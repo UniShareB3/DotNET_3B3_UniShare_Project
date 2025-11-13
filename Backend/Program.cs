@@ -15,6 +15,15 @@ using Backend.Data;
 using Backend.Features.Users;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddIdentity<User, IdentityRole<Guid>>()
     .AddEntityFrameworkStores<ApplicationContext>()
@@ -85,7 +94,7 @@ builder.Services.AddScoped<IHashingService, HashingService>();
 builder.Services.AddScoped<IUserValidator<User>, EmailValidator>();
 
 var app = builder.Build();
-
+app.UseCors("AllowAll");
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -100,10 +109,16 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// ---------------- POPULARE ITEME ----------------
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ApplicationContext>();
+    Backend.Data.DbInitializer.Initialize(context);
+}
 app.MapPost("/login", async (LoginUserRequest request, LoginUserHandler handler) => await handler.Handle(request));
 app.MapPost("/refresh", async (RefreshTokenRequest request, RefreshTokenHandler handler, HttpContext httpContext) => 
     await handler.Handle(request, httpContext));
