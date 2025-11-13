@@ -1,4 +1,6 @@
-﻿namespace Backend.Data;
+﻿using Backend.Features.Items.Enums;
+
+namespace Backend.Data;
 
 using System;
 using System.Collections.Generic;
@@ -40,7 +42,7 @@ public class Item
     [Required]
     [MaxLength(50)]
     [Column(TypeName = "varchar(50)")]
-    public string Category { get; set; } = string.Empty;
+    public ItemCategory Category { get; set; } = ItemCategory.Others;
 
     /// <summary>
     /// Item condition (e.g., 'Excellent', 'Good', 'Fair').
@@ -48,7 +50,7 @@ public class Item
     [Required]
     [MaxLength(50)]
     [Column(TypeName = "varchar(50)")]
-    public string Condition { get; set; } = string.Empty;
+    public ItemCondition Condition { get; set; } = ItemCondition.Good;
 
     /// <summary>
     /// Indicates if the item is available for booking.

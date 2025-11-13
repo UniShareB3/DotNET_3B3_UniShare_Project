@@ -1,3 +1,3 @@
 ﻿namespace Backend.Features.Items;
 
-public record GetItemsRequest();
+public record GetAllItemsRequest();

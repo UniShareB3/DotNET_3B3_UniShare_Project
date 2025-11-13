@@ -65,7 +65,7 @@ builder.Services.AddEndpointsApiExplorer();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationContext>(options =>
     options.UseNpgsql(connectionString));
-builder.Services.AddScoped<GetItemsHandler>();
+builder.Services.AddScoped<GetAllItemsHandler>();
 builder.Services.AddScoped<GetItemHandler>();
 builder.Services.AddScoped<PostItemHandler>();
 builder.Services.AddScoped<DeleteItemHandler>();
@@ -81,6 +81,8 @@ builder.Services.AddScoped<DeleteUserHandler>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IHashingService, HashingService>();
+builder.Services.AddScoped<GetAllUserItemsHandler>();
+builder.Services.AddScoped<GetUserItemHandler>();
 
 builder.Services.AddScoped<IUserValidator<User>, EmailValidator>();
 
@@ -118,7 +120,11 @@ app.MapGet("/users/{email}/refresh-tokens", async (string email, GetRefreshToken
     await handler.Handle(new GetRefreshTokensByEmailRequest(email)));
 app.MapDelete("/users/{email}", async (string email, DeleteUserHandler handler) => 
     await handler.Handle(new DeleteUserRequest(email)));
-app.MapGet("/items", async (GetItemsHandler handler) => await handler.Handle());
+app.MapGet("users/{userId:guid}/items", async (Guid userId, GetAllUserItemsHandler handler) => 
+    await handler.Handle(new GetAllUserItemsRequest(userId)));
+app.MapGet("users/{userId:guid}/items/{itemId:guid}", async (Guid userId, Guid itemId, GetUserItemHandler handler) => 
+    await handler.Handle(new GetUserItemRequest(userId, itemId)));
+app.MapGet("/items", async (GetAllItemsHandler handler) => await handler.Handle());
 app.MapGet("items/{id:guid}", async (Guid id, GetItemHandler handler) => await handler.Handle(new GetItemRequest(id)));
 app.MapPost("items", async (PostItemRequest request, PostItemHandler handler) =>  await handler.Handle(request));
 app.MapDelete("items/{id:guid}", async (Guid id, DeleteItemHandler handler) => await handler.Handle(new DeleteItemRequest(id)));

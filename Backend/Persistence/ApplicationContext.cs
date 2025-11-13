@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Backend.Persistence;
 
@@ -18,7 +19,15 @@ public class ApplicationContext(DbContextOptions<ApplicationContext> options) : 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
-
+        
+        builder.Entity<Item>()
+            .Property(i=> i.Category)
+            .HasConversion<string>();
+        
+        builder.Entity<Item>()
+            .Property(i=> i.Condition)
+            .HasConversion<string>();
+        
         // Rename AspNetUsers table to Users
         builder.Entity<User>(b =>
         {
