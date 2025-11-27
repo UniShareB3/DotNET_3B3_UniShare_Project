@@ -34,7 +34,7 @@ public class PostItemDtoValidator:AbstractValidator<PostItemDto>
     }
     private static string GetValidEnumMessage<TEnum>(string propertyName) where TEnum : struct, Enum
     {
-        var validValues = Enum.GetNames(typeof(TEnum)).ToList();
+        var validValues = Enum.GetNames<TEnum>().ToList();
         return $"{propertyName} must be one of: {string.Join(", ", validValues)}.";
     }
 }
