@@ -191,7 +191,10 @@ class _DashboardPageState extends State<DashboardPage>
     }
 
     final String itemId = booking['itemId'] ?? 'N/A';
-    final String otherUserId = received ? booking['borrowerId'] ?? 'N/A' : booking['ownerId'] ?? 'N/A';
+    final String otherUserId = received
+        ? booking['borrowerId'] ?? 'N/A'
+        : booking['ownerId'] ?? 'N/A';
+
     final String startDate = booking['startDate']?.toString().substring(0, 10) ?? "N/A";
     final String endDate = booking['endDate']?.toString().substring(0, 10) ?? "N/A";
 
@@ -202,8 +205,17 @@ class _DashboardPageState extends State<DashboardPage>
       ]),
       builder: (context, AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
         if (!snapshot.hasData || snapshot.data![0].isEmpty) {
-          if (!snapshot.hasData) return const LinearProgressIndicator();
-          return Card(child: ListTile(title: Text(received ? 'Item Not Found' : 'Booking Unknown')));
+          if (!snapshot.hasData) {
+            return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: LinearProgressIndicator(),
+                ));
+          }
+          return Card(
+              child: ListTile(
+                title: Text(received ? 'Item Not Found' : 'Booking for Unknown Item'),
+              ));
         }
 
         final itemDetails = snapshot.data![0];
@@ -211,7 +223,9 @@ class _DashboardPageState extends State<DashboardPage>
 
         final String itemTitle = itemDetails['name'] ?? "Item Not Found";
         final String? itemImageUrl = itemDetails['imageUrl'];
-        final String otherUserName = '${userDetails['firstName'] ?? ''} ${userDetails['lastName'] ?? ''}'.trim();
+        final String otherUserName = received
+            ? '${userDetails['firstName'] ?? 'User'} ${userDetails['lastName'] ?? ''}'.trim()
+            : '${userDetails['firstName'] ?? 'Owner'} ${userDetails['lastName'] ?? ''}'.trim();
 
         Widget leadingImage;
         if (itemImageUrl != null && itemImageUrl.isNotEmpty) {
@@ -246,19 +260,34 @@ class _DashboardPageState extends State<DashboardPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(itemTitle,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.deepPurple),
-                              overflow: TextOverflow.ellipsis),
+                          Text(
+                            itemTitle,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.deepPurple),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           const SizedBox(height: 4),
-                          Text(received ? 'Request From: $otherUserName' : 'Requested To: $otherUserName',
-                              style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w500),
-                              overflow: TextOverflow.ellipsis),
+                          Text(
+                            received
+                                ? 'Request From: $otherUserName'
+                                : 'Requested To: $otherUserName',
+                            style: TextStyle(
+                                color: Colors.black87,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.calendar_month, size: 16, color: Colors.grey),
+                              const Icon(Icons.calendar_month,
+                                  size: 16, color: Colors.grey),
                               const SizedBox(width: 5),
-                              Text("Period: $startDate to $endDate", style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                              Text("Period: $startDate to $endDate",
+                                  style: TextStyle(
+                                      fontSize: 13, color: Colors.grey[600])),
                             ],
                           ),
                         ],
@@ -273,28 +302,64 @@ class _DashboardPageState extends State<DashboardPage>
                     Chip(
                       label: Text(status),
                       backgroundColor: statusColor.withOpacity(0.1),
-                      labelStyle: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12),
+                      labelStyle: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12),
                     ),
                     if (received && status == 'Pending')
                       Row(
                         children: [
                           ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                            onPressed: () async {
+                              final success = await ApiService.approveBooking(
+                                  booking['id']);
+                              if (success && mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Request Approved')));
+                                _loadData();
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10)),
                             child: const Text('Approve', style: TextStyle(fontSize: 12)),
                           ),
                           const SizedBox(width: 8),
                           OutlinedButton(
-                            onPressed: () {},
-                            style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: const BorderSide(color: Colors.red)),
-                            child: const Text('Reject', style: TextStyle(fontSize: 12)),
+                            onPressed: () async {
+                              final success =
+                              await ApiService.rejectBooking(booking['id']);
+                              if (success && mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Request Rejected')));
+                                _loadData();
+                              }
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: const BorderSide(color: Colors.red),
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                            ),
+                            child:
+                            const Text('Reject', style: TextStyle(fontSize: 12)),
                           ),
                         ],
                       )
                     else if (!received && status == 'Pending')
                       TextButton(
-                        onPressed: () {},
-                        child: const Text('Cancel Request', style: TextStyle(color: Colors.red)),
+                        onPressed: () async {
+                          final success =
+                          await ApiService.updateBookingStatus(
+                              bookingId: booking['id'], newStatus: 'Cancelled');
+                          if (success && mounted) _loadData();
+                        },
+                        child: const Text('Cancel Request',
+                            style: TextStyle(color: Colors.red)),
                       ),
                   ],
                 ),
@@ -305,6 +370,7 @@ class _DashboardPageState extends State<DashboardPage>
       },
     );
   }
+
 
   Widget _buildTabContent(List<Map<String, dynamic>> list, {required bool isBooking, bool received = false}) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/api_service.dart';
+import '../models/UniversityDto.dart';
 
 class AuthProvider with ChangeNotifier {
   static const _storage = FlutterSecureStorage();
@@ -17,6 +18,21 @@ class AuthProvider with ChangeNotifier {
 
   Map<String, String> _fieldErrors = {};
   Map<String, String> get fieldErrors => _fieldErrors;
+
+  // ----------------- UNIVERSITIES -----------------
+  List<UniversityDto> _universities = [];
+  List<UniversityDto> get universities => _universities;
+
+  Future<void> fetchUniversities() async {
+    try {
+      final data = await ApiService.getUniversities(); // List<dynamic> de la API
+      _universities = data.map((u) => UniversityDto.fromJson(u)).toList();
+      notifyListeners();
+    } catch (e) {
+      _universities = [];
+    }
+  }
+
 
   // ---------------- LOGIN ----------------
   Future<bool> login(String email, String password) async {
@@ -35,26 +51,32 @@ class AuthProvider with ChangeNotifier {
   }
 
   // ---------------- REGISTER ----------------
-  Future<String?> register({
+  Future<Map<String, dynamic>?> register({
     required String firstName,
     required String lastName,
     required String email,
     required String password,
+    required String universityId, // pasăm ID-ul universității
   }) async {
-    final result = await ApiService.register(
+    _fieldErrors.clear();
+
+    final response = await ApiService.register(
       firstName: firstName,
       lastName: lastName,
       email: email,
       password: password,
+      universityId: universityId,
     );
 
-    if (result['success'] == true) {
-      _fieldErrors.clear();
-      return result['entity']['id']; // return user ID
-    } else {
-      _fieldErrors = Map<String, String>.from(result['errors'] ?? {});
+    if (response['success'] == false) {
+      if (response.containsKey('errors')) {
+        _fieldErrors = Map<String, String>.from(response['errors']);
+        notifyListeners();
+      }
       return null;
     }
+
+    return response; // succes
   }
 
   void clearFieldErrors() {

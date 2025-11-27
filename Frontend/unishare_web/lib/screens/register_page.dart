@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:unishare_web/screens/verify_email_page.dart';
 import '../providers/auth_provider.dart';
 import 'login_page.dart';
 
@@ -18,28 +17,34 @@ class _RegisterPageState extends State<RegisterPage> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmPasswordCtrl = TextEditingController();
+
+  String? _selectedUniversityId; // stocăm ID-ul universității selectate
   bool _loading = false;
 
   @override
   void initState() {
     super.initState();
 
-    // Listener: dacă password-ul se schimbă, re-validate confirm password
+    // Listener pentru confirm password
     _passwordCtrl.addListener(() {
       if (_confirmPasswordCtrl.text.isNotEmpty) {
         _formKey.currentState?.validate();
       }
     });
 
-    // Listener: dacă email-ul se modifică, șterge eventuale erori de backend
+    // Listener ca să curețe erorile backend pe email
     _emailCtrl.addListener(_clearFieldError);
+
+    // Fetch universities for dropdown
+    final auth = context.read<AuthProvider>();
+    auth.fetchUniversities();
   }
 
   void _clearFieldError() {
     final auth = context.read<AuthProvider>();
     if (auth.fieldErrors.containsKey('email')) {
       auth.fieldErrors.remove('email');
-      setState(() {}); // re-draw pentru a elimina mesajul
+      setState(() {});
     }
   }
 
@@ -47,6 +52,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
+
     final auth = context.read<AuthProvider>();
 
     final success = await auth.register(
@@ -54,11 +60,12 @@ class _RegisterPageState extends State<RegisterPage> {
       lastName: _lastNameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       password: _passwordCtrl.text.trim(),
+      universityId: _selectedUniversityId!,
     );
 
     setState(() => _loading = false);
 
-    _formKey.currentState!.validate(); // afișează eventualele erori de backend
+    _formKey.currentState!.validate();
 
     if (!mounted) return;
 
@@ -77,7 +84,9 @@ class _RegisterPageState extends State<RegisterPage> {
     if (v == null || v.isEmpty) return 'Enter a password';
     if (v.length < 6) return 'Minimum 6 characters';
     if (!RegExp(r'[0-9]').hasMatch(v)) return 'Must contain at least 1 number';
-    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) return 'Must contain at least 1 special character';
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) {
+      return 'Must contain at least 1 special character';
+    }
     return null;
   }
 
@@ -115,7 +124,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     decoration: InputDecoration(
                       labelText: 'First Name',
                       prefixIcon: const Icon(Icons.person_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     validator: (v) => v!.isEmpty ? 'Enter your first name' : null,
                   ),
@@ -127,9 +137,36 @@ class _RegisterPageState extends State<RegisterPage> {
                     decoration: InputDecoration(
                       labelText: 'Last Name',
                       prefixIcon: const Icon(Icons.person_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     validator: (v) => v!.isEmpty ? 'Enter your last name' : null,
+                  ),
+                  const SizedBox(height: 15),
+
+                  // University dropdown
+                  DropdownButtonFormField<String>(
+                    value: _selectedUniversityId,
+                    decoration: InputDecoration(
+                      labelText: 'University',
+                      prefixIcon: const Icon(Icons.school),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    items: auth.universities
+                        .map<DropdownMenuItem<String>>(
+                          (u) => DropdownMenuItem<String>(
+                        value: u.id, // ID-ul universității
+                        child: Text("${u.name} (${u.shortCode})"),
+                      ),
+                    ).toList(),
+                    onChanged: (value) {
+                      setState(() => _selectedUniversityId = value);
+                    },
+                    validator: (v) => v == null ? 'Select a university' : null,
                   ),
                   const SizedBox(height: 15),
 
@@ -139,11 +176,14 @@ class _RegisterPageState extends State<RegisterPage> {
                     decoration: InputDecoration(
                       labelText: 'Email',
                       prefixIcon: const Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     validator: (v) {
                       if (!v!.contains('@')) return 'Enter a valid email';
-                      if (auth.fieldErrors.containsKey('email')) return auth.fieldErrors['email'];
+                      if (auth.fieldErrors.containsKey('email')) {
+                        return auth.fieldErrors['email'];
+                      }
                       return null;
                     },
                   ),
@@ -155,14 +195,15 @@ class _RegisterPageState extends State<RegisterPage> {
                     decoration: InputDecoration(
                       labelText: 'Password',
                       prefixIcon: const Icon(Icons.lock_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     obscureText: true,
                     validator: (v) {
                       final error = _validatePassword(v);
                       if (error != null) return error;
-                      // validate confirm password if not empty
-                      if (_confirmPasswordCtrl.text.isNotEmpty && v != _confirmPasswordCtrl.text) {
+                      if (_confirmPasswordCtrl.text.isNotEmpty &&
+                          v != _confirmPasswordCtrl.text) {
                         return 'Passwords do not match';
                       }
                       return null;
@@ -176,7 +217,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     decoration: InputDecoration(
                       labelText: 'Confirm Password',
                       prefixIcon: const Icon(Icons.lock_reset),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     obscureText: true,
                     validator: (v) {
@@ -195,7 +237,8 @@ class _RegisterPageState extends State<RegisterPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
                         foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
                         elevation: 5,
                       ),
                       child: _loading
@@ -207,7 +250,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           strokeWidth: 3,
                         ),
                       )
-                          : const Text('Register', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          : const Text(
+                        'Register',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),

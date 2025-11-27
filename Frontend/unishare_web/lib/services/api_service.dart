@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:unishare_web/services/secure_storage_service.dart';
 
 import '../main.dart';
+import '../models/UniversityDto.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:5083';
@@ -81,6 +82,7 @@ class ApiService {
     required String lastName,
     required String email,
     required String password,
+    required String universityId, // nou
   }) async {
     final url = Uri.parse('$baseUrl/register');
 
@@ -92,11 +94,9 @@ class ApiService {
         'lastName': lastName,
         'email': email,
         'password': password,
+        'universityId': universityId, // adăugat
       }),
     );
-
-    print('API register status: ${response.statusCode}');
-    print('API register body: ${response.body}');
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       var rep = json.decode(response.body);
@@ -105,7 +105,6 @@ class ApiService {
     } else {
       final data = jsonDecode(response.body);
       Map<String, String> errors = {};
-
       if (data is List) {
         for (var e in data) {
           if (e['code'] == 'DuplicateEmail' || e['code'] == 'DuplicateUserName') {
@@ -113,7 +112,6 @@ class ApiService {
           }
         }
       }
-
       return {'success': false, 'errors': errors};
     }
   }
@@ -347,6 +345,49 @@ class ApiService {
       return jsonDecode(response.body);
     }
     return {};
+  }
+  static Future<bool> updateBookingStatus({
+    required String bookingId,
+    required String newStatus, // "Approved" / "Rejected"
+  }) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return false;
+
+    final url = Uri.parse('$baseUrl/bookings/$bookingId/status');
+    final response = await http.put(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({'status': newStatus}),
+    );
+
+    print('Update booking $bookingId to $newStatus -> ${response.statusCode}');
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print('Failed: ${response.body}');
+      return false;
+    }
+  }
+
+  // Shortcut-uri
+  static Future<bool> approveBooking(String bookingId) async {
+    return await updateBookingStatus(bookingId: bookingId, newStatus: "Approved");
+  }
+
+  static Future<bool> rejectBooking(String bookingId) async {
+    return await updateBookingStatus(bookingId: bookingId, newStatus: "Rejected");
+  }
+  static Future<List<dynamic>> getUniversities() async {
+    final response = await http.get(Uri.parse('$baseUrl/universities'));
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+
+    return [];
   }
 
 
