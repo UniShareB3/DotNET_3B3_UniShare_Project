@@ -1,0 +1,26 @@
+﻿using AutoMapper;
+using Backend.Data;
+using Backend.Features.Booking;
+using Backend.Features.Booking.DTO;
+
+namespace Backend.Mapping;
+
+public class CreateBookingMapping : Profile
+{
+    public CreateBookingMapping()
+    {
+        CreateMap<CreateBookingRequest, Booking>()
+            .ForMember(dest => dest.ItemId, opt => opt.MapFrom(src => src.Booking.ItemId))
+            .ForMember(dest => dest.BorrowerId, opt => opt.MapFrom(src => src.Booking.BorrowerId))
+            .ForMember(dest => dest.RequestedOn, opt => opt.MapFrom(src => src.Booking.RequestedOn))
+            .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.Booking.StartDate))
+            .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.Booking.EndDate));
+        
+        CreateMap<CreateBookingDto, Booking>()
+            .ForMember(dest => dest.ItemId, opt => opt.MapFrom(src => src.ItemId))
+            .ForMember(dest => dest.BorrowerId, opt => opt.MapFrom(src => src.BorrowerId))
+            .ForMember(dest => dest.RequestedOn, opt => opt.MapFrom(src => src.RequestedOn))
+            .ForMember(dest => dest.StartDate, opt => opt.MapFrom(src => src.StartDate))
+            .ForMember(dest => dest.EndDate, opt => opt.MapFrom(src => src.EndDate));
+    }
+}

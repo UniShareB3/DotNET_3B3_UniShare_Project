@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    [Migration("20251110180518_IncreaseEmailConfirmationTokenCodeLength")]
-    partial class IncreaseEmailConfirmationTokenCodeLength
+    [Migration("20251127083606_AddIdentityUser")]
+    partial class AddIdentityUser
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
