@@ -141,6 +141,10 @@ app.MapGet("users/{userId:guid}/items/{itemId:guid}", async (Guid userId, Guid i
     await mediator.Send(new GetUserItemRequest(userId, itemId)));
 app.MapGet("users/{userId:guid}/bookings", async (Guid userId, IMediator mediator) => 
     await mediator.Send(new GetUserBookingsRequest(userId)));
+app.MapGet("users/{userId:guid}/booked-items", async (Guid userId, IMediator mediator) => 
+    await mediator.Send(new  GetAllUserBookedItemsRequest(userId)));
+app.MapGet("users/{userId:guid}/booked-items/{bookingId:guid}", async (Guid userId, Guid bookingId, IMediator mediator) => 
+    await mediator.Send(new  GetUserBookedItemRequest(userId, bookingId)));
 app.MapDelete("/users/{userId:guid}", async (Guid userId, IMediator mediator) => 
     await mediator.Send(new DeleteUserRequest(userId)));
 
