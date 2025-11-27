@@ -1,3 +1,6 @@
-﻿namespace Backend.Features.Bookings;
+﻿using Backend.Features.Bookings.DTO;
+using MediatR;
 
-public record UpdateBookingStatusRequest(Guid BookingId, Guid UserId);
+namespace Backend.Features.Bookings;
+
+public record UpdateBookingStatusRequest(Guid BookingId, UpdateBookingStatusDto BookingStatusDto) : IRequest<IResult>;

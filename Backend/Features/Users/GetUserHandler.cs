@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Identity;
 using Backend.Data;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using AutoMapper;
 
 namespace Backend.Features.Users;
 
-public class GetUserHandler(ApplicationContext context) : IRequestHandler<GetUserRequest, IResult>
+public class GetUserHandler(ApplicationContext context, IMapper mapper) : IRequestHandler<GetUserRequest, IResult>
 {
     public async Task<IResult> Handle(GetUserRequest request, CancellationToken cancellationToken)
     {
@@ -21,13 +22,7 @@ public class GetUserHandler(ApplicationContext context) : IRequestHandler<GetUse
             return Results.NotFound();
         }
 
-        var userDto = new UserDto
-        {
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            UniversityName = user.University?.Name ?? "N/A",
-            Items = user.Items?.Select(i => i.Name).ToList() ?? new List<string>()
-        };
+        var userDto = mapper.Map<UserDto>(user);
 
         return Results.Ok(userDto);
     }

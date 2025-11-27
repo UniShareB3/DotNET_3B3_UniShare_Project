@@ -4,6 +4,8 @@ using Backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MediatR;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace Backend.Features.Users;
 
@@ -14,7 +16,24 @@ public class ConfirmEmailHandler(
 {
     public async Task<IResult> Handle(ConfirmEmailRequest request, CancellationToken cancellationToken)
     {
-        var user = await userManager.FindByIdAsync(request.UserId.ToString());
+        var handler = new JwtSecurityTokenHandler();
+        if (!handler.CanReadToken(request.JwtToken))
+        {
+            return Results.BadRequest(new { error = "Invalid JWT token" });
+        }
+
+        var jwtToken = handler.ReadJwtToken(request.JwtToken);
+        var userIdClaim = jwtToken.Claims.FirstOrDefault(c => 
+            c.Type == ClaimTypes.NameIdentifier || 
+            c.Type == JwtRegisteredClaimNames.Sub || 
+            c.Type == "sub");
+
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            return Results.BadRequest(new { error = "Invalid or missing UserId in JWT token" });
+        }
+
+        var user = await userManager.FindByIdAsync(userId.ToString());
         
         if (user == null)
         {

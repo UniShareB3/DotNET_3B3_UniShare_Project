@@ -1,4 +1,4 @@
-﻿using Backend.Data;
+﻿﻿using Backend.Data;
 using Backend.Features.Items;
 using Backend.Features.Items.DTO;
 using Backend.Features.Items.Enums;
@@ -39,7 +39,7 @@ public class GetItemsHandlerTests
         await dbContext.SaveChangesAsync();
 
         // Act
-        var result = await handler.Handle();
+        var result = await handler.Handle(new GetAllItemsRequest(), CancellationToken.None);
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
@@ -62,7 +62,7 @@ public class GetItemsHandlerTests
         var handler = new GetAllItemsHandler(dbContext);
         
         //Act
-        var result = await handler.Handle();
+        var result = await handler.Handle(new GetAllItemsRequest(), CancellationToken.None);
         
         //Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;

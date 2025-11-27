@@ -37,7 +37,7 @@ public class PostItemHandlerTests
         );
 
         // Act
-        var result = await handler.Handle(new PostItemRequest(dto));
+        var result = await handler.Handle(new PostItemRequest(dto), CancellationToken.None);
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
@@ -66,14 +66,12 @@ public class PostItemHandlerTests
            "Others",
             "Others",
             "http://example.com/image.jpg"
-            
         );
-
-
+        
         // Act & Assert
         await Assert.ThrowsAnyAsync<Exception>(async () => 
         {
-            await handler.Handle(new PostItemRequest(dto));
+            await handler.Handle(new PostItemRequest(dto), CancellationToken.None);
         });
     }
 
@@ -95,7 +93,7 @@ public class PostItemHandlerTests
 
 
         // Act
-        var result = await handler.Handle(new PostItemRequest(dto));
+        var result = await handler.Handle(new PostItemRequest(dto), CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();

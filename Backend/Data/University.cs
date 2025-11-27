@@ -16,7 +16,7 @@ namespace Backend.Data
         /// Primary key - unique identifier for the university.
         /// </summary>
         [Key]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid Id { get; set; }
 
         /// <summary>
         /// Full official name of the university.

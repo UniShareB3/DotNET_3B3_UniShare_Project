@@ -1,4 +1,4 @@
-﻿using Backend.Features.Items.Enums;
+﻿﻿using Backend.Features.Items.Enums;
 
 namespace Backend.Tests.Handlers.Items;
 
@@ -36,7 +36,7 @@ public class DeleteItemHandlerTests
         var request = new DeleteItemRequest(itemId);
 
         // Act
-        var result = await handler.Handle(request);
+        var result = await handler.Handle(request, CancellationToken.None);
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
@@ -55,7 +55,7 @@ public class DeleteItemHandlerTests
         var request = new DeleteItemRequest(Guid.NewGuid());
 
         // Act
-        var result = await handler.Handle(request);
+        var result = await handler.Handle(request, CancellationToken.None);
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
