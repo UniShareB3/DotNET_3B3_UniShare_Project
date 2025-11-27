@@ -1,10 +1,7 @@
 ﻿using Backend.Persistence;
 using MediatR;
-using System.IdentityModel.Tokens.Jwt;
-using Backend.Validators;
-using FluentValidation.Results;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Http;
+using Backend.Features.Bookings.DTO;
 
 namespace Backend.Features.Bookings;
 
@@ -17,9 +14,16 @@ public class UpdateBookingStatusHandler(ApplicationContext dbContext, ILogger<Up
     public async Task<IResult> Handle(UpdateBookingStatusRequest request, CancellationToken cancellationToken)
     {
         var dto = request.BookingStatusDto;
+
         var booking = await dbContext.Bookings
             .Include(b => b.Item)
             .FirstOrDefaultAsync(b => b.Id == request.BookingId, cancellationToken);
+
+        if (booking == null)
+        {
+            logger.LogWarning("Booking with ID {BookingId} not found.", request.BookingId);
+            return Results.NotFound();
+        }
 
         booking.Status = dto.Status;
         if (dto.Status == "Approved") booking.ApprovedOn = DateTime.UtcNow;
@@ -27,7 +31,22 @@ public class UpdateBookingStatusHandler(ApplicationContext dbContext, ILogger<Up
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
+        var itemDto = booking.Item is not null ? new ItemDto(booking.Item.Id, booking.Item.Name, booking.Item.OwnerId) : null;
+
+        var bookingDto = new BookingDto(
+            booking.Id,
+            booking.ItemId,
+            booking.BorrowerId,
+            booking.RequestedOn,
+            booking.StartDate,
+            booking.EndDate,
+            booking.Status,
+            booking.ApprovedOn,
+            booking.CompletedOn,
+            itemDto
+        );
+
         logger.LogInformation("Booking with ID {BookingId} status updated to {NewStatus}.", request.BookingId, dto.Status);
-        return Results.Ok(booking);
+        return Results.Ok(bookingDto);
     }
 }
