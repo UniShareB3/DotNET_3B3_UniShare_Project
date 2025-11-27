@@ -13,6 +13,28 @@ class ApiService {
     final ownerId = payload['sub']; // sau ce claim folosești pentru ID
     return ownerId;
   }
+  static Future<List<Map<String, dynamic>>> getMyItems() async {
+    final token = await SecureStorageService.getAccessToken();
+    final userId = getUserIdFromToken(token);
+
+    final url = Uri.parse('$baseUrl/users/$userId/items');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) return List<Map<String, dynamic>>.from(data);
+    }
+
+    return [];
+  }
+
   // ----------------- Get Items -----------------
   static Future<List<Map<String, dynamic>>> getItems() async {
     final token = await SecureStorageService.getAccessToken();
@@ -221,4 +243,112 @@ class ApiService {
       return false;
     }
   }
+  // ----------------- Get All Bookings -----------------
+  static Future<List<Map<String, dynamic>>> getBookings() async {
+    final token = await SecureStorageService.getAccessToken();
+    final url = Uri.parse('$baseUrl/bookings');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    print('API get-bookings status: ${response.statusCode}');
+    print('API get-bookings body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) return List<Map<String, dynamic>>.from(data);
+    }
+
+    return [];
+  }
+
+
+// ----------------- Filter Bookings Sent (Requests Sent) -----------------
+  static Future<List<Map<String, dynamic>>> getMyBookings() async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return [];
+
+    final userId = getUserIdFromToken(token);
+
+    // Preluăm toate booking-urile
+    final allBookings = await getBookings();
+
+    // Filtrăm doar ce a trimis userul curent (borrowerId)
+    final sent = allBookings.where((b) => b['borrowerId'] == userId).toList();
+
+    print("Filtered MyBookings (sent): ${sent.length}");
+
+    return sent;
+  }
+
+
+
+// ----------------- Filter Bookings Received (Requests Received) -----------------
+  static Future<List<Map<String, dynamic>>> getReceivedBookings() async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return [];
+
+    final userId = getUserIdFromToken(token);
+
+    // 1. Preluăm itemele userului curent
+    final myItems = await getMyItems();
+    final myItemIds = myItems.map((i) => i['id']).toList();
+
+    // Debug
+    print("My item IDs: $myItemIds");
+
+    if (myItemIds.isEmpty) {
+      print("No items found for current user.");
+      return [];
+    }
+
+    // 2. Preluăm toate booking-urile
+    final allBookings = await getBookings();
+
+    // 3. Filtrăm booking-urile pentru itemele mele
+    final received = allBookings.where((b) => myItemIds.contains(b['itemId'])).toList();
+
+    print("Filtered ReceivedBookings: ${received.length}");
+
+    return received;
+  }
+  // ----------------- Get Single Item -----------------
+  static Future<Map<String, dynamic>> getItemById(String itemId) async {
+    final token = await SecureStorageService.getAccessToken();
+    final url = Uri.parse('$baseUrl/items/$itemId');
+
+    final response = await http.get(url, headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    });
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return {};
+  }
+
+// ----------------- Get Single User -----------------
+  static Future<Map<String, dynamic>> getUserById(String userId) async {
+    final token = await SecureStorageService.getAccessToken();
+    final url = Uri.parse('$baseUrl/users/$userId');
+
+    final response = await http.get(url, headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    });
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    }
+    return {};
+  }
+
+
+
 }
