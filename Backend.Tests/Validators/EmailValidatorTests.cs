@@ -7,6 +7,7 @@ using Moq;
 
 namespace Backend.Tests;
 
+// Tests for EmailValidator
 public class EmailValidatorTests
 {
     private readonly ApplicationContext _dbContext;
