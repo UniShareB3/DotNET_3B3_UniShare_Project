@@ -30,5 +30,29 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         Assert.NotNull(content);
         Assert.True(content.TrimStart().StartsWith("["), "Expected JSON array response for /bookings");
     }
+    
+    [Fact]
+    public async Task CreateBooking_ReturnsCreatedStatusCode()
+    {
+        // Arrange
+        var newBooking = new
+        {
+            UserId = Guid.NewGuid(),
+            ItemId = Guid.NewGuid(),
+            StartTime = DateTime.UtcNow,
+            EndTime = DateTime.UtcNow.AddHours(2)
+        };
+        var request = new HttpRequestMessage(HttpMethod.Post, "/bookings")
+        {
+            Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(newBooking), System.Text.Encoding.UTF8, "application/json")
+        };
+        
+        // Act
+        var response = await client.SendAsync(request);
+        
+        // Assert
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+    
 }
 

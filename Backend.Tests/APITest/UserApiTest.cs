@@ -16,4 +16,5 @@ public class UserApiTest(CustomWebApplicationFactory factory) : IClassFixture<Cu
         // Assert
         response.EnsureSuccessStatusCode();
     }
+    
 }

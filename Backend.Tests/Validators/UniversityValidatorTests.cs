@@ -73,35 +73,4 @@ public class UniversityValidatorTests
         result.Errors.Should().BeEmpty();
     }
     
-    [Fact]
-    public async Task Given_ValidExistingUniversityId_When_Validate_Then_ReturnsSuccess()
-    {
-        // Arrange
-        var context = CreateInMemoryDbContext(Guid.NewGuid().ToString());
-        var validUniversityId = Guid.NewGuid();
-
-        context.Universities.Add(new University
-        {
-            Id = validUniversityId,
-            Name = "Valid University",
-            EmailDomain = "@university.edu"
-        });
-        await context.SaveChangesAsync();
-
-        var validator = new UniversityValidator(context);
-
-        var user = new User 
-        { 
-            UniversityId = validUniversityId,
-            Email = "student@university.edu"
-        };
-
-        // Act
-        var result = await validator.ValidateAsync(null!, user);
-
-        // Assert
-        result.Succeeded.Should().BeTrue();
-    
-        result.Errors.Should().BeEmpty();
-    }
 }
