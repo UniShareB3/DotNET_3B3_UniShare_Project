@@ -18,8 +18,8 @@ public class GetUserItemHandlerTests
             .UseInMemoryDatabase(databaseName: guid)
             .Options;
 
-        var dbContext = new ApplicationContext(options);
-        return dbContext;
+        var context = new ApplicationContext(options);
+        return context;
     }
 
     private static IMapper CreateMapper()
@@ -38,7 +38,7 @@ public class GetUserItemHandlerTests
     public async Task Given_UserWithItems_When_Handle_Then_ReturnsUserItems()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext("d290f1ee-0000-4b01-90e6-d701748f0851");
+        var context = CreateInMemoryDbContext("d290f1ee-0000-4b01-90e6-d701748f0851");
         var mapper = CreateMapper();
         var userId = Guid.Parse("d290f1ee-6c54-4b01-90e6-d701748f0851");
         
@@ -49,7 +49,7 @@ public class GetUserItemHandlerTests
             LastName = "User", 
             Email = "test@student.tuiasi.ro" 
         };
-        dbContext.Users.Add(user);
+        context.Users.Add(user);
         var item1 = new Item 
         { 
             Id = Guid.Parse("d290f1ee-6c54-4b01-90e6-d701748f0000"), 
@@ -69,10 +69,10 @@ public class GetUserItemHandlerTests
             Condition = Features.Items.Enums.ItemCondition.Excellent 
         };
         
-        dbContext.Items.AddRange(item1, item2);
-        await dbContext.SaveChangesAsync();
+        context.Items.AddRange(item1, item2);
+        await context.SaveChangesAsync();
         
-        var handler = new GetUserItemHandler(dbContext, mapper);
+        var handler = new GetUserItemHandler(context, mapper);
         var request = new GetUserItemRequest(userId,item1.Id);
         
         // Act
@@ -96,10 +96,10 @@ public class GetUserItemHandlerTests
     public async Task Given_UserWithoutItems_When_Handle_Then_ReturnsNotFound()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext("d290f1ee-0000-4b01-90e6-d701748f0852");
+        var context = CreateInMemoryDbContext("d290f1ee-0000-4b01-90e6-d701748f0852");
         var mapper = CreateMapper();
         var userId = Guid.Parse("d290f1ee-6c54-4b01-90e6-d701748f0852");
-        var handler = new GetUserItemHandler(dbContext, mapper);
+        var handler = new GetUserItemHandler(context, mapper);
         var request = new GetUserItemRequest(userId, Guid.Parse("d290f1ee-6c54-4b01-90e6-d701748f0002"));
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -112,7 +112,7 @@ public class GetUserItemHandlerTests
     public async Task Given_UserWithDifferentItem_When_Handle_Then_ReturnsNotFound()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext("d290f1ee-0000-4b01-90e6-d701748f0853");
+        var context = CreateInMemoryDbContext("d290f1ee-0000-4b01-90e6-d701748f0853");
         var mapper = CreateMapper();
         var userId = Guid.Parse("d290f1ee-6c54-4b01-90e6-d701748f0853");
 
@@ -123,7 +123,7 @@ public class GetUserItemHandlerTests
             LastName = "User",
             Email = "test@studet.uaic.ro"
         };
-        dbContext.Users.Add(user);
+        context.Users.Add(user);
 
         var item = new Item
         {
@@ -134,9 +134,9 @@ public class GetUserItemHandlerTests
             Category = Features.Items.Enums.ItemCategory.Electronics,
             Condition = Features.Items.Enums.ItemCondition.New
         };
-        dbContext.Items.Add(item);
-        await dbContext.SaveChangesAsync();
-        var handler = new GetUserItemHandler(dbContext, mapper);
+        context.Items.Add(item);
+        await context.SaveChangesAsync();
+        var handler = new GetUserItemHandler(context, mapper);
         var request = new GetUserItemRequest(userId, item.Id);
         
         // Act

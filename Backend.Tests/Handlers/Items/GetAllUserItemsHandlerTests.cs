@@ -13,15 +13,15 @@ public class GetAllUserItemsHandlerTests
             .UseInMemoryDatabase(databaseName: guid)
             .Options;
 
-        var dbContext = new ApplicationContext(options);
-        return dbContext;
+        var context = new ApplicationContext(options);
+        return context;
     }
 
     [Fact]
     public async Task Given_UserWithItems_When_GettingAllItems_Then_ReturnsOnlyUsersItems()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext("cb397a9b-ec7c-4bb4-b683-363f07dd94da");
+        var context = CreateInMemoryDbContext("cb397a9b-ec7c-4bb4-b683-363f07dd94da");
         var userId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94db");
         var otherUserId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94da");
         var userItems = new List<Item>
@@ -45,12 +45,12 @@ public class GetAllUserItemsHandlerTests
                 Category = ItemCategory.Clothing, Condition = ItemCondition.Fair
             }
         };
-        dbContext.Items.AddRange(userItems);
-        dbContext.Items.AddRange(otherUserItems);
-        await dbContext.SaveChangesAsync();
+        context.Items.AddRange(userItems);
+        context.Items.AddRange(otherUserItems);
+        await context.SaveChangesAsync();
 
         // Act
-        var retrievedItems = await dbContext.Items
+        var retrievedItems = await context.Items
             .Where(i => i.OwnerId == userId)
             .ToListAsync();
 
@@ -63,11 +63,11 @@ public class GetAllUserItemsHandlerTests
     public async Task Given_UserWithNoItems_When_GettingAllItems_Then_ReturnsEmptyList()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext("aa397a9b-ec7c-4bb4-b683-363f07dd94d6");
+        var context = CreateInMemoryDbContext("aa397a9b-ec7c-4bb4-b683-363f07dd94d6");
         var userId = Guid.Parse("bb397a9b-ec7c-4bb4-b683-363f07dd94d6");
 
         // Act
-        var retrievedItems = await dbContext.Items
+        var retrievedItems = await context.Items
             .Where(i => i.OwnerId == userId)
             .ToListAsync();
 
@@ -79,11 +79,11 @@ public class GetAllUserItemsHandlerTests
     public async Task Given_UserWithInvalidId_When_GettingAllItems_Then_ReturnsEmptyList()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext("cb397a9b-ec7c-4bb4-b683-363f07dd9rrr4d6");
+        var context = CreateInMemoryDbContext("cb397a9b-ec7c-4bb4-b683-363f07dd9rrr4d6");
         var invalidUserId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd2222");
 
         // Act
-        var retrievedItems = await dbContext.Items
+        var retrievedItems = await context.Items
             .Where(i => i.OwnerId == invalidUserId)
             .ToListAsync();
 

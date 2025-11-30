@@ -25,6 +25,7 @@ using MediatR;
 using FluentValidation.AspNetCore;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
+using Backend.Mapper;
 using Backend.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -99,7 +100,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<UserMapper>();
     cfg.AddProfile<UniversityMapper>();
     cfg.AddProfile<ItemProfile>();
-}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper));
+}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemProfile));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 

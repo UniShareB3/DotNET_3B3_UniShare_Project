@@ -19,8 +19,8 @@ public class GetAllItemsHandlerTests
             .UseInMemoryDatabase(databaseName: guid)
             .Options;
 
-        var dbContext = new ApplicationContext(options);
-        return dbContext;
+        var context = new ApplicationContext(options);
+        return context;
     }
 
     private static IMapper CreateMapper()
@@ -39,19 +39,19 @@ public class GetAllItemsHandlerTests
     public async Task Given_ItemsExist_When_Handle_Then_ReturnsOkWithAllItems()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext("163edd1c-3e7a-4f57-9dac-7e8d17c509f8"); 
+        var context = CreateInMemoryDbContext("163edd1c-3e7a-4f57-9dac-7e8d17c509f8"); 
         var mapper = CreateMapper();
-        var handler = new GetAllItemsHandler(dbContext, mapper);
+        var handler = new GetAllItemsHandler(context, mapper);
         
         var userId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94d6");
         var user = new User { Id = userId, FirstName = "Test", LastName = "User" };
-        dbContext.Users.Add(user);
+        context.Users.Add(user);
 
-        dbContext.Items.AddRange(
+        context.Items.AddRange(
             new Item { OwnerId = userId, Name = "Item 1", Description = "D1", Category = ItemCategory.Clothing, Condition = ItemCondition.New, Owner = user },
             new Item { OwnerId = userId, Name = "Item 2", Description = "D2", Category = ItemCategory.Books, Condition = ItemCondition.Fair, Owner = user }
         );
-        await dbContext.SaveChangesAsync();
+        await context.SaveChangesAsync();
 
         // Act
         var result = await handler.Handle(new GetAllItemsRequest(), CancellationToken.None);
@@ -73,10 +73,10 @@ public class GetAllItemsHandlerTests
     public async Task Given_NoItemsExist_When_Handle_Then_ReturnsOkWithEmptyList()
     {
         //Arrange
-        var dbContext = CreateInMemoryDbContext("0a1dc121-52db-4baf-be9e-e88d2d93d4c5"); 
+        var context = CreateInMemoryDbContext("0a1dc121-52db-4baf-be9e-e88d2d93d4c5"); 
         var mapper = CreateMapper();
         
-        var handler = new GetAllItemsHandler(dbContext, mapper);
+        var handler = new GetAllItemsHandler(context, mapper);
         
         //Act
         var result = await handler.Handle(new GetAllItemsRequest(), CancellationToken.None);

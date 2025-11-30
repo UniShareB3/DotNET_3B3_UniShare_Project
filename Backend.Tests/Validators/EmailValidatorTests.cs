@@ -10,32 +10,32 @@ namespace Backend.Tests;
 // Tests for EmailValidator
 public class EmailValidatorTests
 {
-    private readonly ApplicationContext _dbContext;
+    private readonly ApplicationContext _context;
 
     public EmailValidatorTests()
     {
         var options = new DbContextOptionsBuilder<ApplicationContext>()
             .UseInMemoryDatabase(databaseName: "TestDatabase")
             .Options;
-        _dbContext = new ApplicationContext(options);
+        _context = new ApplicationContext(options);
 
-        _dbContext.Universities.Add(new University
+        _context.Universities.Add(new University
         {
             Id = Guid.NewGuid(),
             Name = "Test University",
             EmailDomain = "@student.uaic.ro"
         });
-        _dbContext.SaveChanges();
+        _context.SaveChanges();
     }
 
     [Fact]
     public async Task Given_ValidEmailDomain_When_ValidatingEmail_Then_Success()
     {
-        var universityId = _dbContext.Universities.First().Id;
+        var universityId = _context.Universities.First().Id;
         var user = new User { Email = "myemail@student.uaic.ro", UniversityId = universityId };
         var userManager = GetMockUserManager();
 
-        var validator = new EmailValidator(_dbContext);
+        var validator = new EmailValidator(_context);
         var result = await validator.ValidateAsync(userManager, user);
 
         Assert.True(result.Succeeded);
@@ -44,11 +44,11 @@ public class EmailValidatorTests
     [Fact]
     public async Task Given_InvalidEmailDomain_When_ValidatingEmail_Then_InvalidEmailDomainError()
     {
-        var universityId = _dbContext.Universities.First().Id;
+        var universityId = _context.Universities.First().Id;
         var user = new User { Email = "myemail@email.com", UniversityId = universityId };
         var userManager = GetMockUserManager();
 
-        var validator = new EmailValidator(_dbContext);
+        var validator = new EmailValidator(_context);
         var result = await validator.ValidateAsync(userManager, user);
 
         Assert.False(result.Succeeded);
@@ -58,11 +58,11 @@ public class EmailValidatorTests
     [Fact]
     public async Task Given_NullEmail_When_ValidatingEmail_Then_InvalidEmailError()
     {
-        var universityId = _dbContext.Universities.First().Id;
+        var universityId = _context.Universities.First().Id;
         var user = new User { Email = null, UniversityId = universityId };
         var userManager = GetMockUserManager();
 
-        var validator = new EmailValidator(_dbContext);
+        var validator = new EmailValidator(_context);
         var result = await validator.ValidateAsync(userManager, user);
 
         Assert.False(result.Succeeded);

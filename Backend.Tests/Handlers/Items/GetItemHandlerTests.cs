@@ -19,8 +19,8 @@ public class GetItemHandlerTests
             .UseInMemoryDatabase(databaseName: guid)
             .Options;
 
-        var dbContext = new ApplicationContext(options);
-        return dbContext;
+        var context = new ApplicationContext(options);
+        return context;
     }
 
     private static IMapper CreateMapper()
@@ -39,7 +39,7 @@ public class GetItemHandlerTests
     public async Task Given_ItemExists_When_Handle_Then_ReturnsOkWithItem()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext("02776839-a33e-4bba-b001-0167bf09e1b3");
+        var context = CreateInMemoryDbContext("02776839-a33e-4bba-b001-0167bf09e1b3");
         var itemId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94d6");
         var item = new Item
         {
@@ -48,13 +48,13 @@ public class GetItemHandlerTests
         };
         var user = new User { Id = item.OwnerId, FirstName = "John", LastName = "Doe", Email = "johndoe@gmail.com" };
 
-        dbContext.Users.Add(user);
-        dbContext.Items.Add(item);
+        context.Users.Add(user);
+        context.Items.Add(item);
 
-        await dbContext.SaveChangesAsync();
+        await context.SaveChangesAsync();
         var mapper = CreateMapper();
 
-        var handler = new GetItemHandler(dbContext, mapper);
+        var handler = new GetItemHandler(context, mapper);
         var request = new GetItemRequest(itemId);
 
         // Act
@@ -75,10 +75,10 @@ public class GetItemHandlerTests
     public async Task Given_ItemDoesNotExist_When_Handle_Then_ReturnsNotFound()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext("02776839-a33e-4bba-b001-0167bf09e1b3");
+        var context = CreateInMemoryDbContext("02776839-a33e-4bba-b001-0167bf09e1b3");
         var mapper = CreateMapper();
         
-        var handler = new GetItemHandler(dbContext, mapper);
+        var handler = new GetItemHandler(context, mapper);
         var request = new GetItemRequest(Guid.Parse("cb8f7efd-c4ad-4fd9-b100-0aa7fb0b3cc1"));
 
         // Act

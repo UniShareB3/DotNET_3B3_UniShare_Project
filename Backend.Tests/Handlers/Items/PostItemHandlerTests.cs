@@ -19,8 +19,8 @@ public class PostItemHandlerTests
             .UseInMemoryDatabase(databaseName: guid)
             .Options;
 
-        var dbContext = new ApplicationContext(options);
-        return dbContext;
+        var context = new ApplicationContext(options);
+        return context;
     }
 
     private static IMapper CreateMapper()
@@ -45,7 +45,7 @@ public class PostItemHandlerTests
     public async Task Given_ValidPostItemRequest_When_Handle_Then_AddsNewItem()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext("a81a22fd-7df5-4d65-a0b5-aec7fa7dc5a3");
+        var context = CreateInMemoryDbContext("a81a22fd-7df5-4d65-a0b5-aec7fa7dc5a3");
         var ownerId = Guid.Parse("a81a22fd-7df5-4d65-a0b5-aec7fa7dc5a3");
         
         // Add the owner user to the database
@@ -56,10 +56,10 @@ public class PostItemHandlerTests
             LastName = "User", 
             Email = "testuser@example.com" 
         };
-        dbContext.Users.Add(user);
-        await dbContext.SaveChangesAsync();
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
         
-        var handler = new PostItemHandler(dbContext, CreateMapper());
+        var handler = new PostItemHandler(context, CreateMapper());
         var dto = new PostItemDto (
             ownerId,
             "Test Item",
@@ -77,7 +77,7 @@ public class PostItemHandlerTests
         statusResult.StatusCode.Should().Be(StatusCodes.Status201Created);
         
         result.Should().NotBeNull();
-        var createItem = await dbContext.Items.FirstOrDefaultAsync( item => item.Name == "Test Item");
+        var createItem = await context.Items.FirstOrDefaultAsync( item => item.Name == "Test Item");
         Assert.NotNull(createItem);
         Assert.Equal("This is a test item.", createItem.Description);
         Assert.Equal(ItemCategory.Electronics, createItem.Category);

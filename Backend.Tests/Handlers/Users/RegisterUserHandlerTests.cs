@@ -60,9 +60,9 @@ public class RegisterUserHandlerTests
         userManagerMock.Setup(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Failed(expectedError));
         
-        ApplicationContext dbContext = CreateInMemoryDbContext(System.Guid.NewGuid().ToString());
+        ApplicationContext context = CreateInMemoryDbContext(System.Guid.NewGuid().ToString());
 
-        var handler = new RegisterUserHandler(userManagerMock.Object, mediatorMock.Object, mapperMock.Object, dbContext);
+        var handler = new RegisterUserHandler(userManagerMock.Object, mediatorMock.Object, mapperMock.Object, context);
 
         // Act
         var result = await handler.Handle(new RegisterUserRequest(userDto), CancellationToken.None);
@@ -94,17 +94,17 @@ public class RegisterUserHandlerTests
         userManagerMock.Setup(x => x.CreateAsync(userEntity, userDto.Password))
             .ReturnsAsync(IdentityResult.Success);
         
-        ApplicationContext dbContext = CreateInMemoryDbContext(System.Guid.NewGuid().ToString());
-        dbContext.Universities.Add(
+        ApplicationContext context = CreateInMemoryDbContext(System.Guid.NewGuid().ToString());
+        context.Universities.Add(
             new University()
             {
                 Name = "Alexandru Ioan Cuza University",
                 EmailDomain = "student.uaic.ro",
                 Id = System.Guid.NewGuid()
             });
-        await dbContext.SaveChangesAsync();
+        await context.SaveChangesAsync();
         
-        var handler = new RegisterUserHandler(userManagerMock.Object, mediatorMock.Object, mapperMock.Object, dbContext);
+        var handler = new RegisterUserHandler(userManagerMock.Object, mediatorMock.Object, mapperMock.Object, context);
 
         // Act
         var result = await handler.Handle(new RegisterUserRequest(userDto), CancellationToken.None);
@@ -139,9 +139,9 @@ public class RegisterUserHandlerTests
         userManagerMock.Setup(x => x.CreateAsync(userEntity, weakPassword))
             .ReturnsAsync(IdentityResult.Failed(identityErrors));
         
-        ApplicationContext dbContext = CreateInMemoryDbContext(System.Guid.NewGuid().ToString());
+        ApplicationContext context = CreateInMemoryDbContext(System.Guid.NewGuid().ToString());
 
-        var handler = new RegisterUserHandler(userManagerMock.Object, mediatorMock.Object, mapperMock.Object, dbContext);
+        var handler = new RegisterUserHandler(userManagerMock.Object, mediatorMock.Object, mapperMock.Object, context);
 
         // Act
         var result = await handler.Handle(new RegisterUserRequest(userDto), CancellationToken.None);
@@ -157,8 +157,8 @@ public class RegisterUserHandlerTests
             .UseInMemoryDatabase(databaseName: guid)
             .Options;
 
-        var dbContext = new ApplicationContext(options);
-        return dbContext;
+        var context = new ApplicationContext(options);
+        return context;
     }
   
 

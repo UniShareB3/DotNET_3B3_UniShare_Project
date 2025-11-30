@@ -10,7 +10,7 @@ using MediatR;
 
 namespace Backend.Features.Booking;
 
-public class CreateBookingHandler(ApplicationContext dbContext, IMapper mapper, CreateBookingValidator validator, ILogger<CreateBookingHandler> logger) : IRequestHandler<CreateBookingRequest, IResult>
+public class CreateBookingHandler(ApplicationContext dbContext, IMapper mapper,  ILogger<CreateBookingHandler> logger) : IRequestHandler<CreateBookingRequest, IResult>
 {
     public async Task<IResult> Handle(CreateBookingRequest? request, CancellationToken cancellationToken)
     {

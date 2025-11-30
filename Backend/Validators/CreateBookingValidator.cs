@@ -21,9 +21,11 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         
         RuleFor(x => x.Booking!.ItemId)
+            .MustAsync(async (itemId, _) => await ItemExists(itemId))
             .NotEmpty().WithMessage("ItemId is required.");
 
         RuleFor(x => x.Booking!.BorrowerId)
+            .MustAsync(async (userId, _) => await UserExists(userId))
             .NotEmpty().WithMessage("BorrowerId is required.");
 
         RuleFor(x => x.Booking!.StartDate)
@@ -67,5 +69,15 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
             _logger.LogError(ex, "Error while checking item availability for booking validation.");
             return false;
         }
+    }
+    
+    private async Task<bool> ItemExists(Guid itemId)
+    {
+        return await _context.Items.AnyAsync(i => i.Id == itemId);
+    }
+    
+    private async Task<bool> UserExists(Guid userId)
+    {
+        return await _context.Users.AnyAsync(u => u.Id == userId);
     }
 }
