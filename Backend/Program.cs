@@ -21,9 +21,7 @@ using Backend.Features.Users.Dtos;
 using Backend.Mapper;
 using MediatR;
 
-using FluentValidation;
 using FluentValidation.AspNetCore;
-using AutoMapper;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
 using Backend.Mapping;
@@ -172,3 +170,5 @@ app.MapPatch("/bookings/{id:guid}", async (Guid id, UpdateBookingStatusDto booki
 app.MapDelete("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteBookingRequest(id)));
 
 await app.RunAsync();
+
+public partial class Program { }

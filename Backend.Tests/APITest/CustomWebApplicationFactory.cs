@@ -1,8 +1,8 @@
 using Backend.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
@@ -17,7 +17,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
     public CustomWebApplicationFactory()
     {
-        // Use a consistent test environment
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
     }
 
@@ -29,19 +28,13 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-
-        // Keep initial service setup minimal; main override happens in ConfigureTestServices
+        
         builder.ConfigureServices(services =>
         {
-            var descriptor = services.Where(d =>
-                d.ServiceType == typeof(DbContextOptions<ApplicationContext>) ||
-                d.ServiceType == typeof(ApplicationContext) ||
-                d.ImplementationType == typeof(ApplicationContext)
-            ).ToList();
-            foreach (var d in descriptor)
-            {
-                services.Remove(d);
-            }
+            services.RemoveAll<ApplicationContext>();
+            services.RemoveAll<DbContextOptions<ApplicationContext>>();
+            services.RemoveAll<IDbContextFactory<ApplicationContext>>();
+            services.RemoveAll<IDbContextOptionsConfiguration<ApplicationContext>>();
 
             services.AddDbContext<ApplicationContext>(options =>
             {
