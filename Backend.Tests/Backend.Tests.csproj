@@ -15,6 +15,7 @@
         <PackageReference Include="coverlet.collector" Version="6.0.2" />
         <PackageReference Include="FluentAssertions" Version="8.8.0" />
         <PackageReference Include="FluentValidation" Version="12.1.0" />
+        <PackageReference Include="Kralizek.AutoFixture.Extensions.AspNetCore.WebApplicationFactory" Version="2.2.1" />
         <PackageReference Include="MediatR" Version="13.1.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.11" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />

@@ -15,7 +15,7 @@ public class ConfirmEmailHandlerTests
     private readonly Mock<UserManager<User>> _userManagerMock;
     private readonly Mock<IHashingService> _hashingServiceMock;
     private readonly ApplicationContext _dbContext;
-    private readonly TokenService _tokenService; // We use the REAL service
+    private readonly TokenService _tokenService;
 
     public ConfirmEmailHandlerTests()
     {
@@ -24,7 +24,7 @@ public class ConfirmEmailHandlerTests
         _dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
 
         var inMemorySettings = new Dictionary<string, string> {
-            {"JwtSettings:Key", "ThisIsASecretKeyForTestingPurposesOnly123!"}, // Must be long enough for HMACSHA256
+            {"JwtSettings:Key", "ThisIsASecretKeyForTestingPurposesOnly123!"}, 
             {"JwtSettings:Issuer", "TestIssuer"},
             {"JwtSettings:Audience", "TestAudience"},
             {"JwtSettings:ExpiryTime", "900"}

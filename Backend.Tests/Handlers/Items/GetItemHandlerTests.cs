@@ -1,4 +1,5 @@
-﻿using Backend.Data;
+﻿using AutoMapper;
+using Backend.Data;
 using Backend.Features.Items;
 using Backend.Features.Items.DTO;
 using Backend.Features.Items.Enums;
@@ -6,11 +7,19 @@ using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Moq;
+using Xunit;
 
 namespace Backend.Tests.Handlers.Items;
 
 public class GetItemHandlerTests
 {
+    private static Mock<IMapper> CreateMapperMock()
+    {
+        var mapperMock = new Mock<IMapper>();
+        return mapperMock;
+    }
+    
     private static ApplicationContext CreateInMemoryDbContext(string guid)
     {
         var options = new DbContextOptionsBuilder<ApplicationContext>()
@@ -34,8 +43,10 @@ public class GetItemHandlerTests
         dbContext.Items.Add(item);
         
         await dbContext.SaveChangesAsync();
-
-        var handler = new GetItemHandler(dbContext);
+        
+        Mock<IMapper> mapperMock = CreateMapperMock();
+        
+        var handler = new GetItemHandler(dbContext, mapperMock.Object);
         var request = new GetItemRequest(itemId);
 
         // Act
@@ -57,7 +68,8 @@ public class GetItemHandlerTests
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext("02776839-a33e-4bba-b001-0167bf09e1b3");
-        var handler = new GetItemHandler(dbContext);
+        Mock<IMapper> mapperMock = CreateMapperMock();
+        var handler = new GetItemHandler(dbContext, mapperMock.Object);
         var request = new GetItemRequest(Guid.Parse("cb8f7efd-c4ad-4fd9-b100-0aa7fb0b3cc1"));
 
         // Act

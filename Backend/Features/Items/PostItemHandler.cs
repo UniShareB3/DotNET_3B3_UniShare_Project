@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Backend.Persistence;
 using Backend.Data;
+using Backend.Features.Items.DTO;
 using Backend.Features.Items.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,6 @@ public class PostItemHandler(ApplicationContext dbContext,IMapper mapper) : IReq
         dbContext.Items.Add(item);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return Results.Created($"/items/{item.Id}", item);
+        return Results.Created($"/items/{item.Id}", mapper.Map<ItemDto>(item));
     }
 }

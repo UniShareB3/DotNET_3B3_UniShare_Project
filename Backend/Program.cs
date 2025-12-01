@@ -22,12 +22,10 @@ using Backend.Features.Users.Dtos;
 using Backend.Mappers;
 using MediatR;
 
-using FluentValidation;
 using FluentValidation.AspNetCore;
-using AutoMapper;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
-using Backend.Mapping;
+using Backend.Mapper;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors(options =>
@@ -101,7 +99,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<UserMapper>();
     cfg.AddProfile<UniversityMapper>();
     cfg.AddProfile<ItemProfile>();
-}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper));
+}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemProfile));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
@@ -210,12 +208,31 @@ app.MapPost("/universities", async (PostUniversitiesRequest request, IMediator m
 
 /// Bookings Endpoints
 
-app.MapGet("/bookings", async (IMediator mediator) => await mediator.Send(new GetAllBookingsRequest()));
-app.MapGet("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetBookingRequest(id)));
-app.MapPost( "/bookings", async (CreateBookingDto dto, IMediator mediator) => 
-    await mediator.Send(new CreateBookingRequest(dto)));
+app.MapGet("/bookings", async (IMediator mediator) => await mediator.Send(new GetAllBookingsRequest()))
+    .WithTags("Bookings")
+    .WithName("GetAllBookings")
+    .WithDescription("Retrieves all bookings.");
+
+app.MapGet("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new GetBookingRequest(id)))
+    .WithTags("Bookings")
+    .WithName("GetBookingById")
+    .WithDescription("Retrieves a booking by its unique identifier.");
+
+app.MapPost("/bookings", async (CreateBookingDto dto, IMediator mediator) => 
+    await mediator.Send(new CreateBookingRequest(dto)))
+    .WithTags("Bookings")
+    .WithName("CreateBooking")
+    .WithDescription("Creates a new booking.");
+
 app.MapPatch("/bookings/{id:guid}", async (Guid id, UpdateBookingStatusDto bookingStatusDto, IMediator mediator) => 
-    await mediator.Send(new UpdateBookingStatusRequest(id, bookingStatusDto)));
-app.MapDelete("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteBookingRequest(id)));
+    await mediator.Send(new UpdateBookingStatusRequest(id, bookingStatusDto)))
+    .WithTags("Bookings")
+    .WithName("UpdateBookingStatus")
+    .WithDescription("Updates the status of an existing booking.");
+
+app.MapDelete("/bookings/{id:guid}", async (Guid id, IMediator mediator) => await mediator.Send(new DeleteBookingRequest(id)))
+    .WithTags("Bookings")
+    .WithName("DeleteBooking")
+    .WithDescription("Deletes a booking by its unique identifier.");
 
 await app.RunAsync();
