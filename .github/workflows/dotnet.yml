@@ -11,10 +11,6 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: ./Backend
-
     steps:
     - uses: actions/checkout@v4
     
@@ -25,9 +21,12 @@ jobs:
         
     - name: Restore dependencies
       run: dotnet restore Backend.csproj
+      working-directory: ./Backend
       
     - name: Build
       run: dotnet build Backend.csproj --no-restore
+      working-directory: ./Backend
       
     - name: Test
-      run: dotnet test Backend.csproj --no-build --verbosity normal
+      run: dotnet test Backend.Tests.csproj --no-build --verbosity normal
+      working-directory: ./Backend.Tests
