@@ -1,19 +1,8 @@
 namespace Backend.Tests.APITest;
 
-public class ItemsApiTest: IClassFixture<CustomWebApplicationFactory>
+public class ItemsApiTest(CustomWebApplicationFactory factory): IClassFixture<CustomWebApplicationFactory>
 {
-    private CustomWebApplicationFactory _factory;
-    private readonly HttpClient _client;
-    
-    private readonly string _webUrl = "https://localhost:7112";
-
-    public ItemsApiTest(CustomWebApplicationFactory factory)
-    {
-        _factory = factory;
-        _client = factory.CreateClient();
-        
-        _factory.HostUrl = _webUrl;
-    }
+    private readonly HttpClient _client = factory.CreateClient();
 
     [Fact]
     public async Task GetAllItems_ReturnsSuccessStatusCode()

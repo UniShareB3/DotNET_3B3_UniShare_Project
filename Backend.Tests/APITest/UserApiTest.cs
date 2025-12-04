@@ -7,7 +7,7 @@ public class UserApiTest(CustomWebApplicationFactory factory) : IClassFixture<Cu
     private readonly HttpClient _client = factory.CreateClient();
     
     [Fact]
-    public async Task GetAllUsers_ReturnsSuccessStatusCode()
+    public async Task GetAllUsers_ReturnsUnauthorizedStatusCode()
     {
         // Arrange
         var request = new HttpRequestMessage(HttpMethod.Get, "/users");
