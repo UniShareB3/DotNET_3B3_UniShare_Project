@@ -5,9 +5,9 @@ using Backend.Features.Items.Enums;
 
 namespace Backend.Mapping;
 
-public class ItemProfile:Profile
+public class ItemMapper:Profile
 {
-    public ItemProfile()
+    public ItemMapper()
     {
         CreateMap<PostItemDto, Item>()
             .ForMember(

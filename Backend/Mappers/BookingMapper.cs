@@ -5,9 +5,9 @@ using Backend.Features.Booking.DTO;
 
 namespace Backend.Mapping;
 
-public class CreateBookingMapping : Profile
+public class BookingMapper : Profile
 {
-    public CreateBookingMapping()
+    public BookingMapper()
     {
         CreateMap<CreateBookingRequest, Booking>()
             .ForMember(dest => dest.ItemId, opt => opt.MapFrom(src => src.Booking.ItemId))

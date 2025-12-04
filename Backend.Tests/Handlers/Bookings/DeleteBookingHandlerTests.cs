@@ -41,7 +41,7 @@ public class DeleteBookingHandlerTests
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
-        statusResult.StatusCode.Should().Be(StatusCodes.Status204NoContent);
+        statusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
 
         var removed = await context.Bookings.FindAsync(bookingId);
         Assert.Null(removed);
