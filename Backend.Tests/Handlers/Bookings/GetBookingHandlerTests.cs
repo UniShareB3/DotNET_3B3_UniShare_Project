@@ -1,5 +1,5 @@
 ﻿using Backend.Data;
-using Backend.Features.Booking;
+using Backend.Features.Bookings;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;

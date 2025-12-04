@@ -1,6 +1,6 @@
 ﻿using Backend.Data;
-using Backend.Features.Booking;
-using Backend.Features.Booking.DTO;
+using Backend.Features.Bookings;
+using Backend.Features.Bookings.DTO;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
