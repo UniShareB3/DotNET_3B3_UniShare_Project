@@ -1,5 +1,4 @@
-﻿using System.Net.Mime;
-using Backend.Data;
+﻿using Backend.Data;
 using Backend.Persistence;
 using Backend.Validators;
 using FluentAssertions;

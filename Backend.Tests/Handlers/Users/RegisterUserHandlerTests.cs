@@ -4,17 +4,12 @@ using Backend.Features.Users.Dtos;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-using System.Threading;
-using System.Threading.Tasks;
 using AutoMapper;
-using Backend.Validators;
 using FluentAssertions;
-using k8s.KubeConfigModels;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
-using Xunit;
 using User = Backend.Data.User;
 
 namespace Backend.Tests.Handlers.Users;

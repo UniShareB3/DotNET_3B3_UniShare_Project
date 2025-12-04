@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace Backend.Tests.APITest;
 
 public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixture<CustomWebApplicationFactory>
@@ -12,7 +14,7 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         // Act
         var response = await client.SendAsync(request);
         // Assert
-        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     //TEST TREBUIE SA FIE MODIFICAT DUPA IMPLEMENTAREA AUTENTIFICARII

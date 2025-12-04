@@ -3,8 +3,6 @@ using Backend.Features.Booking;
 using Backend.Features.Booking.DTO;
 using Backend.Persistence;
 using Backend.Validators;
-using FluentAssertions;
-using FluentValidation;
 using FluentValidation.TestHelper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

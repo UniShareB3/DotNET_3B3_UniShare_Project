@@ -1,0 +1,46 @@
+name: Backend Build and Run
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres        
+          POSTGRES_PASSWORD: admin 
+          POSTGRES_DB: UniShare          
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore Backend.csproj
+      working-directory: ./Backend
+      
+    - name: Build Backend
+      run: dotnet build Backend.csproj --no-restore --configuration Release
+      working-directory: ./Backend
+      
+    - name: Verify App Can Run
+      run: timeout 10s dotnet run --no-build -c Release --project Backend.csproj || code=$?; if [ $code -ne 0 ] && [ $code -ne 124 ]; then exit $code; fi
+      working-directory: ./Backend

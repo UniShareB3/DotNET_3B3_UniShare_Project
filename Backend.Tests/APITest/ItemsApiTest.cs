@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace Backend.Tests.APITest;
 
 public class ItemsApiTest: IClassFixture<CustomWebApplicationFactory>

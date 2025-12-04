@@ -1,0 +1,45 @@
+name: Backend Tests
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Restore Backend dependencies
+      run: dotnet restore Backend.csproj
+      working-directory: ./Backend
+      
+    - name: Restore Test dependencies
+      run: dotnet restore Backend.Tests.csproj
+      working-directory: ./Backend.Tests
+      
+    - name: Build Backend
+      run: dotnet build Backend.csproj --no-restore --configuration Release
+      working-directory: ./Backend
+      
+    - name: Build Tests
+      run: dotnet build Backend.Tests.csproj --no-restore --configuration Release
+      working-directory: ./Backend.Tests
+      
+    - name: Run Tests
+      run: dotnet test Backend.Tests.csproj --no-build --configuration Release --verbosity normal
+      working-directory: ./Backend.Tests
+      env:
+        JwtSettings__Key: "This_Is_A_Random_Key_For_Testing_Only_Make_Sure_Its_Long_Enough"
+        JwtSettings__Issuer: "TestIssuer"
+        JwtSettings__Audience: "TestAudience"
+
