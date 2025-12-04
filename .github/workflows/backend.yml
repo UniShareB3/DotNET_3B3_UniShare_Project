@@ -14,9 +14,9 @@ jobs:
       postgres:
         image: postgres:latest
         env:
-          POSTGRES_USER: $POSTGRES_USER_SECRET      
-          POSTGRES_PASSWORD: $POSTGRES_PASSWORD_SECRET 
-          POSTGRES_DB: $POSTGRES_PASSWORD_SECRET          
+          POSTGRES_USER: ${{ POSTGRES_USER_SECRET }}      
+          POSTGRES_PASSWORD: ${{ POSTGRES_PASSWORD_SECRET }} 
+          POSTGRES_DB: ${{ POSTGRES_PASSWORD_SECRET }}          
         ports:
           - 5432:5432
         options: >-
