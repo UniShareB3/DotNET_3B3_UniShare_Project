@@ -1,7 +1,7 @@
 ﻿using Backend.Persistence;
 using MediatR;
 
-namespace Backend.Features.Booking;
+namespace Backend.Features.Bookings;
 
 public class GetBookingHandler(ApplicationContext dbContext, ILogger<GetBookingHandler> logger) : IRequestHandler<GetBookingRequest, IResult>
 {

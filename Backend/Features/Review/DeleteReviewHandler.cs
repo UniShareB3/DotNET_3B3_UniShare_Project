@@ -17,7 +17,7 @@ public class DeleteReviewHandler(ApplicationContext dbContext, ILogger<DeleteRev
         }
 
         dbContext.Reviews.Remove(review);
-        dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(cancellationToken);
         
         logger.LogInformation("Deleted review with ID {ReviewId} from the database.", request.Id);
         return Results.Ok($"Review {request.Id} deleted successfully.");

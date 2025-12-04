@@ -1,6 +1,6 @@
 ﻿using Backend.Data;
-using Backend.Features.Booking;
-using Backend.Features.Booking.DTO;
+using Backend.Features.Bookings;
+using Backend.Features.Bookings.DTO;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -27,8 +27,7 @@ public class DeleteBookingHandlerTests
     {
         // Arrange
         var context = CreateInMemoryDbContext("12345678-1234-1234-1234-1234567890ab");
-        var logger = new Mock<ILogger<DeleteBookingHandler>>().Object;
-        var handler = new DeleteBookingHandler(context,logger);
+        var handler = new DeleteBookingHandler(context);
         var bookingId = Guid.Parse("12345678-1234-1234-1234-1234567890a5");
         var booking = new Booking { Id = bookingId, ItemId = Guid.Parse("12345678-1234-1234-1234-123456789077"), BorrowerId = Guid.Parse("12345678-1234-1234-1234-123456789078"), StartDate = DateTime.UtcNow, EndDate = DateTime.UtcNow.AddDays(1) };
         context.Bookings.Add(booking);
@@ -52,8 +51,7 @@ public class DeleteBookingHandlerTests
     {
         // Arrange
         var context = CreateInMemoryDbContext("87654321-4321-4321-4321-ba0987654321");
-        var logger = new Mock<ILogger<DeleteBookingHandler>>().Object;
-        var handler = new DeleteBookingHandler(context,logger);
+        var handler = new DeleteBookingHandler(context);
         var request = new DeleteBookingRequest(Guid.NewGuid());
 
         // Act
