@@ -5,23 +5,22 @@ namespace Backend.Features.Review;
 
 public class DeleteReviewHandler(ApplicationContext dbContext, ILogger<DeleteReviewHandler> logger) : IRequestHandler<DeleteReviewRequest, IResult>
 {
-    public Task<IResult> Handle(DeleteReviewRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> Handle(DeleteReviewRequest request, CancellationToken cancellationToken)
     {
         
-        var review = dbContext.Reviews.Find(request.id);
+        var review = dbContext.Reviews.Find(request.Id);
         
         if (review == null)
         {
-            logger.LogWarning("Review with ID {ReviewId} not found.", request.id);
-            return Task.FromResult(Results.NotFound($"Review with ID {request.id} not found.") as IResult);
+            logger.LogWarning("Review with ID {ReviewId} not found.", request.Id);
+            return Results.NotFound($"Review with ID {request.Id} not found.");
         }
 
         dbContext.Reviews.Remove(review);
-        dbContext.SaveChanges();
+        dbContext.SaveChangesAsync();
         
-        logger.LogInformation("Deleted review with ID {ReviewId} from the database.", request.id);
-        return Task.FromResult(Results.Ok($"Review with ID {request.id} deleted successfully.") as IResult);
-        
+        logger.LogInformation("Deleted review with ID {ReviewId} from the database.", request.Id);
+        return Results.Ok($"Review {request.Id} deleted successfully.");
     }
 }
 

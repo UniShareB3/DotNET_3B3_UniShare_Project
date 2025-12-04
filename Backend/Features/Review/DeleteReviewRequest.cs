@@ -2,4 +2,4 @@
 
 namespace Backend.Features.Review;
 
-public record DeleteReviewRequest(Guid id) : IRequest<IResult>;
+public record DeleteReviewRequest(Guid Id) : IRequest<IResult>;

@@ -21,6 +21,6 @@ public class DeleteBookingHandler(ApplicationContext dbContext, ILogger<DeleteBo
         await dbContext.SaveChangesAsync(cancellationToken);
 
         logger.LogInformation($"Booking with id {request.Id} was deleted successfully");
-        return Results.NoContent();
+        return Results.Ok($"Booking with id {request.Id} was deleted successfully");
     }
 }

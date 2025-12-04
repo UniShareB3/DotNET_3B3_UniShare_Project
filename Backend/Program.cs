@@ -363,14 +363,11 @@ bookingVerifiedGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator)
         await mediator.Send(new DeleteBookingRequest(id)))
     .WithDescription("Delete a booking");
 
+
+/// Reviews Endpoints
 var reviewsGroup = app.MapGroup("/reviews")
     .WithTags("Reviews")
     .RequireAuthorization();
-
-reviewsGroup.MapPost("", async (CreateReviewDTO dto, IMediator mediator) =>
-        await mediator.Send(new CreateReviewRequest(dto)))
-    .WithDescription("Create a new review")
-    .RequireEmailVerification();
 
 reviewsGroup.MapGet("", async (IMediator mediator) =>
         await mediator.Send(new GetAllReviewsRequest()))
@@ -381,6 +378,16 @@ reviewsGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
         await mediator.Send(new GetReviewRequest(id)))
     .WithDescription("Get a specific review by ID")
     .AllowAnonymous();
+
+reviewsGroup.MapPost("", async (CreateReviewDTO dto, IMediator mediator) =>
+        await mediator.Send(new CreateReviewRequest(dto)))
+    .WithDescription("Create a new review")
+    .RequireEmailVerification();
+
+reviewsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
+    await mediator.Send(new DeleteReviewRequest(id)))
+    .WithDescription("Delete a review")
+    .RequireEmailVerification();
 
 // Log the URLs where the application is listening
 
