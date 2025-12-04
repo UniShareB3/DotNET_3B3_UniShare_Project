@@ -42,6 +42,5 @@ jobs:
       working-directory: ./Backend
       
     - name: Verify App Can Run
-      run: dotnet run --no-build -c Release --project Backend.csproj
+      run: timeout 30s dotnet run --no-build -c Release --project Backend.csproj || code=$?; if [ $code -ne 0 ] && [ $code -ne 124 ]; then exit $code; fi
       working-directory: ./Backend
-
