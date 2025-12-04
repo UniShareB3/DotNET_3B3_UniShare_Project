@@ -12,7 +12,7 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         // Act
         var response = await client.SendAsync(request);
         // Assert
-        response.EnsureSuccessStatusCode();
+        response.EnsureSuccessStatusCode()
     }
 
     //TEST TREBUIE SA FIE MODIFICAT DUPA IMPLEMENTAREA AUTENTIFICARII
