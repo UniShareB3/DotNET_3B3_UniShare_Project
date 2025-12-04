@@ -39,7 +39,7 @@ jobs:
       run: dotnet test Backend.Tests.csproj --no-build --configuration Release --verbosity normal
       working-directory: ./Backend.Tests
       env:
-        JwtSettings__Key: "This_Is_A_Random_Key_For_Testing_Only_Make_Sure_Its_Long_Enough"
-        JwtSettings__Issuer: "TestIssuer"
-        JwtSettings__Audience: "TestAudience"
+        JwtSettings__Key: $JWT_SECRET
+        JwtSettings__Issuer: $JWTSETTINGS_ISSUER
+        JwtSettings__Audience: $JWTSETTINGS_AUDIENCE
 
