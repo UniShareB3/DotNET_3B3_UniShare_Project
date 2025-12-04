@@ -1,11 +1,11 @@
 ﻿using AutoMapper;
 using Backend.Persistence;
 using MediatR;
-using Serilog;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Booking;
+namespace Backend.Features.Bookings;
 
 public class CreateBookingHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<CreateBookingRequest, IResult>
 {

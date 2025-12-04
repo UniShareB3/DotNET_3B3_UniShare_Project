@@ -12,8 +12,6 @@ using Backend.Validators;
 using Backend.Services;
 using Backend.Data;
 using Backend.Features.Universities;
-using Backend.Features.Booking;
-using Backend.Features.Booking.DTO;
 using Backend.Features.Shared.Pipeline;
 using Backend.Features.Shared.Authorization;
 using Backend.Features.Users;
@@ -382,6 +380,11 @@ reviewsGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
 reviewsGroup.MapPost("", async (CreateReviewDTO dto, IMediator mediator) =>
         await mediator.Send(new CreateReviewRequest(dto)))
     .WithDescription("Create a new review")
+    .RequireEmailVerification();
+
+reviewsGroup.MapPatch("/{id:guid}", async (Guid id, UpdateReviewDto dto, IMediator mediator) =>
+        await mediator.Send(new UpdateReviewRequest(id, dto)))
+    .WithDescription("Update an existing review's rating and comment")
     .RequireEmailVerification();
 
 reviewsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>

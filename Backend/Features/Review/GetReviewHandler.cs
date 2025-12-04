@@ -7,7 +7,7 @@ public class GetReviewHandler(ApplicationContext dbContext, ILogger<GetReviewHan
 {
     public async Task<IResult> Handle(GetReviewRequest request, CancellationToken cancellationToken)
     {
-        var review = await dbContext.Reviews.FindAsync( request.Id , cancellationToken);
+        var review = await dbContext.Reviews.FindAsync([request.Id, cancellationToken], cancellationToken: cancellationToken);
         
         if (review == null)
         {

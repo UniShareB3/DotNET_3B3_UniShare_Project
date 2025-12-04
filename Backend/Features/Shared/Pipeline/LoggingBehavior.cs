@@ -10,12 +10,7 @@ namespace Backend.Features.Shared.Pipeline;
 public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
-    private readonly Serilog.ILogger _logger;
-
-    public LoggingBehavior()
-    {
-        _logger = Log.ForContext<LoggingBehavior<TRequest, TResponse>>();
-    }
+    private readonly Serilog.ILogger _logger = Log.ForContext<LoggingBehavior<TRequest, TResponse>>();
 
     public async Task<TResponse> Handle(
         TRequest request,

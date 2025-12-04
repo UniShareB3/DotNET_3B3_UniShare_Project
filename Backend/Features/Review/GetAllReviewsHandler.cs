@@ -1,5 +1,4 @@
-﻿using Backend.Features.Booking;
-using Backend.Persistence;
+﻿using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 

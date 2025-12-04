@@ -27,8 +27,6 @@ public class UpdateBookingStatusHandler(ApplicationContext dbContext, ILogger<Up
         }
 
         booking.BookingStatus = dto.BookingStatus;
-        if (dto.BookingStatus == BookingStatus.Approved) booking.ApprovedOn = DateTime.UtcNow;
-        if (dto.BookingStatus == BookingStatus.Completed) booking.CompletedOn = DateTime.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
