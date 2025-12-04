@@ -1,5 +1,4 @@
 ﻿using MediatR;
-using Backend.Data;
 
 namespace Backend.Features.Users;
 

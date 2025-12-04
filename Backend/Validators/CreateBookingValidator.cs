@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Backend.Features.Bookings;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Backend.Persistence;
 using Backend.Features.Bookings.Enums;
 

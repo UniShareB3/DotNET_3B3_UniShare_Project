@@ -1,6 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using Backend.Data;
+﻿using Backend.Data;
 using Backend.Persistence;
 using Backend.TokenGenerators;
 using Backend.Features.Users.Dtos;

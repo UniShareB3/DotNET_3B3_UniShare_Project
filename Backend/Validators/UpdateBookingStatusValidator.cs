@@ -1,5 +1,4 @@
 ﻿using Backend.Features.Bookings;
-using Backend.Features.Bookings.Enums;
 using FluentValidation;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;

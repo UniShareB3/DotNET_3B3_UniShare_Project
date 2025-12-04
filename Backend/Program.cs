@@ -148,7 +148,9 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<UserMapper>();
     cfg.AddProfile<UniversityMapper>();
     cfg.AddProfile<ItemMapper>();
-}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper));
+    cfg.AddProfile<BookingMapper>();
+    cfg.AddProfile<ReviewMapper>();
+}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper), typeof(BookingMapper), typeof(ReviewMapper));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 

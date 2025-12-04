@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Backend.Persistence;
 using Backend.Data;
-using Backend.Features.Items.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
