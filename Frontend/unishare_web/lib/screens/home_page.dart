@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import 'login_page.dart';
+import 'product_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -88,8 +89,12 @@ class _HomePageState extends State<HomePage> {
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Clicked on ${item['name']}")),
+                // Open the product page directly and pass the item id as a constructor parameter.
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ProductPage(itemId: item['id'].toString()),
+                  ),
                 );
               },
               child: Column(

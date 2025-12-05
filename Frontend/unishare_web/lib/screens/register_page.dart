@@ -55,12 +55,20 @@ class _RegisterPageState extends State<RegisterPage> {
 
     final auth = context.read<AuthProvider>();
 
+    final universityName = auth.getUniversityNameById(_selectedUniversityId!);
+    if (universityName == null) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selected university could not be resolved.')),);
+      return;
+    }
+
     final success = await auth.register(
       firstName: _firstNameCtrl.text.trim(),
       lastName: _lastNameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       password: _passwordCtrl.text.trim(),
-      universityId: _selectedUniversityId!,
+      universityName: universityName,
     );
 
     setState(() => _loading = false);
@@ -161,17 +169,33 @@ class _RegisterPageState extends State<RegisterPage> {
                       filled: true,
                       fillColor: Colors.white,
                     ),
-                    items: auth.universities
-                        .map<DropdownMenuItem<String>>(
-                          (u) => DropdownMenuItem<String>(
+                    items: auth.isUniversitiesLoading
+                        ? [
+                            const DropdownMenuItem<String>(
+                              value: null,
+                              child: Text('Loading universities...'),
+                            )
+                          ]
+                        : auth.universities.isEmpty
+                            ? [
+                                const DropdownMenuItem<String>(
+                                  value: null,
+                                  child: Text('No universities available'),
+                                )
+                              ]
+                            : auth.universities
+                                .map<DropdownMenuItem<String>>(
+                                  (u) => DropdownMenuItem<String>(
 
-                        value: u.id, // ID-ul universității
-                        child: Text("${u.name} (${u.shortCode})"),
-                      ),
-                    ).toList(),
-                    onChanged: (value) {
-                      setState(() => _selectedUniversityId = value);
-                    },
+                                value: u.id, // ID-ul universității
+                                child: Text("${u.name} (${u.shortCode})"),
+                              ),
+                            ).toList(),
+                    onChanged: auth.isUniversitiesLoading || auth.universities.isEmpty
+                        ? null
+                        : (value) {
+                            setState(() => _selectedUniversityId = value);
+                          },
                     validator: (v) => v == null ? 'Select a university' : null,
                   ),
                   const SizedBox(height: 15),
@@ -239,7 +263,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   SizedBox(
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _loading ? null : _register,
+                      onPressed: _loading || auth.isUniversitiesLoading || auth.universities.isEmpty ? null : _register,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
                         foregroundColor: Colors.white,

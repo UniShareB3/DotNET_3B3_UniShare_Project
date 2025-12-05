@@ -3,7 +3,6 @@
 public record LoginUserResponseDto(
     string AccessToken,
     string RefreshToken,
-    int ExpiresIn,
-    bool EmailVerified // nou
+    int ExpiresIn
 );
 

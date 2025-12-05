@@ -315,6 +315,10 @@ itemsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
     .AllowAdmin()
     .RequireEmailVerification();
 
+itemsGroup.MapGet("/{id:guid}/bookings", async (Guid id, IMediator mediator) =>
+    await mediator.Send(new GetBookingsForItemRequest(id)))
+    .AllowAnonymous();
+
 /// Universities Endpoints
 var universitiesGroup = app.MapGroup("/universities")
     .WithTags("Universities");
@@ -382,6 +386,11 @@ reviewsGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
 reviewsGroup.MapPost("", async (CreateReviewDTO dto, IMediator mediator) =>
         await mediator.Send(new CreateReviewRequest(dto)))
     .WithDescription("Create a new review")
+    .RequireEmailVerification();
+
+reviewsGroup.MapPut("/{id:guid}", async (Guid id, CreateReviewDTO dto, IMediator mediator) =>
+        await mediator.Send(new UpdateReviewRequest(id, dto)))
+    .WithDescription("Update an existing review")
     .RequireEmailVerification();
 
 reviewsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>

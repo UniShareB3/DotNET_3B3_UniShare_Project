@@ -71,8 +71,7 @@ public class RefreshTokenHandler(
         var response = new LoginUserResponseDto(
             AccessToken: newAccessToken,
             RefreshToken: newRefreshTokenString,
-            ExpiresIn: tokenService.GetAccessTokenExpirationInSeconds(),
-            EmailVerified:false
+            ExpiresIn: tokenService.GetAccessTokenExpirationInSeconds()
         );
         
         return Results.Ok(response);

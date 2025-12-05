@@ -54,9 +54,13 @@ class _DashboardPageState extends State<DashboardPage>
     });
 
     try {
-      final items = await ApiService.getMyItems();
-      final sent = await ApiService.getMyBookings();
-      final received = await ApiService.getReceivedBookings();
+      // Use timeouts to avoid indefinite hanging; catch and report per-call problems
+      print('Dashboard: fetching myItems...');
+      final items = await ApiService.getMyItems().timeout(const Duration(seconds: 10));
+      print('Dashboard: fetching myBookings...');
+      final sent = await ApiService.getMyBookings().timeout(const Duration(seconds: 10));
+      print('Dashboard: fetching receivedBookings...');
+      final received = await ApiService.getReceivedBookings().timeout(const Duration(seconds: 10));
 
       // Populam cache-ul pentru items
       for (var item in items) {
@@ -67,13 +71,17 @@ class _DashboardPageState extends State<DashboardPage>
         myItems = items;
         requestsSent = sent;
         requestsReceived = received;
-        _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, st) {
+      print('Dashboard _loadData error: $e');
+      print(st.toString());
       setState(() {
         _errorMessage = "Failed to load dashboard data: $e";
-        _isLoading = false;
       });
+    }
+    finally {
+      // Ensure loading indicator is removed
+      if (mounted) setState(() { _isLoading = false; });
     }
   }
 
@@ -190,21 +198,29 @@ class _DashboardPageState extends State<DashboardPage>
         statusColor = Colors.orange;
     }
 
-    final String itemId = booking['itemId'] ?? 'N/A';
-    final String otherUserId = received
-        ? booking['borrowerId'] ?? 'N/A'
-        : booking['ownerId'] ?? 'N/A';
+    final String itemId = booking['itemId']?.toString() ?? '';
+    // Try to determine the other user's id (borrower when received, owner when sent).
+    // Booking payloads may omit ownerId; try booking['ownerId'] then booking['item']?.['ownerId'].
+    String? otherUserId;
+    if (received) {
+      otherUserId = booking['borrowerId']?.toString();
+    } else {
+      otherUserId = booking['ownerId']?.toString() ?? (booking['item'] is Map ? (booking['item']['ownerId']?.toString()) : null);
+    }
 
     final String startDate = booking['startDate']?.toString().substring(0, 10) ?? "N/A";
     final String endDate = booking['endDate']?.toString().substring(0, 10) ?? "N/A";
 
+    // Build list of futures: always fetch item; fetch user only if we have an id
+    final futures = <Future<Map<String, dynamic>>>[];
+    futures.add(_getItem(itemId));
+    final bool willFetchUser = otherUserId != null && otherUserId.isNotEmpty && otherUserId != 'N/A';
+    if (willFetchUser) futures.add(_getUser(otherUserId!));
+
     return FutureBuilder(
-      future: Future.wait([
-        _getItem(itemId),
-        _getUser(otherUserId),
-      ]),
+      future: Future.wait(futures),
       builder: (context, AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
-        if (!snapshot.hasData || snapshot.data![0].isEmpty) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty || snapshot.data![0].isEmpty) {
           if (!snapshot.hasData) {
             return const Center(
                 child: Padding(
@@ -219,13 +235,23 @@ class _DashboardPageState extends State<DashboardPage>
         }
 
         final itemDetails = snapshot.data![0];
-        final userDetails = snapshot.data![1];
+        final Map<String, dynamic> userDetails = willFetchUser && snapshot.data!.length > 1 ? snapshot.data![1] : {};
 
         final String itemTitle = itemDetails['name'] ?? "Item Not Found";
         final String? itemImageUrl = itemDetails['imageUrl'];
-        final String otherUserName = received
-            ? '${userDetails['firstName'] ?? 'User'} ${userDetails['lastName'] ?? ''}'.trim()
-            : '${userDetails['firstName'] ?? 'Owner'} ${userDetails['lastName'] ?? ''}'.trim();
+        // Compute display name for the other user. Prefer fetched user details, then item.ownerName, then booking fields.
+        String otherUserName = 'Unknown';
+        if (userDetails.isNotEmpty) {
+          otherUserName = received
+              ? '${userDetails['firstName'] ?? 'User'} ${userDetails['lastName'] ?? ''}'.trim()
+              : '${userDetails['firstName'] ?? 'Owner'} ${userDetails['lastName'] ?? ''}'.trim();
+        } else if (itemDetails.containsKey('ownerName') && itemDetails['ownerName'] != null && itemDetails['ownerName'].toString().trim().isNotEmpty) {
+          otherUserName = itemDetails['ownerName'].toString();
+        } else if (received) {
+          otherUserName = booking['borrowerName'] ?? 'User';
+        } else {
+          otherUserName = booking['ownerName'] ?? 'Owner';
+        }
 
         Widget leadingImage;
         if (itemImageUrl != null && itemImageUrl.isNotEmpty) {
@@ -388,8 +414,60 @@ class _DashboardPageState extends State<DashboardPage>
               padding: const EdgeInsets.symmetric(horizontal: 40.0),
               child: Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
             ),
+            const SizedBox(height: 12),
+            // If this is the Received tab and there was a server error while fetching booked-items, show a banner
+            if (isBooking && received && ApiService.lastReceivedError != null)
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  border: Border.all(color: Colors.orange.shade200),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.orange),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text('We could not load received requests due to a server issue.')),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          showDialog(context: context, builder: (ctx) {
+                            return AlertDialog(
+                              title: const Text('Server error details'),
+                              content: SizedBox(
+                                width: double.maxFinite,
+                                child: SingleChildScrollView(child: Text(ApiService.lastReceivedError ?? '')),
+                              ),
+                              actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close'))],
+                            );
+                          });
+                        },
+                        child: const Text('View details'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
+      );
+    }
+
+    // If this is the Received bookings tab but the API returned ItemDto objects
+    // (e.g. GET /users/{userId}/booked-items returns items), render them as items.
+    if (isBooking && received && list.isNotEmpty && list[0].containsKey('name') && list[0].containsKey('ownerName')) {
+      return ListView.builder(
+        padding: const EdgeInsets.all(10),
+        itemCount: list.length,
+        itemBuilder: (_, i) => _buildItemCard(list[i]),
       );
     }
 

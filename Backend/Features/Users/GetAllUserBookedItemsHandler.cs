@@ -1,31 +1,30 @@
-﻿using Backend.Persistence;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using Backend.Persistence;
+using Backend.Features.Items.DTO;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Users;
 
-public class GetAllUserBookedItemsHandler(ApplicationContext context, ILogger<GetAllUserBookedItemsHandler> logger) : IRequestHandler< GetAllUserBookedItemsRequest, IResult>
+public class GetAllUserBookedItemsHandler(ApplicationContext context, IMapper mapper, ILogger<GetAllUserBookedItemsHandler> logger) : IRequestHandler< GetAllUserBookedItemsRequest, IResult>
 {
     public async Task<IResult> Handle(GetAllUserBookedItemsRequest request, CancellationToken cancellationToken)
     {
-        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
-        if (user == null)
-        {
-            logger.LogWarning("User with ID {UserId} not found.", request.UserId);
-            return Results.NotFound();
-        }
-
-        var bookedItems = await context.Items
+        var query = context.Items
+            .Include(i => i.Owner)
             .Where(item => item.OwnerId == request.UserId)
             .Join(context.Bookings,
                 item => item.Id,
                 booking => booking.ItemId,
-                (item, booking) => new { item, booking })
-            .Select(x => x.item)
-            .Distinct()
+                (item, booking) => item)
+            .Distinct();
+
+        var dtoList = await query
+            .ProjectTo<ItemDto>(mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
-        
-        logger.LogInformation("Retrieved {Count} booked items for user ID {UserId}.", bookedItems.Count, request.UserId);
-        return Results.Ok(bookedItems);
+
+        logger.LogInformation("Retrieved {Count} booked items for user ID {UserId}.", dtoList.Count, request.UserId);
+        return Results.Ok(dtoList);
     }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
+import '../services/secure_storage_service.dart';
 import 'verify_email_page.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -18,9 +19,43 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> checkEmailVerified() async {
     setState(() => isLoading = true);
     final auth = context.read<AuthProvider>();
-    final token = auth.token;
+    String? token = auth.token;
 
-    final result = await ApiService.getEmailVerifiedStatus(token!);
+    // If provider token is null, try reading from secure storage (fallback)
+    if (token == null) {
+      token = await SecureStorageService.getAccessToken();
+    }
+
+    bool? result;
+
+    // Prefer value already decoded and stored in AuthProvider (set on login/auto-login)
+    result = auth.emailVerified;
+    print('AuthProvider.emailVerified: $result');
+
+    // Prefer decoding the claim from the token (no backend call)
+    if (result == null) {
+      try {
+        result = ApiService.getEmailVerifiedFromToken(token);
+        print('Decoded email_verified from token: $result');
+      } catch (e) {
+        print('Error decoding token in profile: $e');
+        result = null;
+      }
+    }
+
+    // If token didn't include the claim, fallback to the (deprecated) endpoint
+    if (result == null) {
+      if (token != null && token.isNotEmpty) {
+        try {
+          result = await ApiService.getEmailVerifiedStatus(token);
+          print('Fetched email_verified from endpoint: $result');
+        } catch (e) {
+          print('Failed to fetch email_verified endpoint: $e');
+          result = null;
+        }
+      }
+    }
+
     setState(() {
       emailVerified = result;
       isLoading = false;
@@ -38,7 +73,17 @@ class _ProfilePageState extends State<ProfilePage> {
     final auth = context.watch<AuthProvider>();
     final email = auth.currentUserEmail ?? "unknown@unishare.com";
     final token=auth.token;
-    final userId=ApiService.getUserIdFromToken(token);
+    final userId = token != null ? ApiService.getUserIdFromToken(token) : null;
+
+    // Compute displayed verification status synchronously: prefer local state, then provider, then decode token
+    bool? displayedVerified = emailVerified ?? auth.emailVerified;
+    if (displayedVerified == null && token != null && token.isNotEmpty) {
+      try {
+        displayedVerified = ApiService.getEmailVerifiedFromToken(token);
+      } catch (e) {
+        // ignore
+      }
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -66,13 +111,13 @@ class _ProfilePageState extends State<ProfilePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                emailVerified == true ? "Email Verified ✅" : "Email Not Verified ❌",
+                displayedVerified == true ? "Email Verified ✅" : "Email Not Verified ❌",
                 style: TextStyle(
-                  color: emailVerified == true ? Colors.green : Colors.red,
+                  color: displayedVerified == true ? Colors.green : Colors.red,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (emailVerified != true)
+              if (displayedVerified != true)
                 TextButton(
                   onPressed: () {
                     Navigator.push(

@@ -8,6 +8,8 @@ import '../models/UniversityDto.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:5083';
+  // Debug: store last non-200 response body for received bookings (serialization/server issues)
+  static String? lastReceivedError;
   static getUserIdFromToken(String? token){
     final parts = token!.split('.');
     final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
@@ -82,20 +84,27 @@ class ApiService {
     required String lastName,
     required String email,
     required String password,
-    required String universityId, // nou
+    required String universityName, // changed to send name (backend expects UniversityName)
+    String? universityId, // optional: include id for backwards compatibility
   }) async {
     final url = Uri.parse('$baseUrl/register');
+
+    final payload = {
+      'firstName': firstName,
+      'lastName': lastName,
+      'email': email,
+      'password': password,
+      'universityName': universityName,
+    };
+
+    if (universityId != null) {
+      payload['universityId'] = universityId;
+    }
 
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'firstName': firstName,
-        'lastName': lastName,
-        'email': email,
-        'password': password,
-        'universityId': universityId, // adăugat
-      }),
+      body: jsonEncode(payload),
     );
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -139,17 +148,39 @@ class ApiService {
       await SecureStorageService.saveRefreshToken(data['refreshToken']);
       await SecureStorageService.saveEmail(email);
 
-      // ❗ Verificăm dacă email-ul nu e verificat și afișăm SnackBar
-      if (data['emailVerified'] != null && data['emailVerified'] == false) {
-        // Trebuie să ai un navigatorKey definit în MaterialApp pentru a putea folosi context aici
-        ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Email not verified. Please go to your profile to verify your email.',
-            ),
-            backgroundColor: Colors.orange,
-          ),
-        );
+      // Check email verification using the JWT's 'email_verified' claim
+      try {
+        final token = data['accessToken'] as String?;
+        if (token != null && token.isNotEmpty) {
+          final parts = token.split('.');
+          if (parts.length >= 2) {
+            final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+            final emailVerifiedClaim = payload['email_verified'];
+
+            // Claim might be a bool or a string ('true'/'false') depending on how backend encoded it
+            final isVerified = (emailVerifiedClaim is bool && emailVerifiedClaim == true) ||
+                (emailVerifiedClaim is String && emailVerifiedClaim.toLowerCase() == 'true');
+
+            // expose verification in returned data so consumers can rely on it
+            if (data is Map<String, dynamic>) {
+              data['emailVerified'] = isVerified;
+            }
+
+            if (!isVerified) {
+              ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Email not verified. Please go to your profile to verify your email.',
+                  ),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            }
+          }
+        }
+      } catch (e) {
+        // decoding failed -> silently ignore, don't block login
+        print('Failed to decode token for email_verified check: $e');
       }
 
       return data;
@@ -226,25 +257,28 @@ class ApiService {
 
     return null;
   }
-  static Future<bool> sendVerificationCode(String userId) async {
-    final url = Uri.parse('$baseUrl/auth/send-verification-code');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'userId': userId}),
-    );
 
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      print('Failed to send verification code: ${response.body}');
-      return false;
+  // New: decode the email_verified claim directly from the access token (preferred)
+  static bool? getEmailVerifiedFromToken(String? token) {
+    if (token == null || token.isEmpty) return null;
+    try {
+      final parts = token.split('.');
+      if (parts.length < 2) return null;
+      final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+      final claim = payload['email_verified'];
+      if (claim == null) return null;
+      if (claim is bool) return claim;
+      if (claim is String) return claim.toLowerCase() == 'true';
+    } catch (e) {
+      print('Failed to decode email_verified from token: $e');
     }
+    return null;
   }
-  // ----------------- Get All Bookings -----------------
-  static Future<List<Map<String, dynamic>>> getBookings() async {
+
+// ----------------- Get Bookings For Item -----------------
+  static Future<List<Map<String, dynamic>>> getBookingsForItem(String itemId) async {
     final token = await SecureStorageService.getAccessToken();
-    final url = Uri.parse('$baseUrl/bookings');
+    final url = Uri.parse('$baseUrl/items/$itemId/bookings');
 
     final response = await http.get(
       url,
@@ -254,8 +288,8 @@ class ApiService {
       },
     );
 
-    print('API get-bookings status: ${response.statusCode}');
-    print('API get-bookings body: ${response.body}');
+    print('API get-item-bookings status: ${response.statusCode}');
+    print('API get-item-bookings body: ${response.body}');
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -272,16 +306,22 @@ class ApiService {
     if (token == null) return [];
 
     final userId = getUserIdFromToken(token);
+    final url = Uri.parse('$baseUrl/users/$userId/bookings');
 
-    // Preluăm toate booking-urile
-    final allBookings = await getBookings();
+    final response = await http.get(url, headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    });
 
-    // Filtrăm doar ce a trimis userul curent (borrowerId)
-    final sent = allBookings.where((b) => b['borrowerId'] == userId).toList();
+    print('API get-user-bookings status: ${response.statusCode}');
+    print('API get-user-bookings body: ${response.body}');
 
-    print("Filtered MyBookings (sent): ${sent.length}");
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) return List<Map<String, dynamic>>.from(data);
+    }
 
-    return sent;
+    return [];
   }
 
 
@@ -292,28 +332,25 @@ class ApiService {
     if (token == null) return [];
 
     final userId = getUserIdFromToken(token);
+    final url = Uri.parse('$baseUrl/users/$userId/booked-items');
 
-    // 1. Preluăm itemele userului curent
-    final myItems = await getMyItems();
-    final myItemIds = myItems.map((i) => i['id']).toList();
+    final response = await http.get(url, headers: {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    });
 
-    // Debug
-    print("My item IDs: $myItemIds");
+    print('API get-user-booked-items status: ${response.statusCode}');
+    print('API get-user-booked-items body: ${response.body}');
 
-    if (myItemIds.isEmpty) {
-      print("No items found for current user.");
-      return [];
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) return List<Map<String, dynamic>>.from(data);
+    } else {
+      // capture error body so UI can show explanation
+      lastReceivedError = response.body;
     }
 
-    // 2. Preluăm toate booking-urile
-    final allBookings = await getBookings();
-
-    // 3. Filtrăm booking-urile pentru itemele mele
-    final received = allBookings.where((b) => myItemIds.contains(b['itemId'])).toList();
-
-    print("Filtered ReceivedBookings: ${received.length}");
-
-    return received;
+    return [];
   }
   // ----------------- Get Single Item -----------------
   static Future<Map<String, dynamic>> getItemById(String itemId) async {
@@ -389,7 +426,214 @@ class ApiService {
 
     return [];
   }
+  static Future<bool> sendVerificationCode(String userId) async {
+    final url = Uri.parse('$baseUrl/auth/send-verification-code');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'userId': userId}),
+    );
 
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print('Failed to send verification code: ${response.body}');
+      return false;
+    }
+  }
+  static Future<bool> createBooking({
+    required String itemId,
+    required String startDateIso,
+    required String endDateIso,
+  }) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return false;
 
+    final borrowerId = getUserIdFromToken(token);
+    // Client-side validation before sending to backend
+    if (itemId.isEmpty) {
+      print('createBooking: missing itemId');
+      return false;
+    }
+    if (borrowerId == null || borrowerId.toString().isEmpty) {
+      print('createBooking: missing borrowerId (token issue)');
+      return false;
+    }
+
+    DateTime? startDt;
+    DateTime? endDt;
+    try {
+      startDt = DateTime.parse(startDateIso).toUtc();
+      endDt = DateTime.parse(endDateIso).toUtc();
+    } catch (e) {
+      print('createBooking: invalid date format: $e');
+      return false;
+    }
+
+    if (!startDt.isBefore(endDt)) {
+      print('createBooking: StartDate must be before EndDate');
+      return false;
+    }
+
+    if (!(startDt.isAfter(DateTime.now().toUtc().subtract(const Duration(minutes: 5))))) {
+      print('createBooking: StartDate is in the past (or too close to now)');
+      return false;
+    }
+    final url = Uri.parse('$baseUrl/bookings');
+
+    final body = jsonEncode({
+      'ItemId': itemId,
+      'BorrowerId': borrowerId,
+      'RequestedOn': DateTime.now().toUtc().toIso8601String(),
+      'StartDate': startDateIso,
+      'EndDate': endDateIso,
+    });
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: body,
+    );
+
+    print('Create booking status: ${response.statusCode}');
+    print('Create booking body: ${response.body}');
+
+    return response.statusCode == 201 || response.statusCode == 200;
+  }
+
+  // ----------------- Reviews -----------------
+  static Future<List<Map<String, dynamic>>> getReviews() async {
+    final url = Uri.parse('$baseUrl/reviews');
+
+    final response = await http.get(url, headers: {
+      'Content-Type': 'application/json',
+    });
+
+    print('API get-reviews status: ${response.statusCode}');
+    print('API get-reviews body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) return List<Map<String, dynamic>>.from(data);
+    }
+
+    return [];
+  }
+
+  static Future<List<Map<String, dynamic>>> getReviewsForItem(String itemId) async {
+    final allReviews = await getReviews();
+    return allReviews.where((r) => r['targetItemId']?.toString() == itemId).toList();
+  }
+
+  static Future<Map<String, dynamic>> createReview({
+    required String bookingId,
+    String? targetUserId,
+    String? targetItemId,
+    required int rating,
+    String? comment,
+  }) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return {'success': false, 'status': 401, 'body': 'Not authenticated'};
+
+    final reviewerId = getUserIdFromToken(token);
+    final url = Uri.parse('$baseUrl/reviews');
+
+    final body = jsonEncode({
+      'BookingId': bookingId,
+      'ReviewerId': reviewerId,
+      'TargetUserId': targetUserId,
+      'TargetItemId': targetItemId,
+      'Rating': rating,
+      'Comment': comment,
+      'CreatedAt': DateTime.now().toUtc().toIso8601String(),
+    });
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: body,
+    );
+
+    print('🔍 [CREATE REVIEW] Status: ${response.statusCode}');
+    print('🔍 [CREATE REVIEW] Body length: ${response.body.length}');
+    print('🔍 [CREATE REVIEW] Body: ${response.body}');
+    print('🔍 [CREATE REVIEW] Headers: ${response.headers}');
+
+    return {
+      'success': response.statusCode == 201 || response.statusCode == 200,
+      'status': response.statusCode,
+      'body': response.body,
+    };
+  }
+  static Future<Map<String, dynamic>> updateReview({
+    required String reviewId,
+    required String bookingId,
+    String? targetUserId,
+    String? targetItemId,
+    required int rating,
+    String? comment,
+  }) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return {'success': false, 'status': 401, 'body': 'Not authenticated'};
+
+    final reviewerId = getUserIdFromToken(token);
+    final url = Uri.parse('$baseUrl/reviews/$reviewId');
+
+    final body = jsonEncode({
+      'BookingId': bookingId,
+      'ReviewerId': reviewerId,
+      'TargetUserId': targetUserId,
+      'TargetItemId': targetItemId,
+      'Rating': rating,
+      'Comment': comment,
+      'CreatedAt': DateTime.now().toUtc().toIso8601String(),
+    });
+
+    final response = await http.put(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: body,
+    );
+
+    print('🔍 [UPDATE REVIEW] Status: ${response.statusCode}');
+    print('🔍 [UPDATE REVIEW] Body: ${response.body}');
+
+    return {
+      'success': response.statusCode == 200,
+      'status': response.statusCode,
+      'body': response.body,
+    };
+  }
+  static Future<Map<String, dynamic>> deleteReview({
+    required String reviewId,
+  }) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return {'success': false, 'status': 401, 'body': 'Not authenticated'};
+
+    final url = Uri.parse('$baseUrl/reviews/$reviewId');
+    final response = await http.delete(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    print('🔍 [DELETE REVIEW] Status: ${response.statusCode}');
+    print('🔍 [DELETE REVIEW] Body: ${response.body}');
+    return {
+      'success': response.statusCode == 200,
+      'status': response.statusCode,
+      'body': response.body,
+    };
+  }
 
 }
