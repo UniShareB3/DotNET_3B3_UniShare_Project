@@ -3,9 +3,8 @@ using MediatR;
 
 namespace Backend.Features.Review;
 
-public class UpdateReviewRequest(Guid reviewId, CreateReviewDTO review) : IRequest<IResult>
+public class UpdateReviewRequest(Guid reviewId, UpdateReviewDto review) : IRequest<IResult>
 {
     public Guid ReviewId { get; } = reviewId;
-    public CreateReviewDTO Review { get; } = review;
+    public UpdateReviewDto Review { get; } = review;
 }
-

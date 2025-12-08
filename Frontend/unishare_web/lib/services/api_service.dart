@@ -585,17 +585,13 @@ class ApiService {
     final reviewerId = getUserIdFromToken(token);
     final url = Uri.parse('$baseUrl/reviews/$reviewId');
 
+    // Send only the fields required by UpdateReviewDto on the backend (Rating and Comment).
     final body = jsonEncode({
-      'BookingId': bookingId,
-      'ReviewerId': reviewerId,
-      'TargetUserId': targetUserId,
-      'TargetItemId': targetItemId,
-      'Rating': rating,
-      'Comment': comment,
-      'CreatedAt': DateTime.now().toUtc().toIso8601String(),
+      'rating': rating,
+      'comment': comment,
     });
 
-    final response = await http.put(
+    final response = await http.patch(
       url,
       headers: {
         'Content-Type': 'application/json',

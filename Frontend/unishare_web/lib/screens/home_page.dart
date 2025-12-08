@@ -16,20 +16,38 @@ class _HomePageState extends State<HomePage> {
   List<dynamic> items = [];
   bool isLoading = true;
 
-  final Map<String, String> categoryMap = {
-    '0': 'Electronics',
-    '1': 'Books',
-    '2': 'Accessories',
-    '3': 'Kitchen',
-    '4': 'Others',
+  // Use numeric-keyed maps aligned with backend enums and a helper mapper
+  static const Map<int, String> _categoryMap = {
+    0: 'Others',
+    1: 'Books',
+    2: 'Electronics',
+    3: 'Kitchen',
+    4: 'Clothing',
+    5: 'Accessories',
   };
 
-  final Map<String, String> conditionMap = {
-    '0': 'Excellent',
-    '1': 'Good',
-    '2': 'Fair',
-    '3': 'Poor',
+  static const Map<int, String> _conditionMap = {
+    0: 'New',
+    1: 'Excellent',
+    2: 'Good',
+    3: 'Fair',
+    4: 'Poor',
   };
+
+  String _mapIntOrStringToName(dynamic value, Map<int, String> map, String fallback) {
+    if (value == null) return fallback;
+    if (value is int) return map[value] ?? value.toString();
+    if (value is String) {
+      final trimmed = value.trim();
+      // numeric-as-string
+      final parsed = int.tryParse(trimmed);
+      if (parsed != null) return map[parsed] ?? trimmed;
+      // if backend already returned the display name (case-insensitive match), return it
+      if (map.values.any((v) => v.toLowerCase() == trimmed.toLowerCase())) return trimmed;
+      return trimmed; // fallback to the raw string
+    }
+    return fallback;
+  }
 
 
   @override
@@ -78,8 +96,8 @@ class _HomePageState extends State<HomePage> {
         ),
         itemBuilder: (context, index) {
           final item = items[index];
-          final categoryText = categoryMap[item['category'].toString()] ?? 'Unknown';
-          final conditionText = conditionMap[item['condition'].toString()] ?? 'Unknown';
+          final categoryText = _mapIntOrStringToName(item['category'], _categoryMap, 'Unknown');
+          final conditionText = _mapIntOrStringToName(item['condition'], _conditionMap, 'Unknown');
 
           return Card(
             shape: RoundedRectangleBorder(
@@ -102,8 +120,19 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   AspectRatio(
                     aspectRatio: 1.3,
-                    child: item['imageUrl'] != null
-                        ? Image.network(item['imageUrl'], fit: BoxFit.cover)
+                    child: (item['imageUrl'] != null && (item['imageUrl'] as String).trim().isNotEmpty)
+                        ? Image.network(
+                      item['imageUrl'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[300],
+                        child: const Icon(
+                          Icons.broken_image,
+                          size: 40,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    )
                         : Container(
                       color: Colors.grey[300],
                       child: const Icon(
