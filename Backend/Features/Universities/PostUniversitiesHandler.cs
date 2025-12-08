@@ -2,7 +2,6 @@
 using Backend.Data;
 using Backend.Persistence;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Features.Universities;
 

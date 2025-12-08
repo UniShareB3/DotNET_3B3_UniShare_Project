@@ -1,11 +1,11 @@
 ﻿using AutoMapper;
 using Backend.Persistence;
 using MediatR;
-using Serilog;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Booking;
+namespace Backend.Features.Bookings;
 
 public class CreateBookingHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<CreateBookingRequest, IResult>
 {
@@ -35,12 +35,12 @@ public class CreateBookingHandler(ApplicationContext dbContext, IMapper mapper) 
         catch (DbUpdateException ex)
         {
             _logger.Error(ex, "Database error while creating booking for item {ItemId}", request.Booking.ItemId);
-            throw;
+            return Results.InternalServerError();
         }
         catch (Exception ex)
         {
             _logger.Error(ex, "Unexpected error while creating booking for item {ItemId}", request.Booking.ItemId);
-            throw;
+            return Results.InternalServerError();
         }
     }
 }

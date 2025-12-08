@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using Backend.Features.Booking;
+using Backend.Features.Bookings;
 using Backend.Persistence;
 using MediatR;
 using Serilog;

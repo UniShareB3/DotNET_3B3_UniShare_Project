@@ -1,9 +1,4 @@
-using Backend.Data;
 using Backend.Features.Items.Enums;
-using Backend.Features.Users;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;
 

@@ -1,4 +1,4 @@
-﻿namespace Backend.Features.Booking.DTO;
+﻿namespace Backend.Features.Bookings.DTO;
 
 public record CreateBookingDto
     (

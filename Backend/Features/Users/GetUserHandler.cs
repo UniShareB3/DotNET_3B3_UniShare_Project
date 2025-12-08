@@ -1,7 +1,5 @@
 ﻿using Backend.Features.Users.Dtos;
 using Backend.Persistence;
-using Microsoft.AspNetCore.Identity;
-using Backend.Data;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;

@@ -1,4 +1,3 @@
-using Backend.Data;
 using Backend.Features.Items.Enums;
 using Backend.Persistence;
 using Bogus;

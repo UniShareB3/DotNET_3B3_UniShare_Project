@@ -1,5 +1,5 @@
 ﻿using Backend.Data;
-using Backend.Features.Booking;
+using Backend.Features.Bookings;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -64,10 +64,10 @@ public class GetBookingHandlerTests
     public async Task Given_BookingDoesNotExist_When_Handle_Then_ReturnsNotFound()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("12345678-90ab-cdef-1234-567890abcdef");
+        var context = CreateInMemoryDbContext("12345000-90ab-cdef-1234-567890abcdef");
         var logger = new Mock<ILogger<GetBookingHandler>>().Object;
         var handler = new GetBookingHandler(context, logger);
-        var request = new GetBookingRequest(Guid.NewGuid());
+        var request = new GetBookingRequest(Guid.Parse("12345000-90ab-cdef-1234-567890abcdef"));
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);

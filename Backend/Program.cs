@@ -150,7 +150,9 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<UserMapper>();
     cfg.AddProfile<UniversityMapper>();
     cfg.AddProfile<ItemMapper>();
-}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper));
+    cfg.AddProfile<BookingMapper>();
+    cfg.AddProfile<ReviewMapper>();
+}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper), typeof(BookingMapper), typeof(ReviewMapper));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
@@ -388,9 +390,9 @@ reviewsGroup.MapPost("", async (CreateReviewDTO dto, IMediator mediator) =>
     .WithDescription("Create a new review")
     .RequireEmailVerification();
 
-reviewsGroup.MapPut("/{id:guid}", async (Guid id, CreateReviewDTO dto, IMediator mediator) =>
+reviewsGroup.MapPatch("/{id:guid}", async (Guid id, UpdateReviewDto dto, IMediator mediator) =>
         await mediator.Send(new UpdateReviewRequest(id, dto)))
-    .WithDescription("Update an existing review")
+    .WithDescription("Update an existing review's rating and comment")
     .RequireEmailVerification();
 
 reviewsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>

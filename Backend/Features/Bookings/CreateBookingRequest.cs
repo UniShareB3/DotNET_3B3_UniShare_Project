@@ -1,6 +1,6 @@
-﻿using Backend.Features.Booking.DTO;
+﻿using Backend.Features.Bookings.DTO;
 using MediatR;
 
-namespace Backend.Features.Booking;
+namespace Backend.Features.Bookings;
 
 public record CreateBookingRequest(CreateBookingDto Booking) : IRequest<IResult>;
