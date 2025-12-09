@@ -33,7 +33,7 @@ public class GetAllUserItemsHandlerTests
                 cfg.CreateMap<Item, ItemDto>()
                     .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.ToString()))
                     .ForMember(dest => dest.Condition, opt => opt.MapFrom(src => src.Condition.ToString()))
-                    .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => ((src.Owner?.FirstName ?? "") + " " + (src.Owner?.LastName ?? "")).Trim()));
+                    .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => (src.Owner.FirstName + " " + src.Owner.LastName).Trim()));
             }, loggerFactory);
 
             return config.CreateMapper();
