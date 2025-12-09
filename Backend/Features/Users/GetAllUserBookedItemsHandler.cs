@@ -1,17 +1,21 @@
 ﻿using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+using ILogger = Serilog.ILogger;
 
 namespace Backend.Features.Users;
 
-public class GetAllUserBookedItemsHandler(ApplicationContext context, ILogger<GetAllUserBookedItemsHandler> logger) : IRequestHandler< GetAllUserBookedItemsRequest, IResult>
+public class GetAllUserBookedItemsHandler(ApplicationContext context) : IRequestHandler<GetAllUserBookedItemsRequest, IResult>
 {
+    private readonly ILogger _logger = Log.ForContext<GetAllUserBookedItemsHandler>();
+    
     public async Task<IResult> Handle(GetAllUserBookedItemsRequest request, CancellationToken cancellationToken)
     {
         var user = await context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
         if (user == null)
         {
-            logger.LogWarning("User with ID {UserId} not found.", request.UserId);
+            _logger.Warning("User with ID {UserId} not found.", request.UserId);
             return Results.NotFound();
         }
 
@@ -25,7 +29,7 @@ public class GetAllUserBookedItemsHandler(ApplicationContext context, ILogger<Ge
             .Distinct()
             .ToListAsync(cancellationToken);
         
-        logger.LogInformation("Retrieved {Count} booked items for user ID {UserId}.", bookedItems.Count, request.UserId);
+        _logger.Information("Retrieved {Count} booked items for user ID {UserId}.", bookedItems.Count, request.UserId);
         return Results.Ok(bookedItems);
     }
 }

@@ -59,8 +59,8 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         // Arrange
         var newBooking = new
         {
-            UserId = Guid.NewGuid(),
-            ItemId = Guid.NewGuid(),
+            UserId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94d6"),
+            ItemId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94d7"),
             StartTime = DateTime.UtcNow,
             EndTime = DateTime.UtcNow.AddHours(2)
         };

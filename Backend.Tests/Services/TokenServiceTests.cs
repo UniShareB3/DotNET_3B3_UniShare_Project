@@ -1,4 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using Backend.Data;
 using Backend.TokenGenerators;
 using Microsoft.Extensions.Configuration;
 
@@ -29,7 +30,7 @@ public class TokenServiceTests
         // Arrange
         var configuration = CrateInMemoryConfiguration();
         var tokenService = new TokenGenerators.TokenService(configuration);
-        var user = new Data.User
+        var user = new User
         {
             Id = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94d6"),
             Email = "email@student.uaic.ro",

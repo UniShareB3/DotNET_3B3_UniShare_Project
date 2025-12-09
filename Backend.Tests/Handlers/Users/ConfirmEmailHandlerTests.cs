@@ -8,7 +8,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Backend.Persistence;
+using Castle.Core.Logging;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
 public class ConfirmEmailHandlerTests
 {
@@ -186,5 +188,10 @@ public class ConfirmEmailHandlerTests
     {
         var store = new Mock<IUserStore<User>>();
         return new Mock<UserManager<User>>(store.Object, null, null, null, null, null, null, null, null);
+    }
+    
+    private Mock<ILogger<ConfirmEmailHandler>> CreateLoggerMock()
+    {
+        return new Mock<ILogger<ConfirmEmailHandler>>();
     }
 }
