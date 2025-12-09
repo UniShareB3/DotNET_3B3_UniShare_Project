@@ -145,7 +145,8 @@ public class CreateBookingHandlerTests
     {
         // Arrange
         var mapper = CreateMapper();
-        var handler = new CreateBookingHandler(null, mapper);
+        var context = CreateInMemoryDbContext("bbcdefab-cdef-abcd-efab-cdefabcdefa0");
+        var handler = new CreateBookingHandler(context, mapper);
         
         var bookingDto = new CreateBookingDto
         (
@@ -157,6 +158,8 @@ public class CreateBookingHandlerTests
         );
         
         var request = new CreateBookingRequest(bookingDto);
+
+       await context.DisposeAsync();
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -171,7 +174,7 @@ public class CreateBookingHandlerTests
     {
         // Arrange
         var options = new DbContextOptionsBuilder<ApplicationContext>()
-            .UseInMemoryDatabase(databaseName: "db-update-exception-test-" + Guid.NewGuid())
+            .UseInMemoryDatabase("b91b22fd-7df5-4d65-a0b5-aec7fa7dc5b4")
             .Options;
         
         var context = new ThrowingDbUpdateExceptionContext(options);

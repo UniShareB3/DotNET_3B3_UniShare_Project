@@ -74,7 +74,7 @@ public class UpdateReviewHandlerTests
     }
     
     [Fact]
-    public async Task Give_ExceptionOccurs_When_Handle_Then_ReturnsProblemResult()
+    public async Task Given_ExceptionOccurs_When_Handle_Then_ReturnsProblemResult()
     {
         // Arrange
         var context = CreateInMemoryDbContext("update-review-exception-test-" + Guid.NewGuid());

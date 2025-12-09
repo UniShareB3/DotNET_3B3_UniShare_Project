@@ -116,7 +116,9 @@ public class PostItemHandlerTests
     public async Task Given_PostItemRequest_When_Handle_Then_HandlesExceptionGracefully()
     {
         // Arrange
-        var handler = new PostItemHandler(null, null);
+        var context = CreateInMemoryDbContext("b91b22fd-7df5-4d65-a0b5-aec7fa7dc5b4");
+        var mapper = CreateMapper();
+        var handler = new PostItemHandler(context, mapper);
         var dto = new PostItemDto (
             Guid.NewGuid(),
             "Test Item",
@@ -125,6 +127,8 @@ public class PostItemHandlerTests
             "0",
             "http://example.com/image.jpg"
         );
+
+        await context.DisposeAsync();
 
         // Act
         var result = await handler.Handle(new PostItemRequest(dto), CancellationToken.None);

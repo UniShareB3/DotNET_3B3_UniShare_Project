@@ -73,7 +73,7 @@ public class UniversityValidatorTests
     }
 
     [Fact]
-    public async Task Give_EmptyUniversityId_When_Validate_Then_ReturnsInvalidUniversityError()
+    public async Task Given_EmptyUniversityId_When_Validate_Then_ReturnsInvalidUniversityError()
     {
         // Arrange
         var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());

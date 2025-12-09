@@ -26,14 +26,18 @@ public class GetAllUserItemsHandlerTests
 
     private static IMapper CreateMapper()
     {
-        var config = new MapperConfiguration(cfg =>
+        using (var loggerFactory = new LoggerFactory())
         {
-            cfg.CreateMap<Item, ItemDto>()
-                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.ToString()))
-                .ForMember(dest => dest.Condition, opt => opt.MapFrom(src => src.Condition.ToString()))
-                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => (src.Owner.FirstName + " " + src.Owner.LastName).Trim()));
-        }, new LoggerFactory());
-        return config.CreateMapper();
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<Item, ItemDto>()
+                    .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.ToString()))
+                    .ForMember(dest => dest.Condition, opt => opt.MapFrom(src => src.Condition.ToString()))
+                    .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => ((src.Owner?.FirstName ?? "") + " " + (src.Owner?.LastName ?? "")).Trim()));
+            }, loggerFactory);
+
+            return config.CreateMapper();
+        }
     }
 
     [Fact]

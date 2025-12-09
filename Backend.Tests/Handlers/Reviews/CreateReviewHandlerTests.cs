@@ -100,8 +100,10 @@ public class CreateReviewHandlerTests
     {
         // Arrange
         var mapper = CreateMapper();
-        var handler = new CreateReviewHandler(null, mapper);
-        
+
+        var context = CreateInMemoryDbContext("create-review-exception-test-" + Guid.NewGuid());
+        var handler = new CreateReviewHandler(context, mapper);
+
         var reviewDto = new CreateReviewDTO(
             BookingId: Guid.NewGuid(),
             ReviewerId: Guid.NewGuid(),
@@ -113,6 +115,8 @@ public class CreateReviewHandlerTests
         );
         
         var request = new CreateReviewRequest(reviewDto);
+
+        await context.DisposeAsync();
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
