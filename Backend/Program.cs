@@ -137,8 +137,11 @@ builder.Services.AddMediatR(cfg =>
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ApplicationContext>(options =>
-    options.UseNpgsql(connectionString));
+if (builder.Environment.EnvironmentName != "Testing")
+{
+    builder.Services.AddDbContext<ApplicationContext>(options =>
+        options.UseNpgsql(connectionString));
+}
 
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
@@ -168,23 +171,25 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<ApplicationContext>();
-    var userManager = services.GetRequiredService<UserManager<User>>();
-    var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 
-    // Apply pending migrations
-    if (context.Database.IsRelational())
-    {
-        // If we run the app normally, apply migrations
-        await context.Database.MigrateAsync();
-    }
-    else
-    {
-        // If we run the tests with InMemory database, ensure created
-        await context.Database.EnsureCreatedAsync();
-    }
 
-    // Seed the database
-    await DatabaseSeeder.SeedAsync(context, userManager, roleManager);
+    if (app.Environment.EnvironmentName != "Testing")
+    {
+        // Apply pending migrations
+        if (context.Database.IsRelational())
+        {
+            var userManager = services.GetRequiredService<UserManager<User>>();
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+            // If we run the app normally, apply migrations
+            await context.Database.MigrateAsync();
+            await DatabaseSeeder.SeedAsync(context, userManager, roleManager);
+        }
+        else
+        {
+            // If we run the tests with InMemory database, ensure created
+            await context.Database.EnsureCreatedAsync();
+        }
+    }
 }
 
 app.UseCors("AllowAll");

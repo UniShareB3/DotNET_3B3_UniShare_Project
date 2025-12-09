@@ -20,7 +20,8 @@ public class DeleteUserHandler(
         
         var user = await userManager.FindByIdAsync(request.UserId.ToString());
         
-        if (user == null) {
+        if (user == null) 
+        {
             _logger.Warning("User with ID {UserId} not found for deletion", request.UserId);
             return Results.NotFound(new { message = "User not found" });
         }
@@ -29,7 +30,8 @@ public class DeleteUserHandler(
             .Where(rt => rt.UserId == user.Id)
             .ToListAsync(cancellationToken);
         
-        if (refreshTokens.Any()) {
+        if (refreshTokens.Any()) 
+        {
             _logger.Information("Removing {TokenCount} refresh tokens for user {UserId}", refreshTokens.Count, user.Id);
             context.RefreshTokens.RemoveRange(refreshTokens);
         }
