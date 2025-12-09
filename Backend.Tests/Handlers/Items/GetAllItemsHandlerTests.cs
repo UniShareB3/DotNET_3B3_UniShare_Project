@@ -90,5 +90,21 @@ public class GetAllItemsHandlerTests
         
         items.Should().HaveCount(0);
     }
+    
+    [Fact]
+    public async Task Given_ExceptionOccurs_When_Handle_Then_ReturnsProblem()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("f3b8c9e2-4d5a-4c6b-9f7e-8a9b0c1d2e3f");
+        
+        var handler = new GetAllItemsHandler(context, null);
+        
+        // Act
+        var result = await handler.Handle(new GetAllItemsRequest(), CancellationToken.None);
+        
+        // Assert
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+    }
 
 }
