@@ -1,12 +1,9 @@
 ﻿using Backend.Data;
 using Backend.Features.Bookings;
-using Backend.Features.Bookings.DTO;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Moq;
 
 namespace Backend.Tests.Handlers.Bookings;
 
@@ -60,5 +57,35 @@ public class DeleteBookingHandlerTests
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
         statusResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+    }
+    
+    [Fact]
+    public async Task Given_ExceptionOccurs_When_Handle_Then_ReturnsProblemResult()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5da");
+        var bookingId = Guid.Parse("12345678-1234-1234-1234-1234567890a6");
+        var booking = new Booking
+        {
+            Id = bookingId,
+            ItemId = Guid.Parse("12345678-1234-1234-1234-123456789077"),
+            BorrowerId = Guid.Parse("12345678-1234-1234-1234-123456789078"),
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddDays(1)
+        };
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+
+        await context.DisposeAsync();
+
+        var handler = new DeleteBookingHandler(context);
+        var request = new DeleteBookingRequest(bookingId);
+
+        // Act
+        var result = await handler.Handle(request, CancellationToken.None);
+
+        // Assert
+        var problemResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        problemResult.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
     }
 }

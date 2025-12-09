@@ -86,6 +86,54 @@ public class PostItemHandlerTests
     }
 
     
-    //TO DO: TESTS FOR MISSING REQUIRED FIELDS THAT THROW EXCEPTIONS AND LENGTH CONSTRAINTS ON STRINGS
+    [Fact]
+    public async Task Given_PostItemRequestWithNonExistentOwner_When_Handle_Then_ReturnsNotFound()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("b91b22fd-7df5-4d65-a0b5-aec7fa7dc5b4");
+        var handler = new PostItemHandler(context, CreateMapper());
+        var nonExistentOwnerId = Guid.Parse("b91b22fd-7df5-4d65-a0b5-aec7fa7dc5b4");
+        var dto = new PostItemDto (
+            nonExistentOwnerId,
+            "Test Item",
+            "This is a test item.",
+            "Electronics",
+            "0",
+            "http://example.com/image.jpg"
+        );
+
+        // Act
+        var result = await handler.Handle(new PostItemRequest(dto), CancellationToken.None);
+
+        // Assert
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+        
+        result.Should().NotBeNull();
+    }
+    
+    [Fact]
+    public async Task Given_PostItemRequest_When_Handle_Then_HandlesExceptionGracefully()
+    {
+        // Arrange
+        var handler = new PostItemHandler(null, null);
+        var dto = new PostItemDto (
+            Guid.NewGuid(),
+            "Test Item",
+            "This is a test item.",
+            "Electronics",
+            "0",
+            "http://example.com/image.jpg"
+        );
+
+        // Act
+        var result = await handler.Handle(new PostItemRequest(dto), CancellationToken.None);
+
+        // Assert
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+        
+        result.Should().NotBeNull();
+    }
 
 }

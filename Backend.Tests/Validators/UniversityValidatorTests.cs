@@ -71,5 +71,27 @@ public class UniversityValidatorTests
     
         result.Errors.Should().BeEmpty();
     }
-    
+
+    [Fact]
+    public async Task Give_EmptyUniversityId_When_Validate_Then_ReturnsInvalidUniversityError()
+    {
+        // Arrange
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        var validator = new UniversityValidator(dbContext);
+
+        var user = new User
+        {
+            UniversityId = Guid.Empty,
+            Email = "student@university.edu"
+        };
+
+        // Act
+        var result = await validator.ValidateAsync(null!, user);
+        
+        // Assert
+        result.Succeeded.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Code == "InvalidUniversity");
+        result.Errors.Should().Contain(e => e.Description == "The university ID is not set.");
+    }
+
 }

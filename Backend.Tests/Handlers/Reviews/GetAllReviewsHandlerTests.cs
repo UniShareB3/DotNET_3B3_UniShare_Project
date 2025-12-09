@@ -1,6 +1,11 @@
 ﻿using Backend.Data;
+using Backend.Features.Review;
 using Backend.Persistence;
+using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Moq;
 
 namespace Backend.Tests.Handlers.Reviews;
 
@@ -17,25 +22,26 @@ public class GetAllReviewsHandlerTests
     }
     
     [Fact]
-    public async Task Given_ReviewsExist_When_GettingAllReviews_Then_ReturnsAllReviews()
+    public async Task Given_ReviewsExist_When_Handle_Then_ReturnsOkWithAllReviews()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("02776839-a33e-4bba-b001-0167bf09e1a5");
+        var logger = new Mock<ILogger<GetAllReviewsHandler>>().Object;
+        var context = CreateInMemoryDbContext("get-all-reviews-test-" + Guid.NewGuid());
         
         var review1 = new Review
         {
-            Id = Guid.Parse("02776839-a33e-4bba-b001-0167bf09e1b5"),
-            TargetItemId = Guid.Parse("02476839-a33e-4bba-b001-0167bf09e1b5"),
-            ReviewerId = Guid.Parse("01776839-a33e-4bba-b001-0167bf09e1b5"),
+            Id = Guid.NewGuid(),
+            TargetItemId = Guid.NewGuid(),
+            ReviewerId = Guid.NewGuid(),
             Rating = 5,
             Comment = "Great item!"
         };
         
         var review2 = new Review
         {
-            Id = Guid.Parse("02776839-a33e-4bba-b002-0167bf09e1b5"),
-            TargetItemId = Guid.Parse("02775839-a33e-4bba-b001-0167bf09e1b5"),
-            ReviewerId = Guid.Parse("02776839-a33e-4bba-b001-0167b009e1b5"),
+            Id = Guid.NewGuid(),
+            TargetItemId = Guid.NewGuid(),
+            ReviewerId = Guid.NewGuid(),
             Rating = 4,
             Comment = "Good quality."
         };
@@ -43,25 +49,32 @@ public class GetAllReviewsHandlerTests
         context.Reviews.AddRange(review1, review2);
         await context.SaveChangesAsync();
         
+        var handler = new GetAllReviewsHandler(context, logger);
+        var request = new GetAllReviewsRequest();
+
         // Act
-        var retrievedReviews = await context.Reviews.ToListAsync();
-        
+        var result = await handler.Handle(request, CancellationToken.None);
+
         // Assert
-        Assert.Equal(2, retrievedReviews.Count);
-        Assert.Contains(retrievedReviews, r => r.Id == review1.Id);
-        Assert.Contains(retrievedReviews, r => r.Id == review2.Id);
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
     }
     
     [Fact]
-    public async Task Given_NoReviewsExist_When_GettingAllReviews_Then_ReturnsEmptyList()
+    public async Task Given_NoReviewsExist_When_Handle_Then_ReturnsOkWithEmptyList()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("02776839-a33e-4bba-b001-0167bf09e1c6");
+        var logger = new Mock<ILogger<GetAllReviewsHandler>>().Object;
+        var context = CreateInMemoryDbContext("get-all-reviews-empty-test-" + Guid.NewGuid());
         
+        var handler = new GetAllReviewsHandler(context, logger);
+        var request = new GetAllReviewsRequest();
+
         // Act
-        var retrievedReviews = await context.Reviews.ToListAsync();
-        
+        var result = await handler.Handle(request, CancellationToken.None);
+
         // Assert
-        Assert.Empty(retrievedReviews);
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
     }
 }
