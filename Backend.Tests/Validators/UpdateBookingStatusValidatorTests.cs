@@ -32,8 +32,8 @@ public class UpdateBookingStatusValidatorTests
         
         var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var borrowerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-        var itemId = Guid.Parse("33333333-3333-3333-3333-333333333333");
-        var bookingId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        var itemId = Guid.Parse("a3333333-3333-3333-3333-333333333333");
+        var bookingId = Guid.Parse("a4444444-4444-4444-4444-444444444444");
         
         var item = new Item
         {
@@ -147,8 +147,8 @@ public class UpdateBookingStatusValidatorTests
         var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var borrowerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
         var nonOwnerId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-        var itemId = Guid.Parse("33333333-3333-3333-3333-333333333333");
-        var bookingId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        var itemId = Guid.Parse("e3333333-3333-3333-3333-333333333333");
+        var bookingId = Guid.Parse("e4444444-4444-4444-4444-444444444444");
         
         var item = new Item
         {
@@ -198,8 +198,8 @@ public class UpdateBookingStatusValidatorTests
         
         var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var borrowerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-        var itemId = Guid.Parse("33333333-3333-3333-3333-333333333333");
-        var bookingId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        var itemId = Guid.Parse("99993333-3333-3333-3333-333333333333");
+        var bookingId = Guid.Parse("99994444-4444-4444-4444-444444444444");
         
         var item = new Item
         {
