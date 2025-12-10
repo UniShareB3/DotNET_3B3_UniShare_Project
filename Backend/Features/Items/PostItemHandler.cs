@@ -42,7 +42,7 @@ public class PostItemHandler(ApplicationContext dbContext,IMapper mapper) : IReq
         catch (Exception ex)
         {
             _logger.Error(ex, "Unexpected error while creating item with name {ItemName}", request.Item.Name);
-            return Results.Problem("An unexpected error occurred while creating the item.");
+            return Results.InternalServerError("An unexpected error occurred while creating the item.");
         }
     }
 }

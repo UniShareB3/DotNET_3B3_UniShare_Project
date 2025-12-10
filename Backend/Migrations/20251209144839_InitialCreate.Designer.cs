@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    [Migration("20251110142925_AddRefreshTokenRotationAndFamily")]
-    partial class AddRefreshTokenRotationAndFamily
+    [Migration("20251209144839_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -34,6 +34,11 @@ namespace Backend.Migrations
                     b.Property<DateTime?>("ApprovedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("BookingStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
                     b.Property<Guid>("BorrowerId")
                         .HasColumnType("uuid");
 
@@ -51,11 +56,6 @@ namespace Backend.Migrations
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
 
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uuid");
@@ -98,6 +98,36 @@ namespace Backend.Migrations
                     b.HasIndex("ReviewId");
 
                     b.ToTable("Comments");
+                });
+
+            modelBuilder.Entity("Backend.Data.EmailConfirmationToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EmailConfirmationTokens");
                 });
 
             modelBuilder.Entity("Backend.Data.Item", b =>
@@ -218,8 +248,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BookingId")
-                        .IsUnique();
+                    b.HasIndex("BookingId");
 
                     b.HasIndex("ReviewerId");
 
@@ -515,6 +544,17 @@ namespace Backend.Migrations
                     b.Navigation("Commenter");
 
                     b.Navigation("Review");
+                });
+
+            modelBuilder.Entity("Backend.Data.EmailConfirmationToken", b =>
+                {
+                    b.HasOne("Backend.Data.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Backend.Data.Item", b =>

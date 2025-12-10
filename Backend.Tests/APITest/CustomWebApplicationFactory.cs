@@ -1,49 +1,66 @@
+using System.Data.Common;
+using Backend.Data;
 using Backend.Persistence;
+using Backend.Tests.Data;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Backend.Tests.APITest;
 
-/// <summary>
-/// Custom WebApplicationFactory for integration tests.
-/// Configures the test server with an in-memory database and other test-specific services.
-/// </summary>
-public class CustomWebApplicationFactory : WebApplicationFactory<Program>
+// 1. Implement IAsyncLifetime to handle async seeding safely
+public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    public string HostUrl { get; set; } = "https://localhost:5001"; // we can use any free port
+    private readonly string _dbName = Guid.NewGuid().ToString();
     
-    public CustomWebApplicationFactory()
-    {
-        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
-    }
-
-    /// <summary>
-    /// Configures the web host for testing by:
-    /// - Using an in-memory database instead of the production database
-    /// - Clearing existing database registrations
-    /// </summary>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseUrls(HostUrl);
-        
         builder.UseEnvironment("Testing");
-        
+
         builder.ConfigureServices(services =>
         {
+            // 1. Remove the Context itself
             services.RemoveAll<ApplicationContext>();
+        
+            // 2. Remove the generic options (the one you already had)
             services.RemoveAll<DbContextOptions<ApplicationContext>>();
-            services.RemoveAll<IDbContextFactory<ApplicationContext>>();
-            services.RemoveAll<IDbContextOptionsConfiguration<ApplicationContext>>();
+        
+            // 3. Remove the non-generic DbContextOptions
+            services.RemoveAll<DbContextOptions>();
 
+            // 4. Add the Test Database
             services.AddDbContext<ApplicationContext>(options =>
             {
-                options.UseInMemoryDatabase(Guid.NewGuid().ToString());
+                options.UseInMemoryDatabase(_dbName);
+                // Optional: Ignore the transaction warning for InMemory
+                options.ConfigureWarnings(x => x.Ignore(InMemoryEventId.TransactionIgnoredWarning));
             });
-
         });
+    }
+
+    public async Task InitializeAsync()
+    {
+        using var scope = Services.CreateScope();
+        var scopedServices = scope.ServiceProvider;
+        var context = scopedServices.GetRequiredService<ApplicationContext>();
+        var userManager = scopedServices.GetRequiredService<UserManager<User>>();
+        var roleManager = scopedServices.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+
+        await context.Database.EnsureCreatedAsync();
+        
+        // Ensure we don't double-seed if tests run in parallel sharing the factory
+        if (!context.Users.Any())
+        {
+            await TestDataSeeder.SeedTestDataAsync(context, userManager, roleManager);
+        }
+    }
+
+    public Task DisposeAsync()
+    {
+        return Task.CompletedTask;
     }
 }

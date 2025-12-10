@@ -16,11 +16,6 @@ public class CreateReviewHandler(ApplicationContext dbContext, IMapper mapper) :
         _logger.Information("Creating review for item {TargetItemId} and targetUser {TargetUserId}", request.Review.TargetItemId, request.Review.TargetUserId);
 
         var review = mapper.Map<Data.Review>(request.Review);
-        
-        if (review.Id == Guid.Empty)
-        {
-            review.Id = Guid.NewGuid();
-        }
 
         try
         {
@@ -34,8 +29,8 @@ public class CreateReviewHandler(ApplicationContext dbContext, IMapper mapper) :
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Unexpected error while creating review for item {TargetItemId} and targetUser {TargetUserId}", request.Review.TargetItemId, request.Review.TargetUserId);
-            return Results.StatusCode(500);
+            _logger.Error(ex, "Unexpected error while creating review for item {TargetItemId} and targetUser {}", request.Review.TargetItemId, request.Review.TargetUserId);
+            return Results.InternalServerError();
         }
     }
 }

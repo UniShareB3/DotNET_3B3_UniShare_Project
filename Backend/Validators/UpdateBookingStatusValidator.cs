@@ -26,7 +26,7 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
 
     private bool ValidateOwnershipAsync(UpdateBookingStatusRequest request)
     {
-        var dto = request.BookingStatusDto!; // validated by RuleFor
+        var dto = request.BookingStatusDto!;
 
         var booking = dbContext.Bookings
             .Include(b => b.Item)

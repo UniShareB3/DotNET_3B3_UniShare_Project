@@ -4,8 +4,6 @@ using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using Moq;
 
 namespace Backend.Tests.Handlers.Bookings;
 
@@ -25,7 +23,7 @@ public class GetAllBookingsHandlerTests
     public async Task Given_BookingsExist_When_Handle_Then_ReturnsAllBookings()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("get-all-bookings-test-db");
+        var context = CreateInMemoryDbContext("a1b2c3d4-eaf6-7a8b-9c0d-e1f2a3b4c5d6");
         
         var booking1 = new Booking
         {
@@ -70,7 +68,7 @@ public class GetAllBookingsHandlerTests
     public async Task Given_NoBookingsExist_When_Handle_Then_ReturnsEmptyList()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("get-all-bookings-empty-test-db");
+        var context = CreateInMemoryDbContext("a1b2c3d4-e0f6-7a8b-9c0d-e1f2a3b4c5d6");
         
         var handler = new GetAllBookingsHandler(context);
         var request = new GetAllBookingsRequest();
@@ -86,5 +84,20 @@ public class GetAllBookingsHandlerTests
         var bookings = valueResult.Value.Should().BeAssignableTo<List<Booking>>().Subject;
         
         bookings.Should().BeEmpty();
+    }
+    
+    [Fact]
+    public async Task Given_ExceptionOccurs_When_Handle_Then_ReturnsProblemResult()
+    {
+        // Arrange
+        var handler = new GetAllBookingsHandler(null!);
+        var request = new GetAllBookingsRequest();
+        
+        // Act
+        var result = await handler.Handle(request, CancellationToken.None);
+        
+        // Assert
+        var problemResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        problemResult.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
     }
 }

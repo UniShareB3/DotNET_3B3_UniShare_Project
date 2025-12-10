@@ -16,11 +16,6 @@ public class CreateBookingHandler(ApplicationContext dbContext, IMapper mapper) 
         _logger.Information("Creating booking for item {ItemId}", request.Booking.ItemId);
         
         var booking = mapper.Map<Data.Booking>(request.Booking);
-        
-        if (booking.Id == Guid.Empty)
-        {
-            booking.Id = Guid.NewGuid();
-        }
 
         try
         {

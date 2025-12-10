@@ -26,7 +26,7 @@ public class GetAllUserItemsHandler(ApplicationContext dbContext,IMapper mapper)
         catch (Exception ex)
         {
             _logger.Error(ex, "Unexpected error while retrieving items for user {UserId}", request.UserId);
-            return Results.Problem("An unexpected error occurred while retrieving user items.");
+            return Results.InternalServerError("An unexpected error occurred while retrieving user items.");
         }
     }
 }

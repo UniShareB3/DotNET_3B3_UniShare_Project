@@ -22,7 +22,7 @@ public class GetAllBookingsHandler(ApplicationContext dbContext) : IRequestHandl
         catch (Exception ex)
         {
             _logger.Error(ex, "An unexpected error occurred while retrieving all bookings.");
-            return Results.Problem("An unexpected error occurred while retrieving bookings.");
+            return Results.InternalServerError("An unexpected error occurred while retrieving bookings.");
         }
     }
 }
