@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Shared.Auth;
 
 public class AssignAdminRoleHandler(UserManager<User> userManager) : IRequestHandler<AssignAdminRoleRequest, IResult>
 {

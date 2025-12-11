@@ -4,8 +4,6 @@ using Backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MediatR;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
@@ -20,38 +18,19 @@ public class ConfirmEmailHandler(
     
     public async Task<IResult> Handle(ConfirmEmailRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Attempting to confirm email with JWT token");
+        _logger.Information("Attempting to confirm email for user {UserId}", request.UserId);
         
-        var handler = new JwtSecurityTokenHandler();
-        if (!handler.CanReadToken(request.JwtToken))
-        {
-            _logger.Warning("Invalid JWT token provided for email confirmation");
-            return Results.BadRequest(new { error = "Invalid JWT token" });
-        }
-
-        var jwtToken = handler.ReadJwtToken(request.JwtToken);
-        var userIdClaim = jwtToken.Claims.FirstOrDefault(c => 
-            c.Type == ClaimTypes.NameIdentifier || 
-            c.Type == JwtRegisteredClaimNames.Sub || 
-            c.Type == "sub");
-
-        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-        {
-            _logger.Warning("Invalid or missing UserId in JWT token");
-            return Results.BadRequest(new { error = "Invalid or missing UserId in JWT token" });
-        }
-
-        var user = await userManager.FindByIdAsync(userId.ToString());
+        var user = await userManager.FindByIdAsync(request.UserId.ToString());
         
         if (user == null)
         {
-            _logger.Warning("User not found for ID {UserId} during email confirmation", userId);
+            _logger.Warning("User not found for ID {UserId} during email confirmation", request.UserId);
             return Results.BadRequest(new { error = "User not found" });
         }
 
         if (user.EmailConfirmed)
         {
-            _logger.Warning("Email already confirmed for user {UserId}", userId);
+            _logger.Warning("Email already confirmed for user {UserId}", request.UserId);
             return Results.BadRequest(new { error = "Email already confirmed" });
         }
 
@@ -69,11 +48,11 @@ public class ConfirmEmailHandler(
 
         if (token == null)
         {
-            _logger.Warning("Invalid or expired verification code for user {UserId}", userId);
+            _logger.Warning("Invalid or expired verification code for user {UserId}", request.UserId);
             return Results.BadRequest(new { error = "Invalid or expired verification code" });
         }
 
-        _logger.Information("Confirming email for user {UserId}", userId);
+        _logger.Information("Confirming email for user {UserId}", request.UserId);
         
         token.IsUsed = true;
         user.EmailConfirmed = true;
@@ -82,14 +61,14 @@ public class ConfirmEmailHandler(
         if (!updateResult.Succeeded)
         {
             _logger.Error("Failed to update user {UserId} during email confirmation. Errors: {Errors}", 
-                userId, 
+                request.UserId, 
                 string.Join(", ", updateResult.Errors.Select(e => e.Description)));
             return Results.Problem("Failed to confirm email");
         }
         
         await context.SaveChangesAsync(cancellationToken);
         
-        _logger.Information("Email confirmed successfully for user {UserId}", userId);
+        _logger.Information("Email confirmed successfully for user {UserId}", request.UserId);
         return Results.Ok(new { message = "Email confirmed successfully" });
     }
 }

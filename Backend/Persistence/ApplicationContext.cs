@@ -15,6 +15,7 @@ public class ApplicationContext(DbContextOptions<ApplicationContext> options) : 
     public DbSet<University> Universities { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<EmailConfirmationToken> EmailConfirmationTokens { get; set; }
+    public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
     
     protected override void OnModelCreating(ModelBuilder builder)
     {

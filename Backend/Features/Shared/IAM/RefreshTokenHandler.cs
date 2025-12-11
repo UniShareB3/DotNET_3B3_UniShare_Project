@@ -1,14 +1,14 @@
 ﻿using Backend.Data;
+using Backend.Features.Users.Dtos;
 using Backend.Persistence;
 using Backend.TokenGenerators;
-using Backend.Features.Users.Dtos;
+using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using MediatR;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Shared.Auth;
 
 public class RefreshTokenHandler(
     UserManager<User> userManager, 

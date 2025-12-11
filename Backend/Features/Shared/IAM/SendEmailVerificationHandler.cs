@@ -1,13 +1,13 @@
 ﻿using Backend.Data;
 using Backend.Persistence;
 using Backend.Services;
+using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using MediatR;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Shared.Auth;
 
 public class SendEmailVerificationHandler(
     UserManager<User> userManager,
@@ -61,21 +61,9 @@ public class SendEmailVerificationHandler(
         
         _logger.Information("Created new email confirmation token for user {UserId}", user.Id);
 
-        var subject = "Email Verification Code - UniShare";
-        var body = $@"Hello {user.FirstName},
-
-                    Your email verification code is: {code}
-
-                    This code will expire in 5 minutes.
-
-                    If you didn't request this code, please ignore this email.
-
-                    Best regards,
-                    UniShare Team";
-
         try
         {
-            await emailSender.SendEmailAsync(user.Email!, subject, body);
+            await emailSender.SendEmailVerificationAsync(user.Email!, code);
             _logger.Information("Successfully sent verification email to user {UserId}", user.Id);
             return Results.Ok(new { message = "Verification code sent to your email" });
         }

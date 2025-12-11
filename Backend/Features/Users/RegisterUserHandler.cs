@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Backend.Data;
+using Backend.Features.Shared.Auth;
 using Backend.Features.Users.Dtos;
 using Backend.Persistence;
 using Microsoft.AspNetCore.Identity;

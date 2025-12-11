@@ -18,5 +18,7 @@ public class UserMapper : Profile
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
             .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Email))
             .ForMember(dest => dest.UniversityId, opt => opt.Ignore());
+        
+        
     }
 }

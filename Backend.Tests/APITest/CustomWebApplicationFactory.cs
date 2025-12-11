@@ -1,7 +1,7 @@
 using System.Data.Common;
 using Backend.Data;
 using Backend.Persistence;
-using Backend.Tests.Data;
+using Backend.Tests.Seeder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;

@@ -1,4 +1,4 @@
-﻿namespace Backend.Features.Users.Dtos;
+﻿namespace Backend.Features.Shared.IAM.DTO;
 
 public record RefreshTokenDto(string RefreshToken);
 

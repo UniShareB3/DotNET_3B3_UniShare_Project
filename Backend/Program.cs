@@ -24,6 +24,8 @@ using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
 using Backend.Features.Review;
 using Backend.Features.Review.DTO;
+using Backend.Features.Shared.Auth;
+using Backend.Features.Shared.IAM.DTO;
 using Backend.Mapping;
 using Serilog;
 
@@ -168,6 +170,8 @@ builder.Services.AddScoped<CreateBookingHandler>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<CreateBookingRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateBookingStatusRequest>();
+builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserRequest>();
+builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordRequest>();
 builder.Services.AddFluentValidationAutoValidation();
 
 var app = builder.Build();
@@ -229,16 +233,6 @@ app.UseAuthorization();
 var authGroup = app.MapGroup("/auth")
     .WithTags("Auth");
 
-authGroup.MapPost("/verification-code", async (SendEmailVerificationDto dto, IMediator mediator) =>
-        await mediator.Send(new SendEmailVerificationRequest(dto.UserId)))
-    .RequireAuthorization()
-    .AllowAdmin()
-    .RequireOwner();
-
-authGroup.MapPost("/email-confirmation", async (ConfirmEmailDto dto, IMediator mediator) =>
-        await mediator.Send(new ConfirmEmailRequest(dto.jwt, dto.Code)))
-    .AllowAnonymous();
-
 // Root auth endpoints (not nested under /auth/)
 app.MapPost("/login", async (LoginUserDto dto, IMediator mediator) =>
         await mediator.Send(new LoginUserRequest(dto.Email, dto.Password)))
@@ -255,10 +249,38 @@ app.MapPost("/register", async (RegisterUserDto dto, IMediator mediator) =>
     .WithTags("Auth")
     .AllowAnonymous();
 
+authGroup.MapPost("/verification-code", async (SendEmailVerificationDto dto, IMediator mediator) =>
+        await mediator.Send(new SendEmailVerificationRequest(dto.UserId)))
+    .RequireAuthorization()
+    .AllowAdmin()
+    .RequireOwner();
+
+authGroup.MapPost("/email-confirmation", async (ConfirmEmailDto dto, IMediator mediator) =>
+        await mediator.Send(new ConfirmEmailRequest(dto.UserId, dto.Code)))
+    .AllowAnonymous();
+
+// Password reset endpoints
+authGroup.MapPost("/password-reset/request", async (RequestPasswordResetDto dto, IMediator mediator) =>
+        await mediator.Send(new RequestPasswordResetRequest(dto.UserId)))
+    .WithDescription("Request a password reset code to be sent via email")
+    .AllowAnonymous();
+
+authGroup.MapGet("/password", async (Guid userId, string code, IMediator mediator) =>
+        await mediator.Send(new VerifyPasswordResetRequest(userId, code)))
+    .WithDescription("Verify password reset code and get temporary token")
+    .AllowAnonymous();
+
 /// Users Endpoints
 var usersGroup = app.MapGroup("/users")
     .WithTags("Users")
     .RequireAuthorization();
+
+// Password change endpoint (requires temporary password reset token or admin)
+usersGroup.MapPost("/password", async (ChangePasswordDto dto, IMediator mediator) =>
+        await mediator.Send(new ChangePasswordRequest(dto)))
+    .WithDescription("Change user password (requires temporary password reset token or admin)")
+    .AllowAdmin()
+    .RequirePasswordResetToken();
 
 // Admin only - list all users
 usersGroup.MapGet("", async (IMediator mediator) =>
@@ -273,12 +295,16 @@ userByIdGroup.MapGet("", async (Guid userId, IMediator mediator) =>
         await mediator.Send(new GetUserRequest(userId)))
     .RequireOwner();
 
+userByIdGroup.MapPatch("", async (Guid userId, UpdateUserDto dto, IMediator mediator) =>
+        await mediator.Send(new UpdateUserRequest(userId, dto)))
+    .WithDescription("Update user information (PATCH)")
+    .RequireOwner();
+
 userByIdGroup.MapGet("/refresh-tokens", async (Guid userId, IMediator mediator) =>
         await mediator.Send(new GetRefreshTokensRequest(userId)))
     .RequireOwner();
 
-userByIdGroup.MapDelete("", async (Guid userId, IMediator mediator) =>
-        await mediator.Send(new DeleteUserRequest(userId)))
+userByIdGroup.MapDelete("", async (Guid userId, IMediator mediator) =>  await mediator.Send(new DeleteUserRequest(userId)))
     .RequireOwner();
 
 userByIdGroup.MapPost("/assign-admin", async (Guid userId, IMediator mediator) =>

@@ -4,7 +4,7 @@ using Backend.Features.Items.Enums;
 using Backend.Persistence;
 using Microsoft.AspNetCore.Identity;
 
-namespace Backend.Tests.Data;
+namespace Backend.Tests.Seeder;
 
 /// <summary>
 /// Provides consistent, predefined test data for integration tests.
