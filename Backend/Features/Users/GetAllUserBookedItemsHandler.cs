@@ -25,8 +25,6 @@ public class GetAllUserBookedItemsHandler(ApplicationContext context, IMapper ma
                 booking => booking.ItemId,
                 (item, booking) => new { item, booking })
             .Select(x => x.item)
-            .Distinct()
-                (item, booking) => item)
             .Distinct();
 
         var dtoList = await query
