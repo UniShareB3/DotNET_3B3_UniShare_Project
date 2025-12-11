@@ -10,10 +10,6 @@ using Moq;
 
 namespace Backend.Tests.Validators;
 
-/// <summary>
-/// Example tests for a CreateBookingValidator if you implement one using FluentValidation.
-/// Uncomment these tests after you create the validator in the Backend project.
-/// </summary>
 public class CreateBookingValidatorTests
 {
     private static ApplicationContext CreateInMemoryDbContext(string guid)
@@ -77,11 +73,11 @@ public class CreateBookingValidatorTests
         
         var invalidBookingDto = new CreateBookingDto
         (
-            Guid.Parse("55555555-5555-5555-5555-555555555555"), // Non-existent ItemId
-            Guid.Parse("55555555-5555-5555-5555-555555555558"), // Non-existent BorrowerId
+            Guid.Parse("55555555-5555-5555-5555-555555555555"), 
+            Guid.Parse("55555555-5555-5555-5555-555555555558"), 
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(7),
-            DateTime.UtcNow.AddDays(1) // EndDate before StartDate
+            DateTime.UtcNow.AddDays(1) 
         );
         
         var request = new CreateBookingRequest(invalidBookingDto);
@@ -90,7 +86,6 @@ public class CreateBookingValidatorTests
         var resultValidator = await validator.TestValidateAsync(request);
 
         // Assert
-        // The validator should find multiple validation errors
         resultValidator.ShouldHaveValidationErrorFor(r => r.Booking.BorrowerId);
         resultValidator.ShouldHaveValidationErrorFor(r => r.Booking.EndDate);
         resultValidator.ShouldHaveValidationErrorFor(r => r.Booking.StartDate);
@@ -134,8 +129,8 @@ public class CreateBookingValidatorTests
             itemId,
             userId,
             DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(7),  // Start date is after
-            DateTime.UtcNow.AddDays(1)   // End date 
+            DateTime.UtcNow.AddDays(7),  
+            DateTime.UtcNow.AddDays(1)   
         );
         
         var request = new CreateBookingRequest(invalidBookingDto);
@@ -157,8 +152,7 @@ public class CreateBookingValidatorTests
         var validator = new CreateBookingValidator(context, loggerValidator);
         
         var userId = Guid.Parse("33333333-3333-3333-3333-333333333333");
-
-        // Add user only, no item
+        
         var user = new User
         {
             Id = userId,

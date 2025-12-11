@@ -59,4 +59,23 @@ public class DeleteItemHandlerTests
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
         statusResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
     }
+    
+    [Fact]
+    public async Task Given_ExceptionOccurs_When_Handle_Then_ReturnsInternalServerError()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("d3f5e8c4-3f4b-4c2a-9f7e-8b9e6f1c2d3e");
+        var handler = new DeleteItemHandler(context);
+        var request = new DeleteItemRequest(Guid.NewGuid());
+
+        // Simulate exception by disposing the context before handling
+        context.Dispose();
+
+        // Act
+        var result = await handler.Handle(request, CancellationToken.None);
+
+        // Assert
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+    }
 }

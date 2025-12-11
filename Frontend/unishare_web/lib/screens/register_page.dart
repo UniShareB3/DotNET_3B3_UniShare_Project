@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:unishare_web/screens/verify_email_page.dart';
 import '../providers/auth_provider.dart';
 import 'login_page.dart';
 
@@ -16,26 +15,35 @@ class _RegisterPageState extends State<RegisterPage> {
   final _firstNameCtrl = TextEditingController();
   final _lastNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _userNameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _confirmPasswordCtrl = TextEditingController();
+
+  String? _selectedUniversityId; // stocăm ID-ul universității selectate
   bool _loading = false;
 
   @override
   void initState() {
     super.initState();
 
-    // ---------------- LISTENERS FOR CLEARING ERRORS ----------------
-    _emailCtrl.addListener(() => _clearFieldError('email'));
-    _userNameCtrl.addListener(() => _clearFieldError('userName'));
+    // Listener pentru confirm password
+    _passwordCtrl.addListener(() {
+      if (_confirmPasswordCtrl.text.isNotEmpty) {
+        _formKey.currentState?.validate();
+      }
+    });
+
+    // Listener ca să curețe erorile backend pe email
+    _emailCtrl.addListener(_clearFieldError);
+
+    // Fetch universities for dropdown
+    final auth = context.read<AuthProvider>();
+    auth.fetchUniversities();
   }
 
-  void _clearFieldError(String field) {
+  void _clearFieldError() {
     final auth = context.read<AuthProvider>();
-    if (auth.fieldErrors.containsKey(field)) {
-      auth.fieldErrors.remove(field);
-      // Force form revalidation to clear the error message
-      if (_formKey.currentState != null) _formKey.currentState!.validate();
-      // Notify widget to re-render
+    if (auth.fieldErrors.containsKey('email')) {
+      auth.fieldErrors.remove('email');
       setState(() {});
     }
   }
@@ -44,33 +52,38 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
+
     final auth = context.read<AuthProvider>();
+
+    final universityName = auth.getUniversityNameById(_selectedUniversityId!);
+    if (universityName == null) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selected university could not be resolved.')),);
+      return;
+    }
+
     final success = await auth.register(
       firstName: _firstNameCtrl.text.trim(),
       lastName: _lastNameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
-      userName: _userNameCtrl.text.trim(),
       password: _passwordCtrl.text.trim(),
+      universityName: universityName,
     );
+
     setState(() => _loading = false);
 
-    _formKey.currentState!.validate(); // revalidate to show backend errors
+    _formKey.currentState!.validate();
 
     if (!mounted) return;
-    /// ai cum sa trimiti variabila aia by reference sau ceva? sau defapt nu
-  /// ai undeva response pe aici?
-    /// unde apelezi endpoint-ul meu? da, dar nu apelezi de aici? sau se apeleaza automat
+
     if (success != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Registration successful! Check your email for verification code.')),
-      );
-
-      // Navigate to VerifyEmailPage
+        const SnackBar(content: Text('Registration successful!')),
+        );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => VerifyEmailPage(id: success),
-        ),
+        MaterialPageRoute(builder: (_) => const LoginPage()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -79,30 +92,33 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
+  String? _validatePassword(String? v) {
+    if (v == null || v.isEmpty) return 'Enter a password';
+    if (v.length < 6) return 'Minimum 6 characters';
+    if (!RegExp(r'[0-9]').hasMatch(v)) return 'Must contain at least 1 number';
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) {
+      return 'Must contain at least 1 special character';
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final double maxFormWidth = 450.0; // Slightly wider for more fields
+    final double maxFormWidth = 450.0;
 
     return Scaffold(
-      // Removed AppBar for a cleaner look, kept title here for context
-      // If you prefer the AppBar, uncomment:
-      // appBar: AppBar(title: const Text('Register')),
-
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: maxFormWidth,
-            ),
+            constraints: BoxConstraints(maxWidth: maxFormWidth),
             child: Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. Prominent Title
                   const Text(
                     'Create Your Account',
                     style: TextStyle(
@@ -114,114 +130,166 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                   const SizedBox(height: 30),
 
-                  // 2. First Name
+                  // First Name
                   TextFormField(
                     controller: _firstNameCtrl,
                     decoration: InputDecoration(
                       labelText: 'First Name',
                       prefixIcon: const Icon(Icons.person_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     validator: (v) => v!.isEmpty ? 'Enter your first name' : null,
                   ),
                   const SizedBox(height: 15),
 
-                  // 3. Last Name
+                  // Last Name
                   TextFormField(
                     controller: _lastNameCtrl,
                     decoration: InputDecoration(
                       labelText: 'Last Name',
                       prefixIcon: const Icon(Icons.person_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     validator: (v) => v!.isEmpty ? 'Enter your last name' : null,
                   ),
                   const SizedBox(height: 15),
 
-                  // 4. Email
+                  // University dropdown
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    value: _selectedUniversityId,
+                    decoration: InputDecoration(
+                      labelText: 'University',
+                      prefixIcon: const Icon(Icons.school),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    items: auth.isUniversitiesLoading
+                        ? [
+                            const DropdownMenuItem<String>(
+                              value: null,
+                              child: Text('Loading universities...'),
+                            )
+                          ]
+                        : auth.universities.isEmpty
+                            ? [
+                                const DropdownMenuItem<String>(
+                                  value: null,
+                                  child: Text('No universities available'),
+                                )
+                              ]
+                            : auth.universities
+                                .map<DropdownMenuItem<String>>(
+                                  (u) => DropdownMenuItem<String>(
+
+                                value: u.id, // ID-ul universității
+                                child: Text("${u.name} (${u.shortCode})"),
+                              ),
+                            ).toList(),
+                    onChanged: auth.isUniversitiesLoading || auth.universities.isEmpty
+                        ? null
+                        : (value) {
+                            setState(() => _selectedUniversityId = value);
+                          },
+                    validator: (v) => v == null ? 'Select a university' : null,
+                  ),
+                  const SizedBox(height: 15),
+
+                  // Email
                   TextFormField(
                     controller: _emailCtrl,
                     decoration: InputDecoration(
                       labelText: 'Email',
                       prefixIcon: const Icon(Icons.email_outlined),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     validator: (v) {
                       if (!v!.contains('@')) return 'Enter a valid email';
-                      if (auth.fieldErrors.containsKey('email')) return auth.fieldErrors['email'];
+                      if (auth.fieldErrors.containsKey('email')) {
+                        return auth.fieldErrors['email'];
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: 15),
 
-                  // 5. Username
-                  TextFormField(
-                    controller: _userNameCtrl,
-                    decoration: InputDecoration(
-                      labelText: 'Username',
-                      prefixIcon: const Icon(Icons.alternate_email),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    validator: (v) {
-                      if (v!.isEmpty) return 'Enter a username';
-                      if (auth.fieldErrors.containsKey('userName')) return auth.fieldErrors['userName'];
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 15),
-
-                  // 6. Password
+                  // Password
                   TextFormField(
                     controller: _passwordCtrl,
                     decoration: InputDecoration(
                       labelText: 'Password',
                       prefixIcon: const Icon(Icons.lock_outline),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                     obscureText: true,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'Enter a password';
-                      if (v.length < 6) return 'Minimum 6 characters';
-                      if (!RegExp(r'[0-9]').hasMatch(v)) return 'Must contain at least 1 number';
-                      if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(v)) return 'Must contain at least 1 special character';
+                      final error = _validatePassword(v);
+                      if (error != null) return error;
+                      if (_confirmPasswordCtrl.text.isNotEmpty &&
+                          v != _confirmPasswordCtrl.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 15),
+
+                  // Confirm Password
+                  TextFormField(
+                    controller: _confirmPasswordCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      prefixIcon: const Icon(Icons.lock_reset),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    obscureText: true,
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Confirm your password';
+                      if (v != _passwordCtrl.text) return 'Passwords do not match';
                       return null;
                     },
                   ),
                   const SizedBox(height: 30),
 
-                  // 7. Register Button (ElevatedButton)
+                  // Register Button
                   SizedBox(
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _loading ? null : _register,
+                      onPressed: _loading || auth.isUniversitiesLoading || auth.universities.isEmpty ? null : _register,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                            borderRadius: BorderRadius.circular(10)),
                         elevation: 5,
                       ),
                       child: _loading
-                          ? const Center(
-                        child: SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 3,
-                          ),
+                          ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 3,
                         ),
                       )
                           : const Text(
                         'Register',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
 
-                  // 8. Secondary Action (Login)
+                  // Login link
                   TextButton(
                     onPressed: () {
                       Navigator.pushReplacement(
@@ -248,8 +316,8 @@ class _RegisterPageState extends State<RegisterPage> {
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _emailCtrl.dispose();
-    _userNameCtrl.dispose();
     _passwordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 }

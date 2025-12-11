@@ -1,4 +1,5 @@
 ﻿using Backend.Data;
+using Backend.Features.Bookings.Enums;
 using Backend.Features.Items.Enums;
 using Backend.Persistence;
 using Microsoft.AspNetCore.Identity;
@@ -38,6 +39,15 @@ public static class TestDataSeeder
     public static readonly Guid BookItemId = Guid.Parse("10000000-0000-0000-0000-000000000002");
     public static readonly Guid JacketItemId = Guid.Parse("10000000-0000-0000-0000-000000000003");
 
+    // Predefined booking IDs
+    public static readonly Guid PendingBookingId = Guid.Parse("20000000-0000-0000-0000-000000000001");
+    public static readonly Guid ApprovedBookingId = Guid.Parse("20000000-0000-0000-0000-000000000002");
+    public static readonly Guid CompletedBookingId = Guid.Parse("20000000-0000-0000-0000-000000000003");
+
+    // Predefined review IDs
+    public static readonly Guid ItemReviewId = Guid.Parse("30000000-0000-0000-0000-000000000001");
+    public static readonly Guid UserReviewId = Guid.Parse("30000000-0000-0000-0000-000000000002");
+
     /// <summary>
     /// Seeds the test database with predefined test data
     /// </summary>
@@ -57,6 +67,12 @@ public static class TestDataSeeder
         
         // 4. Seed Test Items
         await SeedTestItems(context, users);
+        
+        // 5. Seed Test Bookings
+        await SeedTestBookings(context, users);
+        
+        // 6. Seed Test Reviews
+        await SeedTestReviews(context);
         
         await context.SaveChangesAsync();
     }
@@ -226,7 +242,7 @@ public static class TestDataSeeder
             return;
         }
 
-        var verifiedUser = users.FirstOrDefault(u => u.Email == UserEmail);
+        var verifiedUser = UserId;
         if (verifiedUser == null) return;
 
         var items = new List<Item>
@@ -239,7 +255,7 @@ public static class TestDataSeeder
                 Category = ItemCategory.Electronics,
                 Condition = ItemCondition.Good,
                 IsAvailable = true,
-                OwnerId = verifiedUser.Id,
+                OwnerId = verifiedUser,
                 CreatedAt = DateTime.UtcNow
             },
             new Item
@@ -250,7 +266,7 @@ public static class TestDataSeeder
                 Category = ItemCategory.Books,
                 Condition = ItemCondition.New,
                 IsAvailable = true,
-                OwnerId = verifiedUser.Id,
+                OwnerId = verifiedUser,
                 CreatedAt = DateTime.UtcNow
             },
             new Item
@@ -260,8 +276,8 @@ public static class TestDataSeeder
                 Description = "A test jacket for integration tests",
                 Category = ItemCategory.Clothing,
                 Condition = ItemCondition.Good,
-                IsAvailable = false, // Not available for testing booking unavailable items
-                OwnerId = verifiedUser.Id,
+                IsAvailable = false, 
+                OwnerId = verifiedUser,
                 CreatedAt = DateTime.UtcNow
             }
         };
@@ -269,9 +285,103 @@ public static class TestDataSeeder
         context.Items.AddRange(items);
         await context.SaveChangesAsync();
     }
+
+    private static async Task SeedTestBookings(ApplicationContext context, List<User> users)
+    {
+        if (context.Bookings.Any())
+        {
+            return;
+        }
+
+        var itemOwner = users.FirstOrDefault(u => u.Email == UserEmail);
+        var borrower = users.FirstOrDefault(u => u.Email == ModeratorEmail);
+        
+        if (itemOwner == null || borrower == null) return;
+
+        var bookings = new List<Booking>
+        {
+            new Booking
+            {
+                Id = PendingBookingId,
+                ItemId = LaptopItemId,
+                BorrowerId = borrower.Id,
+                RequestedOn = DateTime.UtcNow.AddDays(-2),
+                StartDate = DateTime.UtcNow.AddDays(1),
+                EndDate = DateTime.UtcNow.AddDays(7),
+                BookingStatus = BookingStatus.Pending
+            },
+            new Booking
+            {
+                Id = ApprovedBookingId,
+                ItemId = BookItemId,
+                BorrowerId = borrower.Id,
+                RequestedOn = DateTime.UtcNow.AddDays(-5),
+                StartDate = DateTime.UtcNow.AddDays(-3),
+                EndDate = DateTime.UtcNow.AddDays(3),
+                BookingStatus = BookingStatus.Approved,
+                ApprovedOn = DateTime.UtcNow.AddDays(-4)
+            },
+            new Booking
+            {
+                Id = CompletedBookingId,
+                ItemId = BookItemId,
+                BorrowerId = borrower.Id,
+                RequestedOn = DateTime.UtcNow.AddDays(-15),
+                StartDate = DateTime.UtcNow.AddDays(-14),
+                EndDate = DateTime.UtcNow.AddDays(-7),
+                BookingStatus = BookingStatus.Completed,
+                ApprovedOn = DateTime.UtcNow.AddDays(-14),
+                CompletedOn = DateTime.UtcNow.AddDays(-7)
+            }
+        };
+
+        context.Bookings.AddRange(bookings);
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task SeedTestReviews(ApplicationContext context)
+    {
+        if (context.Reviews.Any())
+        {
+            return;
+        }
+
+        var reviews = new List<Review>
+        {
+            // Review for an Item (after completed booking)
+            new Review
+            {
+                Id = ItemReviewId,
+                BookingId = CompletedBookingId,
+                ReviewerId = ModeratorId, // Borrower reviews the item
+                TargetItemId = BookItemId,
+                TargetUserId = null,
+                Rating = 5,
+                Comment = "Great book, exactly as described!",
+                CreatedAt = DateTime.UtcNow.AddDays(-6)
+            },
+            // Review for a User (owner reviews borrower)
+            new Review
+            {
+                Id = UserReviewId,
+                BookingId = CompletedBookingId,
+                ReviewerId = UserId, // Owner reviews the borrower
+                TargetUserId = ModeratorId,
+                TargetItemId = null,
+                Rating = 4,
+                Comment = "Returned the item on time and in good condition.",
+                CreatedAt = DateTime.UtcNow.AddDays(-5)
+            }
+        };
+
+        context.Reviews.AddRange(reviews);
+        await context.SaveChangesAsync();
+    }
     
     public static void ClearDatabase(ApplicationContext context)
     {
+        context.Reviews.RemoveRange(context.Reviews);
+        context.Bookings.RemoveRange(context.Bookings);
         context.RefreshTokens.RemoveRange(context.RefreshTokens);
         context.EmailConfirmationTokens.RemoveRange(context.EmailConfirmationTokens);
         context.Items.RemoveRange(context.Items);

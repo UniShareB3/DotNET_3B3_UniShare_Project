@@ -1,7 +1,14 @@
-﻿using Backend.Data;
+﻿using AutoMapper;
+using Backend.Data;
+using Backend.Features.Items;
+using Backend.Features.Items.DTO;
 using Backend.Features.Items.Enums;
 using Backend.Persistence;
+using FluentAssertions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Tests.Handlers.Items;
 
@@ -17,23 +24,45 @@ public class GetAllUserItemsHandlerTests
         return context;
     }
 
+    private static IMapper CreateMapper()
+    {
+        using (var loggerFactory = new LoggerFactory())
+        {
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<Item, ItemDto>()
+                    .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.ToString()))
+                    .ForMember(dest => dest.Condition, opt => opt.MapFrom(src => src.Condition.ToString()))
+                    .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => (src.Owner.FirstName + " " + src.Owner.LastName).Trim()));
+            }, loggerFactory);
+
+            return config.CreateMapper();
+        }
+    }
+
     [Fact]
     public async Task Given_UserWithItems_When_GettingAllItems_Then_ReturnsOnlyUsersItems()
     {
         // Arrange
         var context = CreateInMemoryDbContext("cb397a9b-ec7c-4bb4-b683-363f07dd94da");
+        var mapper = CreateMapper();
         var userId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94db");
         var otherUserId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94da");
+
+        var user = new User { Id = userId, FirstName = "Test", LastName = "User", Email = "test@test.com", UserName = "testuser" };
+        var otherUser = new User { Id = otherUserId, FirstName = "Other", LastName = "User", Email = "other@test.com", UserName = "otheruser" };
+        context.Users.AddRange(user, otherUser);
+
         var userItems = new List<Item>
         {
             new Item
             {
-                Id = Guid.NewGuid(), OwnerId = userId, Name = "User Item 1", Description = "Desc 1",
+                Id = Guid.NewGuid(), OwnerId = userId, Owner = user, Name = "User Item 1", Description = "Desc 1",
                 Category = ItemCategory.Electronics, Condition = ItemCondition.New
             },
             new Item
             {
-                Id = Guid.NewGuid(), OwnerId = userId, Name = "User Item 2", Description = "Desc 2",
+                Id = Guid.NewGuid(), OwnerId = userId, Owner = user, Name = "User Item 2", Description = "Desc 2",
                 Category = ItemCategory.Books, Condition = ItemCondition.Good
             }
         };
@@ -41,7 +70,7 @@ public class GetAllUserItemsHandlerTests
         {
             new Item
             {
-                Id = Guid.NewGuid(), OwnerId = otherUserId, Name = "Other User Item 1", Description = "Desc 3",
+                Id = Guid.NewGuid(), OwnerId = otherUserId, Owner = otherUser, Name = "Other User Item 1", Description = "Desc 3",
                 Category = ItemCategory.Clothing, Condition = ItemCondition.Fair
             }
         };
@@ -49,14 +78,15 @@ public class GetAllUserItemsHandlerTests
         context.Items.AddRange(otherUserItems);
         await context.SaveChangesAsync();
 
+        var handler = new GetAllUserItemsHandler(context, mapper);
+
         // Act
-        var retrievedItems = await context.Items
-            .Where(i => i.OwnerId == userId)
-            .ToListAsync();
+        var result = await handler.Handle(new GetAllUserItemsRequest(userId), CancellationToken.None);
 
         // Assert
-        Assert.Equal(2, retrievedItems.Count);
-        Assert.All(retrievedItems, item => Assert.Equal(userId, item.OwnerId));
+        var okResult = result.Should().BeOfType<Ok<List<ItemDto>>>().Subject;
+        okResult.Value.Should().HaveCount(2);
+        okResult.Value.Should().AllSatisfy(item => item.OwnerName.Should().Be("Test User"));
     }
     
     [Fact]
@@ -64,15 +94,17 @@ public class GetAllUserItemsHandlerTests
     {
         // Arrange
         var context = CreateInMemoryDbContext("aa397a9b-ec7c-4bb4-b683-363f07dd94d6");
+        var mapper = CreateMapper();
         var userId = Guid.Parse("bb397a9b-ec7c-4bb4-b683-363f07dd94d6");
 
+        var handler = new GetAllUserItemsHandler(context, mapper);
+
         // Act
-        var retrievedItems = await context.Items
-            .Where(i => i.OwnerId == userId)
-            .ToListAsync();
+        var result = await handler.Handle(new GetAllUserItemsRequest(userId), CancellationToken.None);
 
         // Assert
-        Assert.Empty(retrievedItems);
+        var okResult = result.Should().BeOfType<Ok<List<ItemDto>>>().Subject;
+        okResult.Value.Should().BeEmpty();
     }
     
     [Fact]
@@ -80,14 +112,43 @@ public class GetAllUserItemsHandlerTests
     {
         // Arrange
         var context = CreateInMemoryDbContext("cb397a9b-ec7c-4bb4-b683-363f07dd9rrr4d6");
+        var mapper = CreateMapper();
         var invalidUserId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd2222");
 
+        var handler = new GetAllUserItemsHandler(context, mapper);
+
         // Act
-        var retrievedItems = await context.Items
-            .Where(i => i.OwnerId == invalidUserId)
-            .ToListAsync();
+        var result = await handler.Handle(new GetAllUserItemsRequest(invalidUserId), CancellationToken.None);
 
         // Assert
-        Assert.Empty(retrievedItems);
+        var okResult = result.Should().BeOfType<Ok<List<ItemDto>>>().Subject;
+        okResult.Value.Should().BeEmpty();
+    }
+    
+    [Fact]
+    public async Task Given_ExceptionOccurs_When_GettingAllItems_Then_HandlesException()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("cb397a9b-ec7c-4bb4-b683-363f07dd9excp");
+        var userId = Guid.NewGuid();
+        
+        // Add an item to trigger the mapper (null mapper will cause exception)
+        var user = new User { Id = userId, FirstName = "Test", LastName = "User", Email = "test@test.com", UserName = "testuser" };
+        context.Users.Add(user);
+        context.Items.Add(new Item
+        {
+            Id = Guid.NewGuid(), OwnerId = userId, Owner = user, Name = "Item", Description = "Desc",
+            Category = ItemCategory.Electronics, Condition = ItemCondition.New
+        });
+        await context.SaveChangesAsync();
+        
+        var handler = new GetAllUserItemsHandler(context, null!);
+
+        // Act
+        var result = await handler.Handle(new GetAllUserItemsRequest(userId), CancellationToken.None);
+
+        // Assert
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
     }
 }

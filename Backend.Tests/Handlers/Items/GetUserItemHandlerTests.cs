@@ -146,4 +146,22 @@ public class GetUserItemHandlerTests
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
         statusResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
     }
+
+    [Fact]
+    public async Task Given_ExceptionOccurs_When_Handle_Then_ReturnsProblem()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("d290f1ee-0000-4b01-90e6-d701748f0854");
+        var mapper = CreateMapper();
+        var handler = new GetUserItemHandler(context, mapper);
+        var request = new GetUserItemRequest(Guid.Parse("d290f1ee-6c54-4b01-90e6-d701748f0854"),
+            Guid.Parse("d290f1ee-6c54-4b01-90e6-d701748f0004"));
+        // Simulate exception by disposing the context before handling
+        context.Dispose();
+        // Act
+        var result = await handler.Handle(request, CancellationToken.None);
+        // Assert
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+    }
 }

@@ -1,6 +1,11 @@
 ﻿using Backend.Data;
+using Backend.Features.Review;
 using Backend.Persistence;
+using FluentAssertions;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Moq;
 
 namespace Backend.Tests.Handlers.Reviews;
 
@@ -17,128 +22,153 @@ public class DeleteReviewHandlerTests
     }
     
     [Fact]
-    public async Task Given_ReviewExists_When_DeletingReview_Then_RemovesReview()
+    public async Task Given_ReviewExists_When_Handle_Then_DeletesReviewAndReturnsOk()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("02476119-a33e-422a-b001-0167bf09e1b5");
-        var reviewId = Guid.Parse("02476839-a33e-4bba-b001-0167bf090005");
+        var logger = new Mock<ILogger<DeleteReviewHandler>>().Object;
+        var context = CreateInMemoryDbContext("delete-review-exists-test-" + Guid.NewGuid());
+        var reviewId = Guid.NewGuid();
         var review = new Review
         {
             Id = reviewId,
-            ReviewerId = Guid.Parse("02476839-a33e-4bba-b001-0167bf09e105"),
-            TargetItemId = Guid.Parse("02476839-a33e-4bba-b001-0167bf09e1b0"),
+            ReviewerId = Guid.NewGuid(),
+            TargetItemId = Guid.NewGuid(),
             Rating = 5,
             Comment = "Great item!"
         };
         context.Reviews.Add(review);
         await context.SaveChangesAsync();
 
+        var handler = new DeleteReviewHandler(context, logger);
+        var request = new DeleteReviewRequest(reviewId);
+
         // Act
-        var reviewToDelete = await context.Reviews.FindAsync(reviewId);
-        if (reviewToDelete != null)
-        {
-            context.Reviews.Remove(reviewToDelete);
-            await context.SaveChangesAsync();
-        } 
+        var result = await handler.Handle(request, CancellationToken.None);
 
         // Assert
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
+        
         var deletedReview = await context.Reviews.FindAsync(reviewId);
-        Assert.Null(deletedReview);
+        deletedReview.Should().BeNull();
     }
     
     [Fact]
-    public async Task Given_ReviewDoesNotExist_When_DeletingReview_Then_NoActionTaken()
+    public async Task Given_ReviewDoesNotExist_When_Handle_Then_ReturnsNotFound()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("delete-nonexistent-review-test-db");
-        var nonExistentReviewId = Guid.Parse("99999999-8888-7777-6666-555555555555");
+        var logger = new Mock<ILogger<DeleteReviewHandler>>().Object;
+        var context = CreateInMemoryDbContext("delete-nonexistent-review-test-" + Guid.NewGuid());
+        var nonExistentReviewId = Guid.NewGuid();
+
+        var handler = new DeleteReviewHandler(context, logger);
+        var request = new DeleteReviewRequest(nonExistentReviewId);
 
         // Act
-        var reviewToDelete = await context.Reviews.FindAsync(nonExistentReviewId);
-        if (reviewToDelete != null)
-        {
-            context.Reviews.Remove(reviewToDelete);
-            await context.SaveChangesAsync();
-        } 
+        var result = await handler.Handle(request, CancellationToken.None);
 
         // Assert
-        var reviewsCount = await context.Reviews.CountAsync();
-        Assert.Equal(0, reviewsCount);
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
     }
     
     [Fact]
-    public async Task Given_MultipleReviewsExist_When_DeletingOneReview_Then_OtherReviewsRemain()
+    public async Task Given_MultipleReviewsExist_When_Handle_Then_DeletesOnlyTargetReview()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("02470039-a33e-422a-b001-0167bf09e1b5");
+        var logger = new Mock<ILogger<DeleteReviewHandler>>().Object;
+        var context = CreateInMemoryDbContext("delete-multiple-reviews-test-" + Guid.NewGuid());
+        var review1Id = Guid.NewGuid();
+        var review2Id = Guid.NewGuid();
+        
         var review1 = new Review
         {
-            Id = Guid.Parse("02476839-a33e-422a-b001-0167bf09e1b5"),
-            ReviewerId = Guid.Parse("02476839-a11e-4bba-b001-0167bf09e1b5"),
-            TargetItemId = Guid.Parse("02476839-a33e-4bba-1001-0167bf09e1b5"),
+            Id = review1Id,
+            ReviewerId = Guid.NewGuid(),
+            TargetItemId = Guid.NewGuid(),
             Rating = 4,
             Comment = "Good item."
         };
         var review2 = new Review
         {
-            Id = Guid.Parse("02476839-a33e-4bba-b001-0167bf09e1b0"),
-            ReviewerId = Guid.Parse("02406839-a33e-4bba-b001-0167bf09e1b5"),
-            TargetItemId = Guid.Parse("02476839-a30e-4bba-b001-0167bf09e1b5"),
+            Id = review2Id,
+            ReviewerId = Guid.NewGuid(),
+            TargetItemId = Guid.NewGuid(),
             Rating = 2,
             Comment = "Not as expected."
         };
         context.Reviews.AddRange(review1, review2);
         await context.SaveChangesAsync();
 
+        var handler = new DeleteReviewHandler(context, logger);
+        var request = new DeleteReviewRequest(review1Id);
+
         // Act
-        var reviewToDelete = await context.Reviews.FindAsync(review1.Id);
-        if (reviewToDelete != null)
-        {
-            context.Reviews.Remove(reviewToDelete);
-            await context.SaveChangesAsync();
-        } 
+        var result = await handler.Handle(request, CancellationToken.None);
 
         // Assert
-        var remainingReview = await context.Reviews.FindAsync(review2.Id);
-        Assert.NotNull(remainingReview);
-        Assert.Equal(review2.Comment, remainingReview.Comment);
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
+        
+        var deletedReview = await context.Reviews.FindAsync(review1Id);
+        deletedReview.Should().BeNull();
+        
+        var remainingReview = await context.Reviews.FindAsync(review2Id);
+        remainingReview.Should().NotBeNull();
+        remainingReview!.Comment.Should().Be("Not as expected.");
     }
     
     [Fact]
-    public async Task Given_ReviewExists_When_DeletingReviewTwice_Then_NoErrorOccurs()
+    public async Task Given_ReviewDeleted_When_HandleCalledAgain_Then_ReturnsNotFound()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("02476839-a33e-422a-0001-0167bf09e1b5");
-        var reviewId = Guid.Parse("02476839-a33e-4bba-b001-0167bf09e1b7");
+        var logger = new Mock<ILogger<DeleteReviewHandler>>().Object;
+        var context = CreateInMemoryDbContext("delete-review-twice-test-" + Guid.NewGuid());
+        var reviewId = Guid.NewGuid();
         var review = new Review
         {
             Id = reviewId,
-            ReviewerId = Guid.Parse("02476839-a33e-4bba-b001-0167bf09e105"),
-            TargetItemId = Guid.Parse("02476839-a33e-4bba-b001-0167bf09e1b0"),
+            ReviewerId = Guid.NewGuid(),
+            TargetItemId = Guid.NewGuid(),
             Rating = 3,
             Comment = "Average item."
         };
         context.Reviews.Add(review);
         await context.SaveChangesAsync();
 
-        // Act
-        var reviewToDelete = await context.Reviews.FindAsync(reviewId);
-        if (reviewToDelete != null)
-        {
-            context.Reviews.Remove(reviewToDelete);
-            await context.SaveChangesAsync();
-        } 
+        var handler = new DeleteReviewHandler(context, logger);
+        var request = new DeleteReviewRequest(reviewId);
 
-        // Attempt to delete again
-        reviewToDelete = await context.Reviews.FindAsync(reviewId);
-        if (reviewToDelete != null)
-        {
-            context.Reviews.Remove(reviewToDelete);
-            await context.SaveChangesAsync();
-        } 
+        // Act - First delete
+        var firstResult = await handler.Handle(request, CancellationToken.None);
+        
+        // Assert first delete succeeds
+        var firstStatusResult = firstResult.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        firstStatusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
+
+        // Act - Second delete attempt
+        var secondResult = await handler.Handle(request, CancellationToken.None);
+
+        // Assert second delete returns NotFound
+        var secondStatusResult = secondResult.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        secondStatusResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+    }
+    
+    [Fact]
+    public async Task Given_EmptyGuidReviewId_When_Handle_Then_ReturnsNotFound()
+    {
+        // Arrange
+        var logger = new Mock<ILogger<DeleteReviewHandler>>().Object;
+        var context = CreateInMemoryDbContext("delete-empty-guid-test-" + Guid.NewGuid());
+
+        var handler = new DeleteReviewHandler(context, logger);
+        var request = new DeleteReviewRequest(Guid.Empty);
+
+        // Act
+        var result = await handler.Handle(request, CancellationToken.None);
 
         // Assert
-        var deletedReview = await context.Reviews.FindAsync(reviewId);
-        Assert.Null(deletedReview);
+        var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
+        statusResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
     }
 }
