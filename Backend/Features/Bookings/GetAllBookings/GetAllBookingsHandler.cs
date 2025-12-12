@@ -1,4 +1,4 @@
-﻿﻿using AutoMapper;
+﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Backend.Features.Bookings.DTO;
 using Backend.Persistence;

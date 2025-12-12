@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Backend.Persistence;
 using Microsoft.AspNetCore.Http;
 
+namespace Backend.Tests.Handlers.Users;
+
 public class ConfirmEmailHandlerTests
 {
     private readonly Mock<UserManager<User>> _userManagerMock;
