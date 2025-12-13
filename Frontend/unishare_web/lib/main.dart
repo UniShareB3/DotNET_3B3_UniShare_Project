@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'package:unishare_web/screens/main_page.dart';
 import 'providers/auth_provider.dart';
@@ -12,6 +13,9 @@ import 'screens/reset_password_page.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+  
   final authProvider = AuthProvider();
   await authProvider.tryAutoLogin(); // încercă să încarce token-ul
 

@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:unishare_web/services/secure_storage_service.dart';
 
 import '../main.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:5083';
+  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://localhost:5083';
 
   // Debug: store last non-200 response body for received bookings (serialization/server issues)
   static String? lastReceivedError;
