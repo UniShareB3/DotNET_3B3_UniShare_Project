@@ -53,6 +53,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog();
 
+var frontendOrigin = Environment.GetEnvironmentVariable("FRONTEND_ORIGIN") ?? "http://localhost:5083";
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -61,6 +63,11 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
+    
+    options.AddPolicy("Frontend", policy =>
+        policy.WithOrigins(frontendOrigin)
+              .AllowAnyMethod()
+              .AllowAnyHeader());
 });
 
 builder.Services.AddIdentity<User, IdentityRole<Guid>>()
