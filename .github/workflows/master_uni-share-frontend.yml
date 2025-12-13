@@ -46,3 +46,5 @@ jobs:
           # We deploy the specific app folder because it contains package.json AND build/web
           package: './Frontend/unishare_web'       
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B22AAE6D0D514046BEC80F94EEFD54CE }}
+          startup-command: 'pm2 serve /home/site/wwwroot/build/web --no-daemon --spa'
+
