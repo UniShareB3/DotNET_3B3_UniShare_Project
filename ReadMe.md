@@ -4,7 +4,7 @@
 # Team Members
 1. Ciornei Stefan-Alexandru
 2. Lungu Fabian
-3. Milea Bianca
+3. Milea Bianca-Elena
 4. Marciuc Teodor-Cosmin
 
 
