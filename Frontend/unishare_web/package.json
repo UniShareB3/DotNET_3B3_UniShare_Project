@@ -1,0 +1,10 @@
+﻿{
+  "name": "unishare-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "npx serve -s build/web -p 8080"
+  },
+  "dependencies": {
+    "serve": "^14.0.0"
+  }
+}
