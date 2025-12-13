@@ -1,55 +1,48 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy Node.js app to Azure Web App - uni-share-frontend
+name: Deploy Flutter Frontend (Fixed Path)
 
 on:
   push:
-    branches:
-      - master
-  workflow_dispatch:
+    branches: [ "master", "main" ]
+    paths:
+      - 'Frontend/unishare_web/**' # Only run if the actual app folder changes
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js version
+      # 1. Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+      
+      # 2. Build Flutter (Correct Path)
+      - name: Build Flutter Web
+        working-directory: ./Frontend/unishare_web  # <--- UPDATED PATH
+        run: |
+          flutter pub get
+          flutter build web --release
+
+      # 3. Setup Node for the 'serve' command
+      - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '22.x'
+          node-version: '20'
 
-      - name: npm install, build, and test
-        run: |
-          npm install
-          npm run build --if-present
-          npm run test --if-present
+      # 4. Install 'serve' (Correct Path)
+      - name: Install Node Dependencies
+        working-directory: ./Frontend/unishare_web  # <--- UPDATED PATH
+        run: npm install
 
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: node-app
-          path: .
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: node-app
-      
+      # 5. Deploy to Azure
       - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'uni-share-frontend'
           slot-name: 'Production'
-          package: .
+          # We deploy the specific app folder because it contains package.json AND build/web
+          package: './Frontend/unishare_web'       
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B22AAE6D0D514046BEC80F94EEFD54CE }}
