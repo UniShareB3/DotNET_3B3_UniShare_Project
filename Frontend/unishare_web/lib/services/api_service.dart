@@ -7,13 +7,19 @@ import 'package:unishare_web/services/secure_storage_service.dart';
 import '../main.dart';
 
 class ApiService {
-  final baseUrl = dotenv.env['API_BASE_URL'];
-  if (baseUrl == null || baseUrl.isEmpty) {
-    throw Exception('CRITIC: Nu am gasit API_BASE_URL in fisierul .env!');
-  }
 
   // Debug: store last non-200 response body for received bookings (serialization/server issues)
   static String? lastReceivedError;
+  
+  static String get baseUrl {
+      final url = dotenv.env['API_BASE_URL'];
+      
+      if (url == null || url.isEmpty) {
+        throw Exception('CRITIC: Nu am gasit API_BASE_URL in fisierul .env!'); 
+      }
+      
+      return url;
+    }
 
   static getUserIdFromToken(String? token) {
     final parts = token!.split('.');

@@ -20,20 +20,19 @@ using Backend.Features.Users;
 using Backend.Features.Users.Dtos;
 using MediatR;
 using FluentValidation.AspNetCore;
-using Backend.Features.Bookings;
-using Backend.Features.Bookings.DTO;
 using Backend.Features.Review;
 using Backend.Features.Review.DTO;
 using Backend.Features.Shared.Auth;
 using Backend.Features.Shared.IAM.DTO;
 using Backend.Mapping;
 using Serilog;
+using DotNetEnv;
 
 // Configure Serilog before building the application
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
-    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
-    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Information)
+    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Information)
     .Enrich.FromLogContext()
     .WriteTo.Console(
         outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss}] [{Level:u3}] {Message:lj}{NewLine}{Exception}")
@@ -49,11 +48,17 @@ Log.Logger = new LoggerConfiguration()
 
 Log.Information("Starting UniShare API application");
 
+Env.Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog();
 
-var frontendOrigin = Environment.GetEnvironmentVariable("API_FRONTEND_URL") ?? "http://localhost:5083";
+var frontendOrigin = Environment.GetEnvironmentVariable("API_FRONTEND_URL");
+if (string.IsNullOrEmpty(frontendOrigin))
+{
+    throw new InvalidOperationException("Configuration value 'FrontendOrigin' is missing.");
+}
 
 builder.Services.AddCors(options =>
 {
@@ -218,8 +223,6 @@ else
     Log.Warning("Skipping database initialization - no connection string configured");
 }
 
-app.UseCors("Frontend");
-
 // Enable Swagger middleware
 app.UseSwagger();
 app.UseSwaggerUI
@@ -232,6 +235,7 @@ app.UseSwaggerUI
 );
 app.MapOpenApi();
 
+app.UseCors("AllowAll");
 
 //app.UseHttpsRedirection();
 app.UseAuthentication();
@@ -463,9 +467,6 @@ reviewsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
 // Log the URLs where the application is listening
 
 Log.Information("UniShare API started successfully");
-
-var url = "http://localhost:5083/index.html";
-Log.Information("Application is listening on: {Url}", url);
 
 await app.RunAsync();
 
