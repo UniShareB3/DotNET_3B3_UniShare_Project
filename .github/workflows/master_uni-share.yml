@@ -1,7 +1,4 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy ASP.Net Core - uni-share
+name: Build and deploy ASP.Net Core app to Azure Web App - uni-share
 
 on:
   push:
@@ -13,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -27,19 +24,23 @@ jobs:
         run: dotnet build --configuration Release
         working-directory: ./Backend
 
-      - name: Create .env file
-        run: |
-          echo "API_FRONTEND_URL=${{ secrets.API_FRONTEND_URL }}" > ${{env.DOTNET_ROOT}}/Backend/.env
-
+      # 1. Facem Publish intr-un folder numit "published_app"
       - name: dotnet publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/Backend
+        run: dotnet publish -c Release -o published_app
         working-directory: ./Backend
 
+      # 2. Cream fisierul .env in folderul publicat (ca sa fie luat in arhiva)
+      - name: Create .env file
+        working-directory: ./Backend
+        run: |
+          echo "API_FRONTEND_URL=${{ secrets.API_FRONTEND_URL }}" > published_app/.env
+
+      # 3. Incarcam folderul "published_app" care acum contine si DLL-urile si .env-ul
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          path: ./Backend/published_app
 
   deploy:
     runs-on: ubuntu-latest
@@ -58,6 +59,4 @@ jobs:
           app-name: 'uni-share'
           slot-name: 'Production'
           package: .
-
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_5982BD1F81534EA189B38F38DD04FB21 }}
-
