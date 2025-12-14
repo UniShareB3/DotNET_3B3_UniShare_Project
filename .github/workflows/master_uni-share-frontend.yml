@@ -1,50 +1,73 @@
-name: Deploy Flutter Frontend (Fixed Path)
+name: Build and deploy Flutter Web
 
 on:
   push:
-    branches: [ "master", "main" ]
-    paths:
-      - 'Frontend/unishare_web/**' # Only run if the actual app folder changes
+    branches:
+      - master
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      # 1. Setup Flutter
-      - name: Setup Flutter
+      # 1. Instalează Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      
-      # 2. Build Flutter (Correct Path)
-      - name: Build Flutter Web
-        working-directory: ./Frontend/unishare_web  # <--- UPDATED PATH
-        run: |
-          flutter pub get
-          flutter build web --release
 
-      # 3. Setup Node for the 'serve' command
-      - name: Set up Node.js
+      # 2. Instalează dependențele Flutter
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      # --- MODIFICAREA ESTE AICI ---
+      # 2.1. Creează fișierul .env folosind secretul din GitHub
+      - name: Create .env file
+        run: |
+          echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" > .env
+      # -----------------------------
+
+      # 3. Construiește aplicația Web (va include .env dacă e în assets)
+      - name: Build Flutter Web
+        run: flutter build web --release
+
+      # 4. Pregătește Node.js (pentru serverul 'serve')
+      - name: Set up Node.js version
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '20.x'
 
-      # 4. Install 'serve' (Correct Path)
-      - name: Install Node Dependencies
-        working-directory: ./Frontend/unishare_web  # <--- UPDATED PATH
+      - name: Install Node dependencies
         run: npm install
 
-      # 5. Deploy to Azure
+      # 5. Arhivează totul (inclusiv folderul build/web creat de flutter și .env)
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-app
+          path: .
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: 'Production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: node-app
+      
       - name: 'Deploy to Azure Web App'
+        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'uni-share-frontend'
           slot-name: 'Production'
-          # We deploy the specific app folder because it contains package.json AND build/web
-          package: './Frontend/unishare_web'       
+          package: .
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_B22AAE6D0D514046BEC80F94EEFD54CE }}
-          startup-command: 'pm2 serve /home/site/wwwroot/build/web --no-daemon --spa'
-
