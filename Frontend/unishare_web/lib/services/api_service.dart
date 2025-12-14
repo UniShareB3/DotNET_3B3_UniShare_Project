@@ -7,7 +7,10 @@ import 'package:unishare_web/services/secure_storage_service.dart';
 import '../main.dart';
 
 class ApiService {
-  static String get baseUrl => dotenv.env['API_BASE_URL'] ?? 'http://localhost:5083';
+  final baseUrl = dotenv.env['API_BASE_URL'];
+  if (baseUrl == null || baseUrl.isEmpty) {
+    throw Exception('CRITIC: Nu am gasit API_BASE_URL in fisierul .env!');
+  }
 
   // Debug: store last non-200 response body for received bookings (serialization/server issues)
   static String? lastReceivedError;
