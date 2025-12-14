@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP.Net Core app to Azure Web App - uni-share
+name: Build and deploy ASP.Net Core - uni-share
 
 on:
   push:
@@ -27,8 +27,12 @@ jobs:
         run: dotnet build --configuration Release
         working-directory: ./Backend
 
+      - name: Create .env file
+        run: |
+          echo "API_FRONTEND_URL=${{ secrets.API_FRONTEND_URL }}" > ${{env.DOTNET_ROOT}}/Backend/.env
+
       - name: dotnet publish
-        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/Backend
         working-directory: ./Backend
 
       - name: Upload artifact for deployment job
@@ -56,3 +60,4 @@ jobs:
           package: .
 
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_5982BD1F81534EA189B38F38DD04FB21 }}
+
