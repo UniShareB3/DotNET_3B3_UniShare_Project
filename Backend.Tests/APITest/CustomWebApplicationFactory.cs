@@ -20,6 +20,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        Environment.SetEnvironmentVariable("API_FRONTEND_URL", "http://localhost:50147");
 
         builder.ConfigureServices(services =>
         {
