@@ -59,6 +59,7 @@ jobs:
           package: .
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_83683AB6294A4F0DBC0DC8BBA5A96D98 }}
         env:
-         JwtSettings__Key: ${{ secrets.JWT_KEY }}
+         JwtSettings__Key: ${{ secrets.JWT_SECRET }}
          JwtSettings__Issuer: ${{ secrets.JWT_ISSUER }}
          JwtSettings__Audience: ${{ secrets.JWT_AUDIENCE }}
+
