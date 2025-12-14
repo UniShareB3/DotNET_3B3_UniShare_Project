@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:unishare_web/services/secure_storage_service.dart';
 
@@ -20,7 +19,6 @@ class ApiService {
     defaultValue: 'http://localhost:5000', 
   );
   
-  // Initialize and log the baseUrl on first access
   static void _logBaseUrl() {
     print('🔧 ApiService initialized with baseUrl: $baseUrl');
     if (baseUrl.contains('localhost') && kIsWeb) {
