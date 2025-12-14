@@ -17,7 +17,7 @@ class ApiService {
   // If not set, defaults to localhost which will cause connection errors in production
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:5083', 
+    defaultValue: 'http://localhost:5000', 
   );
   
   // Initialize and log the baseUrl on first access
