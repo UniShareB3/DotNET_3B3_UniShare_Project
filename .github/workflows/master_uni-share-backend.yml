@@ -13,8 +13,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read 
 
+    # --- Set default working directory for this job ---
+    defaults:
+      run:
+        working-directory: ./Backend
+        
     steps:
       - uses: actions/checkout@v4
 
