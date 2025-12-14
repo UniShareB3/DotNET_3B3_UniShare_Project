@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -11,10 +12,21 @@ class ApiService {
   // Debug: store last non-200 response body for received bookings (serialization/server issues)
   static String? lastReceivedError;
   
+  // IMPORTANT: For Azure deployment, set API_BASE_URL during build:
+  // flutter build web --dart-define=API_BASE_URL=https://your-backend-url.azurewebsites.net
+  // If not set, defaults to localhost which will cause connection errors in production
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://localhost:5083', 
   );
+  
+  // Initialize and log the baseUrl on first access
+  static void _logBaseUrl() {
+    print('🔧 ApiService initialized with baseUrl: $baseUrl');
+    if (baseUrl.contains('localhost') && kIsWeb) {
+      print('⚠️  WARNING: Using localhost API URL in web build. Set API_BASE_URL for production!');
+    }
+  }
 
   static getUserIdFromToken(String? token) {
     final parts = token!.split('.');
@@ -369,70 +381,97 @@ class ApiService {
     required String email,
     required String password,
   }) async {
-    final url = Uri.parse('$baseUrl/login');
+    _logBaseUrl(); // Log baseUrl configuration
+    try {
+      final url = Uri.parse('$baseUrl/login');
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
-    );
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Request timeout - unable to connect to server');
+        },
+      );
 
-    print('API login status: ${response.statusCode}');
-    print('API login body: ${response.body}');
+      print('API login status: ${response.statusCode}');
+      print('API login body: ${response.body}');
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-      await SecureStorageService.saveAccessToken(data['accessToken']);
-      await SecureStorageService.saveRefreshToken(data['refreshToken']);
-      await SecureStorageService.saveEmail(email);
+        await SecureStorageService.saveAccessToken(data['accessToken']);
+        await SecureStorageService.saveRefreshToken(data['refreshToken']);
+        await SecureStorageService.saveEmail(email);
 
-      // Check email verification using the JWT's 'email_verified' claim
-      try {
-        final token = data['accessToken'] as String?;
-        if (token != null && token.isNotEmpty) {
-          final parts = token.split('.');
-          if (parts.length >= 2) {
-            final payload = jsonDecode(
-                utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
-            final emailVerifiedClaim = payload['email_verified'];
+        // Check email verification using the JWT's 'email_verified' claim
+        try {
+          final token = data['accessToken'] as String?;
+          if (token != null && token.isNotEmpty) {
+            final parts = token.split('.');
+            if (parts.length >= 2) {
+              final payload = jsonDecode(
+                  utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+              final emailVerifiedClaim = payload['email_verified'];
 
-            // Claim might be a bool or a string ('true'/'false') depending on how backend encoded it
-            final isVerified = (emailVerifiedClaim is bool &&
-                emailVerifiedClaim == true) ||
-                (emailVerifiedClaim is String &&
-                    emailVerifiedClaim.toLowerCase() == 'true');
+              // Claim might be a bool or a string ('true'/'false') depending on how backend encoded it
+              final isVerified = (emailVerifiedClaim is bool &&
+                  emailVerifiedClaim == true) ||
+                  (emailVerifiedClaim is String &&
+                      emailVerifiedClaim.toLowerCase() == 'true');
 
-            // expose verification in returned data so consumers can rely on it
-            if (data is Map<String, dynamic>) {
-              data['emailVerified'] = isVerified;
-            }
+              // expose verification in returned data so consumers can rely on it
+              if (data is Map<String, dynamic>) {
+                data['emailVerified'] = isVerified;
+              }
 
-            if (!isVerified) {
-              ScaffoldMessenger.of(navigatorKey.currentContext!).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    'Email not verified. Please go to your profile to verify your email.',
-                  ),
-                  backgroundColor: Colors.orange,
-                ),
-              );
+              if (!isVerified) {
+                final context = navigatorKey.currentContext;
+                if (context != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Email not verified. Please go to your profile to verify your email.',
+                      ),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              }
             }
           }
+        } catch (e) {
+          // decoding failed -> silently ignore, don't block login
+          print('Failed to decode token for email_verified check: $e');
         }
-      } catch (e) {
-        // decoding failed -> silently ignore, don't block login
-        print('Failed to decode token for email_verified check: $e');
-      }
 
-      return data;
-    } else if (response.statusCode == 401) {
-      // Backend returns 401 with empty body for invalid password
-      return {'error': 'Invalid password or email.'};
-    } else {
-      // Parse error message for other invalid credentials
-      final body = jsonDecode(response.body);
-      return {'error': body['detail'] ?? 'Invalid email or password'};
+        return data;
+      } else if (response.statusCode == 401) {
+        // Backend returns 401 with empty body for invalid password
+        return {'error': 'Invalid password or email.'};
+      } else {
+        // Parse error message for other invalid credentials
+        try {
+          final body = jsonDecode(response.body);
+          return {'error': body['detail'] ?? 'Invalid email or password'};
+        } catch (e) {
+          return {'error': 'Server error: ${response.statusCode}'};
+        }
+      }
+    } catch (e) {
+      print('API login error: $e');
+      // Handle network errors, CORS errors, etc.
+      String errorMessage = 'Unable to connect to server';
+      if (e.toString().contains('CORS') || e.toString().contains('Failed host lookup')) {
+        errorMessage = 'Network error: Please check your connection and API configuration';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = 'Connection timeout: Server is not responding';
+      } else if (baseUrl.contains('localhost')) {
+        errorMessage = 'Configuration error: API URL is set to localhost. Please configure API_BASE_URL for production.';
+      }
+      return {'error': errorMessage};
     }
   }
 
@@ -490,23 +529,27 @@ class ApiService {
   }
 
   static Future<bool?> getEmailVerifiedStatus(String token) async {
-    final url = Uri.parse(
-        'http://localhost:5083/auth/email-verified/${getUserIdFromToken(
-            token)}');
-    final response = await http.get(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    try {
+      final url = Uri.parse(
+          '$baseUrl/auth/email-verified/${getUserIdFromToken(token)}');
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['emailVerified'] as bool?;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['emailVerified'] as bool?;
+      }
+
+      return null;
+    } catch (e) {
+      print('getEmailVerifiedStatus error: $e');
+      return null;
     }
-
-    return null;
   }
 
   // New: decode the email_verified claim directly from the access token (preferred)
