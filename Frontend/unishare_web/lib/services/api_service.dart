@@ -11,15 +11,10 @@ class ApiService {
   // Debug: store last non-200 response body for received bookings (serialization/server issues)
   static String? lastReceivedError;
   
-  static String get baseUrl {
-      final url = dotenv.env['API_BASE_URL'];
-      
-      if (url == null || url.isEmpty) {
-        throw Exception('CRITIC: Nu am gasit API_BASE_URL in fisierul .env!'); 
-      }
-      
-      return url;
-    }
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:5083', 
+  );
 
   static getUserIdFromToken(String? token) {
     final parts = token!.split('.');
