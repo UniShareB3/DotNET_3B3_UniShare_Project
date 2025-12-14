@@ -53,7 +53,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog();
 
-var frontendOrigin = Environment.GetEnvironmentVariable("FRONTEND_ORIGIN") ?? "http://localhost:5083";
+var frontendOrigin = Environment.GetEnvironmentVariable("API_FRONTEND_URL") ?? "http://localhost:5083";
 
 builder.Services.AddCors(options =>
 {
@@ -63,11 +63,11 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
-    
+
     options.AddPolicy("Frontend", policy =>
         policy.WithOrigins(frontendOrigin)
-              .AllowAnyMethod()
-              .AllowAnyHeader());
+            .AllowAnyMethod()
+            .AllowAnyHeader());
 });
 
 builder.Services.AddIdentity<User, IdentityRole<Guid>>()
@@ -154,6 +154,7 @@ if (builder.Environment.EnvironmentName != "Testing")
     {
         Log.Warning("No database connection string configured. Database features will not be available.");
     }
+
     builder.Services.AddDbContext<ApplicationContext>(options =>
         options.UseNpgsql(connectionString ?? ""));
 }
@@ -217,20 +218,20 @@ else
     Log.Warning("Skipping database initialization - no connection string configured");
 }
 
-app.UseCors("AllowAll");
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI
-    (c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "UniShare API V1");
-            c.RoutePrefix = string.Empty; // Set Swagger UI at app's root
-            c.DisplayRequestDuration();
-        }
-    );
-    app.MapOpenApi();
-}
+app.UseCors("Frontend");
+
+// Enable Swagger middleware
+app.UseSwagger();
+app.UseSwaggerUI
+(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "UniShare API V1");
+        c.RoutePrefix = string.Empty; // Set Swagger UI at app's root
+        c.DisplayRequestDuration();
+    }
+);
+app.MapOpenApi();
+
 
 //app.UseHttpsRedirection();
 app.UseAuthentication();
@@ -311,7 +312,8 @@ userByIdGroup.MapGet("/refresh-tokens", async (Guid userId, IMediator mediator) 
         await mediator.Send(new GetRefreshTokensRequest(userId)))
     .RequireOwner();
 
-userByIdGroup.MapDelete("", async (Guid userId, IMediator mediator) =>  await mediator.Send(new DeleteUserRequest(userId)))
+userByIdGroup.MapDelete("",
+        async (Guid userId, IMediator mediator) => await mediator.Send(new DeleteUserRequest(userId)))
     .RequireOwner();
 
 userByIdGroup.MapPost("/assign-admin", async (Guid userId, IMediator mediator) =>
@@ -368,7 +370,7 @@ itemsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
     .RequireEmailVerification();
 
 itemsGroup.MapGet("/{id:guid}/bookings", async (Guid id, IMediator mediator) =>
-    await mediator.Send(new GetBookingsForItemRequest(id)))
+        await mediator.Send(new GetBookingsForItemRequest(id)))
     .AllowAnonymous();
 
 /// Universities Endpoints
@@ -454,7 +456,7 @@ reviewsGroup.MapPut("/{id:guid}", async (Guid id, UpdateReviewDto dto, IMediator
     .RequireEmailVerification();
 
 reviewsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
-    await mediator.Send(new DeleteReviewRequest(id)))
+        await mediator.Send(new DeleteReviewRequest(id)))
     .WithDescription("Delete a review")
     .RequireEmailVerification();
 
