@@ -1,4 +1,7 @@
-name: Build and deploy ASP.Net Core - uni-share
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+
+name: Build and deploy ASP.Net Core app to Azure Web App - uni-share-backend
 
 on:
   push:
@@ -9,7 +12,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read 
 
+    # --- Set default working directory for this job ---
+    defaults:
+      run:
+        working-directory: ./Backend
+        
     steps:
       - uses: actions/checkout@v4
 
@@ -20,17 +30,15 @@ jobs:
 
       - name: Build with dotnet
         run: dotnet build --configuration Release
-        working-directory: ./Backend
 
       - name: dotnet publish
-        run: dotnet publish -c Release -o published_app
-        working-directory: ./Backend
+        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ./Backend/published_app
+          path: ${{env.DOTNET_ROOT}}/myapp
 
   deploy:
     runs-on: ubuntu-latest
@@ -46,7 +54,12 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'uni-share'
+          app-name: 'uni-share-backend'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_5982BD1F81534EA189B38F38DD04FB21 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_83683AB6294A4F0DBC0DC8BBA5A96D98 }}
+        env:
+         JwtSettings__Key: ${{ secrets.JWT_SECRET }}
+         JwtSettings__Issuer: ${{ secrets.JWT_ISSUER }}
+         JwtSettings__Audience: ${{ secrets.JWT_AUDIENCE }}
+
