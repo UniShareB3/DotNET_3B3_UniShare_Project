@@ -29321,7 +29321,7 @@ case 1:return A.E(q,r)}})
 return A.F($async$a3U,r)},
 a3Z(a){var s=0,r=A.G(t.y),q,p,o,n,m
 var $async$a3Z=A.H(function(b,c){if(b===1)return A.D(c,r)
-for(;;)switch(s){case 0:p=A.cw("https://uni-share-backend-hhfwhhg5d6ccf7as.francecentral-01.azurewebsites.net/auth/send-verification-code")
+for(;;)switch(s){case 0:p=A.cw("https://uni-share-backend-hhfwhhg5d6ccf7as.francecentral-01.azurewebsites.net/auth/verification-code")
 o=t.N
 n=A.a0(["Content-Type","application/json"],o,o)
 s=3

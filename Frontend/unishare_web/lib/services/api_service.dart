@@ -726,7 +726,7 @@ class ApiService {
   }
 
   static Future<bool> sendVerificationCode(String userId) async {
-    final url = Uri.parse('$baseUrl/auth/send-verification-code');
+    final url = Uri.parse('$baseUrl/auth/verification-code');
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
