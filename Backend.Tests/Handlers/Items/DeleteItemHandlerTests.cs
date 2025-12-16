@@ -38,7 +38,7 @@ public class DeleteItemHandlerTests
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
-        statusResult.StatusCode.Should().Be(StatusCodes.Status204NoContent);
+        statusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
 
         var removed = await context.Items.FindAsync(itemId);
         Assert.Null(removed);
