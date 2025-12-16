@@ -1,10 +1,19 @@
 ﻿{
-  "buildCommand": "flutter build web --dart-define=API_BASE_URL=$BACKEND_URL",
-  "outputDirectory": "build/web",
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "pubspec.yaml",
+      "use": "@vercel/static-build",
+      "config": {
+        "buildCommand": "flutter build web --dart-define=API_BASE_URL=$BACKEND_URL",
+        "distDir": "build/web"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
