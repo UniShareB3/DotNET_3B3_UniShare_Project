@@ -1,9 +1,5 @@
 ﻿{
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "public": true
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "flutter build web",
+  "outputDirectory": "build/web"
 }
