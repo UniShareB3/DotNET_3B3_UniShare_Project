@@ -5,7 +5,6 @@
       "src": "pubspec.yaml",
       "use": "@vercel/static-build",
       "config": {
-        "buildCommand": "flutter build web --dart-define=API_BASE_URL=$BACKEND_URL",
         "distDir": "build/web"
       }
     }
