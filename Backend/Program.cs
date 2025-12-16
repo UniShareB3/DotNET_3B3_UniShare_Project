@@ -43,6 +43,10 @@ using Backend.Features.Reports.GetAllReports;
 using Backend.Features.Reports.GetReportsByItem;
 using Backend.Features.Reports.GetReportsByModerator;
 using Backend.Features.Reports.UpdateReportStatus;
+using Backend.Features.Users.AssignModeratorRole;
+using Backend.Features.Users.GetAdminAccount;
+using Backend.Features.Users.GetModeratorAccounts;
+using Backend.Features.Users.RemoveModeratorRole;
 
 // Configure Serilog before building the application
 Log.Logger = new LoggerConfiguration()
@@ -317,6 +321,17 @@ usersGroup.MapGet("", async (IMediator mediator) =>
         await mediator.Send(new GetAllUsersRequest()))
     .RequireAdmin();
 
+// Admin-only endpoints for retrieving accounts
+usersGroup.MapGet("/admin", async (IMediator mediator) =>
+        await mediator.Send(new GetAdminAccountRequest()))
+    .WithDescription("Get the admin account (Admin only)")
+    .RequireAdmin();
+
+usersGroup.MapGet("/moderators", async (IMediator mediator) =>
+        await mediator.Send(new GetModeratorAccountsRequest()))
+    .WithDescription("Get all moderator accounts (Admin only)")
+    .RequireAdmin();
+
 // User-specific routes that require owner or admin
 var userByIdGroup = usersGroup.MapGroup("/{userId:guid}")
     .AllowAdmin();
@@ -346,6 +361,11 @@ userByIdGroup.MapPost("/assign-admin", async (Guid userId, IMediator mediator) =
 userByIdGroup.MapPost("/assign-moderator", async (Guid userId, IMediator mediator) =>
         await mediator.Send(new AssignModeratorRoleRequest(userId)))
     .WithDescription("Assign moderator role to a user (Admin only)")
+    .RequireAdmin();
+
+userByIdGroup.MapDelete("/remove-moderator", async (Guid userId, IMediator mediator) =>
+        await mediator.Send(new RemoveModeratorRoleRequest(userId)))
+    .WithDescription("Remove moderator role from a user (Admin only). Pending reports will be reassigned.")
     .RequireAdmin();
 
 // User-specific routes that require owner + email verification (or admin)

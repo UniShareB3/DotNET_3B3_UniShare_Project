@@ -1,4 +1,5 @@
-﻿using Backend.Features.Reports.DTO;
+﻿using Backend.Constants;
+using Backend.Features.Reports.DTO;
 using FluentValidation;
 
 namespace Backend.Validators;
@@ -18,8 +19,7 @@ public class CreateReportDtoValidator : AbstractValidator<CreateReportDto>
         RuleFor(x => x.Description)
             .NotEmpty()
             .WithMessage("Description is required")
-            .MaximumLength(1000)
-            .WithMessage("Description cannot exceed 1000 characters");
+            .MaximumLength(ValidationConstants.MaxDescriptionLength)
+            .WithMessage($"Description cannot exceed {ValidationConstants.MaxDescriptionLength} characters");
     }
 }
-

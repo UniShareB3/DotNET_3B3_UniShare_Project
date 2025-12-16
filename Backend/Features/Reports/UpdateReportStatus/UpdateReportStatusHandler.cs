@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Backend.Features.Reports.DTO;
+using Backend.Mappers.Report;
 using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -44,7 +45,17 @@ public class UpdateReportStatusHandler : IRequestHandler<UpdateReportStatusReque
             return Results.NotFound(new { message = "Moderator not found" });
         }
 
-        report.Status = request.Dto.Status;
+        // Resolve string status to enum using the resolver
+        try
+        {
+            report.Status = ReportStatusStringResolver.ResolveStatus(request.Dto.Status);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.Warning("Invalid status value: {Status}", request.Dto.Status);
+            return Results.BadRequest(new { message = ex.Message });
+        }
+
         report.ModeratorId = request.Dto.ModeratorId;
 
         await _context.SaveChangesAsync(cancellationToken);

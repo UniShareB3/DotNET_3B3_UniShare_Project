@@ -4,6 +4,6 @@ using Backend.Features.Reports.Enums;
 namespace Backend.Features.Reports.DTO;
 
 public record UpdateReportStatusDto(
-    ReportStatus Status,
+    string Status,
     Guid ModeratorId
 );

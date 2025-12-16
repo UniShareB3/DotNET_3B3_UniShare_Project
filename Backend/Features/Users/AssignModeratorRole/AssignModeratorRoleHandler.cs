@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Users.AssignModeratorRole;
 
 public class AssignModeratorRoleHandler : IRequestHandler<AssignModeratorRoleRequest, IResult>
 {

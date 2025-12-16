@@ -45,6 +45,7 @@ public class CreateModeratorRequestHandler : IRequestHandler<CreateModeratorRequ
             _logger.Warning("User {UserId} already has a pending moderator request", request.Dto.UserId);
             return Results.Conflict(new { message = "User already has a pending moderator request" });
         }
+        
 
         var moderatorRequest = _mapper.Map<Data.ModeratorRequest>(request.Dto);
         moderatorRequest.CreatedDate = DateTime.UtcNow;

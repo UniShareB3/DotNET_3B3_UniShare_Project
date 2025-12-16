@@ -46,6 +46,19 @@ public class CreateReportHandler : IRequestHandler<CreateReportRequest, IResult>
             _logger.Warning("User {UserId} not found", request.Dto.UserId);
             return Results.NotFound(new { message = "User not found" });
         }
+        
+        var existingReport = await _context.Reports
+            .FirstOrDefaultAsync(r => r.ItemId == request.Dto.ItemId 
+                && r.UserId == request.Dto.UserId 
+                && r.Status == ReportStatus.PENDING, cancellationToken);
+        if (existingReport != null)
+        {
+            _logger.Warning("User {UserId} already has a pending report for item {ItemId}", 
+                request.Dto.UserId, request.Dto.ItemId);
+            return Results.Conflict(new { message = "User already has a pending report for this item" });
+        }
+        
+        
 
         var report = _mapper.Map<Data.Report>(request.Dto);
         report.OwnerId = item.OwnerId;
