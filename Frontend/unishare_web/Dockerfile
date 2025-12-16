@@ -35,5 +35,5 @@ COPY server.js ./
 # We put them in a folder named 'public' inside the container
 COPY --from=build-env /app/build/web ./public
 
-EXPOSE 3000
+EXPOSE 8080
 CMD ["node", "server.js"]
