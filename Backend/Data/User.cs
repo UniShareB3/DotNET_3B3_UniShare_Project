@@ -56,5 +56,10 @@ public class User : IdentityUser<Guid>
     public List<Review>? ReviewsReceived { get; set; }
 
     public bool EmailConfirmed { get; set; }
+    
+    /// <summary>
+    /// Stripe Connect Account ID for sellers
+    /// </summary>
+    [MaxLength(255)]
+    public string? StripeAccountId { get; set; }
 }
-

@@ -16,6 +16,8 @@ public class ApplicationContext(DbContextOptions<ApplicationContext> options) : 
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<EmailConfirmationToken> EmailConfirmationTokens { get; set; }
     public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+    public DbSet<Report> Reports { get; set; }
+    public DbSet<ModeratorRequest> ModeratorRequests { get; set; }
     
     protected override void OnModelCreating(ModelBuilder builder)
     {
