@@ -203,6 +203,9 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateBookingRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateBookingStatusRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordRequest>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateModeratorRequestRequest>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateReportRequest>();
+
 builder.Services.AddFluentValidationAutoValidation();
 
 var app = builder.Build();
