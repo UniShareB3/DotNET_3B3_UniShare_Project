@@ -2,8 +2,7 @@ name: Backend Tests
 
 on:
   push:
-
-  branches: [ "master",  "master_local" ]
+      branches: [ "master",  "master_local" ]
   pull_request:
     branches: [ "master", "master_local" ]
 
