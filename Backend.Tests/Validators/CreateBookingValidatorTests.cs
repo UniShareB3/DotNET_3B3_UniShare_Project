@@ -30,12 +30,11 @@ public class CreateBookingValidatorTests
         var loggerValidator = new Mock<ILogger<CreateBookingValidator>>().Object;
         var validator = new CreateBookingValidator(context, loggerValidator);
         var itemId = Guid.Parse("44444444-4444-4444-4444-444444444444");
-
-        // Add item only, no user
+        
         var item = new Item
         {
             Id = itemId,
-            OwnerId = Guid.NewGuid(),
+            OwnerId = Guid.Parse("44444444-4444-4444-4444-444444444411"),
             Name = "Test Item",
             Description = "A test item",
             Category = Features.Items.Enums.ItemCategory.Electronics,
@@ -48,7 +47,7 @@ public class CreateBookingValidatorTests
         var bookingDto = new CreateBookingDto
         (
             itemId,
-            Guid.NewGuid(), // Non-existent user
+            Guid.Parse("44444444-4444-4444-4444-444444444422"),
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             DateTime.UtcNow.AddDays(7)
@@ -100,8 +99,7 @@ public class CreateBookingValidatorTests
         var validator = new CreateBookingValidator(context, loggerValidator);
         var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var itemId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-
-        // Add user and item
+        
         var user = new User
         {
             Id = userId,

@@ -12,29 +12,21 @@ using Microsoft.AspNetCore.Http;
 
 namespace Backend.Features.Items
 {
-    public class GetBookingsForItemHandler : IRequestHandler<GetBookingsForItemRequest, IResult>
+    public class GetBookingsForItemHandler(ApplicationContext dbContext, IMapper mapper)
+        : IRequestHandler<GetBookingsForItemRequest, IResult>
     {
-        private readonly ApplicationContext _dbContext;
-        private readonly IMapper _mapper;
-        
-        public GetBookingsForItemHandler(ApplicationContext dbContext, IMapper mapper)
-        {
-            _dbContext = dbContext;
-            _mapper = mapper;
-        }
-
         public async Task<IResult> Handle(GetBookingsForItemRequest request, CancellationToken cancellationToken)
         {
             // Check if item exists first
-            var itemExists = await _dbContext.Items.AnyAsync(i => i.Id == request.ItemId, cancellationToken);
+            var itemExists = await dbContext.Items.AnyAsync(i => i.Id == request.ItemId, cancellationToken);
             if (!itemExists)
             {
                 return Results.NotFound();
             }
             
-            var bookings = await _dbContext.Bookings
+            var bookings = await dbContext.Bookings
                 .Where(b => b.ItemId == request.ItemId)
-                .ProjectTo<BookingDto>(_mapper.ConfigurationProvider)
+                .ProjectTo<BookingDto>(mapper.ConfigurationProvider)
                 .ToListAsync(cancellationToken);
             
             return Results.Ok(bookings);

@@ -18,15 +18,15 @@ public class GetUserItemHandler(ApplicationContext dbContext,IMapper mapper) : I
         try
         {
             var query = dbContext.Items.Where(item => item.OwnerId == request.UserId && item.Id == request.ItemId);
-            var item = await query.ProjectTo<ItemDto>(mapper.ConfigurationProvider)
+            var itemDto = await query.ProjectTo<ItemDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(cancellationToken);
-            if (item == null)
+            if (itemDto == null)
             {
                 _logger.Warning("Retrieval failed: Item {ItemId} for user {UserId} not found.", request.ItemId, request.UserId);
                 return Results.NotFound();
             }
             _logger.Information("Successfully retrieved item {ItemId} for user {UserId}", request.ItemId, request.UserId);
-            return Results.Ok(item);
+            return Results.Ok(itemDto);
         }
         catch (Exception ex)
         {

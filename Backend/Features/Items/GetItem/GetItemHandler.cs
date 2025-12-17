@@ -18,15 +18,15 @@ public class GetItemHandler(ApplicationContext dbContext,IMapper mapper) : IRequ
         try
         {
             var query = dbContext.Items.Where(i => i.Id == request.Id);
-            var item = await query.ProjectTo<ItemDto>(mapper.ConfigurationProvider)
+            var itemDto = await query.ProjectTo<ItemDto>(mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync(cancellationToken);
-            if (item == null)
+            if (itemDto == null)
             {
                 _logger.Warning("Retrieval failed: Item {ItemId} not found.", request.Id);
                 return Results.NotFound();
             }
             _logger.Information("Successfully retrieved item {ItemId}", request.Id);
-            return Results.Ok(item);
+            return Results.Ok(itemDto);
         }
         catch (Exception ex)
         {

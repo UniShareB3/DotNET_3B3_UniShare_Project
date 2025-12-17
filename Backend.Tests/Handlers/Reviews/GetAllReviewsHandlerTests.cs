@@ -1,4 +1,5 @@
-﻿using Backend.Data;
+﻿using AutoMapper;
+using Backend.Data;
 using Backend.Features.Review;
 using Backend.Persistence;
 using FluentAssertions;
@@ -20,28 +21,38 @@ public class GetAllReviewsHandlerTests
         var context = new ApplicationContext(options);
         return context;
     }
-    
+
+    private static IMapper CreateMapper()
+    {
+        var config = new MapperConfiguration(cfg =>
+        {
+            cfg.CreateMap<Review, Backend.Features.Review.DTO.ReviewDto>();
+        }, new LoggerFactory());
+        return config.CreateMapper();
+    }
+
     [Fact]
     public async Task Given_ReviewsExist_When_Handle_Then_ReturnsOkWithAllReviews()
     {
         // Arrange
         var logger = new Mock<ILogger<GetAllReviewsHandler>>().Object;
-        var context = CreateInMemoryDbContext("get-all-reviews-test-" + Guid.NewGuid());
+        var context = CreateInMemoryDbContext("02476839-a33e-4bba-b001-0165bf09e105");
+        var mapper = CreateMapper();
         
         var review1 = new Review
         {
-            Id = Guid.NewGuid(),
-            TargetItemId = Guid.NewGuid(),
-            ReviewerId = Guid.NewGuid(),
+            Id = Guid.Parse("02476839-a33e-4bba-b001-0165bf09e105"),
+            TargetItemId = Guid.Parse("02476819-a33e-4bba-b001-0165bf09e105"),
+            ReviewerId =Guid.Parse("02476839-a33e-4bba-b001-1165bf09e105"),
             Rating = 5,
             Comment = "Great item!"
         };
         
         var review2 = new Review
         {
-            Id = Guid.NewGuid(),
-            TargetItemId = Guid.NewGuid(),
-            ReviewerId = Guid.NewGuid(),
+            Id = Guid.Parse("02476839-a11e-4bba-b001-0165bf09e105"),
+            TargetItemId = Guid.Parse("01116839-a33e-4bba-b001-0165bf09e105"),
+            ReviewerId = Guid.Parse("02476839-a33e-1111-b001-0165bf09e105"),
             Rating = 4,
             Comment = "Good quality."
         };
@@ -49,7 +60,7 @@ public class GetAllReviewsHandlerTests
         context.Reviews.AddRange(review1, review2);
         await context.SaveChangesAsync();
         
-        var handler = new GetAllReviewsHandler(context, logger);
+        var handler = new GetAllReviewsHandler(context, mapper, logger);
         var request = new GetAllReviewsRequest();
 
         // Act
@@ -65,9 +76,10 @@ public class GetAllReviewsHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<GetAllReviewsHandler>>().Object;
+        var mapper = CreateMapper();
         var context = CreateInMemoryDbContext("get-all-reviews-empty-test-" + Guid.NewGuid());
         
-        var handler = new GetAllReviewsHandler(context, logger);
+        var handler = new GetAllReviewsHandler(context, mapper ,logger);
         var request = new GetAllReviewsRequest();
 
         // Act

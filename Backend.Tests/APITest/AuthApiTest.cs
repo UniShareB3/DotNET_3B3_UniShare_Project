@@ -110,7 +110,6 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             Password = "NewUser123!",
             FirstName = "New",
             LastName = "User",
-            PhoneNumber = "1234567890",
             UniversityName = "Universitatea Alexandru Ioan Cuza"
         };
 
@@ -127,14 +126,13 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
     [Fact]
     public async Task Register_WithDuplicateEmail_ReturnsBadRequest()
     {
-        // Arrange - Use existing user email
+        // Arrange
         var registerDto = new
         {
             Email = TestDataSeeder.UserEmail,
             Password = "Password123!",
             FirstName = "Duplicate",
-            LastName = "User",
-            PhoneNumber = "9876543210"
+            LastName = "User"
         };
 
         // Act
@@ -154,8 +152,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             Email = "invalidemail",
             Password = "Password123!",
             FirstName = "Invalid",
-            LastName = "Email",
-            PhoneNumber = "1234567890"
+            LastName = "Email"
         };
 
         // Act
@@ -173,7 +170,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
     [Fact]
     public async Task RefreshToken_WithValidToken_ReturnsOkWithNewToken()
     {
-        // Arrange - First login to get a refresh token
+        // Arrange 
         var loginDto = new
         {
             Email = TestDataSeeder.UserEmail,
@@ -256,7 +253,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
     [Fact]
     public async Task SendVerificationCode_WhenDifferentUser_ReturnsForbidden()
     {
-        // Arrange - User trying to request verification code for UnverifiedUser
+        // Arrange 
         var userToken = await Authenticate(TestDataSeeder.UserEmail, TestDataSeeder.UserPassword);
         var verificationDto = new
         {

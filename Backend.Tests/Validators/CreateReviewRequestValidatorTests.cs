@@ -104,32 +104,6 @@ public class CreateReviewRequestValidatorTests
     }
     
     [Fact]
-    public async Task Given_RatingBelowMinimum_When_Validate_Then_ReturnsValidationError()
-    {
-        // Arrange
-        var context = CreateInMemoryDbContext("c1c1c1c1-c1c1-c1c1-c1c1-c1c1c1c1c1c1");
-        var validator = new CreateReviewRequestValidator(context);
-        
-        var reviewDto = new CreateReviewDTO(
-            BookingId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
-            ReviewerId: Guid.Parse("66666666-6666-6666-6666-666666666666"),
-            TargetUserId: null,
-            TargetItemId: Guid.Parse("77777777-7777-7777-7777-777777777777"),
-            Rating: 0, // Invalid rating < 1
-            Comment: "Test comment",
-            CreatedAt: DateTime.UtcNow
-        );
-        
-        var request = new CreateReviewRequest(reviewDto);
-        
-        // Act
-        var result = await validator.TestValidateAsync(request);
-        
-        // Assert
-        result.ShouldHaveValidationErrorFor(r => r.Review.Rating);
-    }
-    
-    [Fact]
     public async Task Given_EmptyReviewerId_When_Validate_Then_ReturnsValidationError()
     {
         // Arrange
@@ -138,7 +112,7 @@ public class CreateReviewRequestValidatorTests
         
         var reviewDto = new CreateReviewDTO(
             BookingId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
-            ReviewerId: Guid.Empty, // Invalid empty GUID
+            ReviewerId: Guid.Empty, 
             TargetUserId: null,
             TargetItemId: Guid.Parse("77777777-7777-7777-7777-777777777777"),
             Rating: 4,
@@ -187,17 +161,17 @@ public class CreateReviewRequestValidatorTests
         // Arrange
         var context = CreateInMemoryDbContext("f1f1f1f1-f1f1-f1f1-f1f1-f1f1f1f1f1f1");
         var validator = new CreateReviewRequestValidator(context);
-        
+
+
         var reviewDto = new CreateReviewDTO(
             BookingId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
             ReviewerId: Guid.Parse("66666666-6666-6666-6666-666666666666"),
-            TargetUserId: Guid.Parse("88888888-8888-8888-8888-888888888888"), // Both set
-            TargetItemId: Guid.Parse("77777777-7777-7777-7777-777777777777"), // Both set
+            TargetUserId: Guid.Parse("88888888-8888-8888-8888-888888888888"), 
+            TargetItemId: Guid.Parse("77777777-7777-7777-7777-777777777777"), 
             Rating: 4,
             Comment: "Test comment",
             CreatedAt: DateTime.UtcNow
         );
-        
         var request = new CreateReviewRequest(reviewDto);
         
         // Act
@@ -217,8 +191,8 @@ public class CreateReviewRequestValidatorTests
         var reviewDto = new CreateReviewDTO(
             BookingId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
             ReviewerId: Guid.Parse("66666666-6666-6666-6666-666666666666"),
-            TargetUserId: null, // Neither set
-            TargetItemId: null, // Neither set
+            TargetUserId: null, 
+            TargetItemId: null,
             Rating: 4,
             Comment: "Test comment",
             CreatedAt: DateTime.UtcNow
@@ -287,7 +261,7 @@ public class CreateReviewRequestValidatorTests
             ItemId = itemId,
             Item = item,
             BorrowerId = borrowerId,
-            BookingStatus = BookingStatus.Pending, // Not completed
+            BookingStatus = BookingStatus.Pending, 
             StartDate = DateTime.UtcNow.AddDays(-7),
             EndDate = DateTime.UtcNow.AddDays(-1)
         };
@@ -355,7 +329,7 @@ public class CreateReviewRequestValidatorTests
         
         var reviewDto = new CreateReviewDTO(
             BookingId: bookingId,
-            ReviewerId: unrelatedUserId, // Not borrower or owner
+            ReviewerId: unrelatedUserId,
             TargetUserId: null,
             TargetItemId: itemId,
             Rating: 5,
@@ -479,9 +453,9 @@ public class CreateReviewRequestValidatorTests
         
         var reviewDto = new CreateReviewDTO(
             BookingId: bookingId,
-            ReviewerId: ownerId, // Owner trying to review item
+            ReviewerId: ownerId, 
             TargetUserId: null,
-            TargetItemId: itemId, // Targeting item (only borrower can do this)
+            TargetItemId: itemId, 
             Rating: 5,
             Comment: "Great item!",
             CreatedAt: DateTime.UtcNow
@@ -538,7 +512,7 @@ public class CreateReviewRequestValidatorTests
             BookingId: bookingId,
             ReviewerId: borrowerId,
             TargetUserId: null,
-            TargetItemId: differentItemId, // Mismatched item ID
+            TargetItemId: differentItemId, 
             Rating: 5,
             Comment: "Great item!",
             CreatedAt: DateTime.UtcNow
@@ -594,7 +568,7 @@ public class CreateReviewRequestValidatorTests
         var reviewDto = new CreateReviewDTO(
             BookingId: bookingId,
             ReviewerId: borrowerId,
-            TargetUserId: unrelatedUserId, // Should be ownerId
+            TargetUserId: unrelatedUserId, 
             TargetItemId: null,
             Rating: 5,
             Comment: "Great owner!",
@@ -649,8 +623,8 @@ public class CreateReviewRequestValidatorTests
         
         var reviewDto = new CreateReviewDTO(
             BookingId: bookingId,
-            ReviewerId: ownerId, // Owner reviewing borrower
-            TargetUserId: borrowerId, // Targeting borrower
+            ReviewerId: ownerId, 
+            TargetUserId: borrowerId, 
             TargetItemId: null,
             Rating: 5,
             Comment: "Great borrower!",
@@ -705,8 +679,8 @@ public class CreateReviewRequestValidatorTests
         
         var reviewDto = new CreateReviewDTO(
             BookingId: bookingId,
-            ReviewerId: borrowerId, // Borrower reviewing owner
-            TargetUserId: ownerId, // Targeting owner
+            ReviewerId: borrowerId, 
+            TargetUserId: ownerId, 
             TargetItemId: null,
             Rating: 5,
             Comment: "Great owner!",

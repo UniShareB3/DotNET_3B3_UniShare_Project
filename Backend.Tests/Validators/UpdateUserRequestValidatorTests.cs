@@ -79,7 +79,8 @@ public class UpdateUserRequestValidatorTests
         var options = new Mock<IOptions<IdentityOptions>>();
         options.Setup(o => o.Value).Returns(new IdentityOptions());
 
-        var userValidators = new List<IUserValidator<User>>();
+        List<IUserValidator<User>> userValidators;
+        userValidators = [];
         var passwordValidators = new List<IPasswordValidator<User>>
         {
             new PasswordValidator<User>()
@@ -97,40 +98,9 @@ public class UpdateUserRequestValidatorTests
             passwordValidators,
             upperInvariantLookupNormalizer,
             errors,
-            null,
+            null!,
             logger.Object);
     }
-
-    private static UserManager<User> CreateUserManagerWithCustomPasswordValidator(
-        IUserStore<User> store, 
-        IPasswordValidator<User> customPasswordValidator)
-    {
-        var options = new Mock<IOptions<IdentityOptions>>();
-        options.Setup(o => o.Value).Returns(new IdentityOptions());
-
-        var userValidators = new List<IUserValidator<User>>();
-        var passwordValidators = new List<IPasswordValidator<User>>
-        {
-            customPasswordValidator
-        };
-        var passwordHasher = new PasswordHasher<User>();
-        var upperInvariantLookupNormalizer = new UpperInvariantLookupNormalizer();
-        var errors = new IdentityErrorDescriber();
-        var logger = new Mock<ILogger<UserManager<User>>>();
-
-        return new UserManager<User>(
-            store,
-            options.Object,
-            passwordHasher,
-            userValidators,
-            passwordValidators,
-            upperInvariantLookupNormalizer,
-            errors,
-            null,
-            logger.Object);
-    }
-
-    #region FirstName Validation Tests
 
     [Fact]
     public async Task Given_FirstNameExceeds100Characters_When_Validate_Then_ReturnsValidationError()
@@ -210,10 +180,7 @@ public class UpdateUserRequestValidatorTests
         // Assert
         result.ShouldNotHaveValidationErrorFor(r => r.UpdateUserDto.FirstName);
     }
-
-    #endregion
-
-    #region LastName Validation Tests
+    
 
     [Fact]
     public async Task Given_LastNameExceeds100Characters_When_Validate_Then_ReturnsValidationError()
@@ -274,10 +241,6 @@ public class UpdateUserRequestValidatorTests
         // Assert
         result.ShouldNotHaveValidationErrorFor(r => r.UpdateUserDto.LastName);
     }
-
-    #endregion
-
-    #region Email Uniqueness Validation Tests
 
     [Fact]
     public async Task Given_EmailAlreadyInUseByAnotherUser_When_Validate_Then_ReturnsValidationError()
@@ -401,8 +364,6 @@ public class UpdateUserRequestValidatorTests
         // Assert
         result.ShouldNotHaveAnyValidationErrors();
     }
-
-    #endregion
     
     [Fact]
     public async Task Given_EmptyPassword_When_Validate_Then_NoValidationError()

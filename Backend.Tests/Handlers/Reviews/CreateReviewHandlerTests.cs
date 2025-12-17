@@ -29,7 +29,7 @@ public class CreateReviewHandlerTests
             .Setup(m => m.Map<Review>(It.IsAny<CreateReviewDTO>()))
             .Returns((Func<CreateReviewDTO, Review>)(src => new Review
             {
-                Id = Guid.NewGuid(),
+                Id = Guid.Parse("02476839-a33e-4bba-b001-0165bf09e115"),
                 BookingId = src.BookingId,
                 ReviewerId = src.ReviewerId,
                 TargetUserId = src.TargetUserId,

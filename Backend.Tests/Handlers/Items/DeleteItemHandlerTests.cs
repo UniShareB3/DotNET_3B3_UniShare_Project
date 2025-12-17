@@ -50,7 +50,7 @@ public class DeleteItemHandlerTests
         // Arrange
         var context = CreateInMemoryDbContext("97612d06-7360-4a15-be6b-ea5561772f4f");
         var handler = new DeleteItemHandler(context);
-        var request = new DeleteItemRequest(Guid.NewGuid());
+        var request = new DeleteItemRequest(Guid.Parse("a1b2c3d4-e9f6-4789-8abc-def012345678"));
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -66,7 +66,7 @@ public class DeleteItemHandlerTests
         // Arrange
         var context = CreateInMemoryDbContext("d3f5e8c4-3f4b-4c2a-9f7e-8b9e6f1c2d3e");
         var handler = new DeleteItemHandler(context);
-        var request = new DeleteItemRequest(Guid.NewGuid());
+        var request = new DeleteItemRequest(Guid.Parse("a9b2c3d4-e5f6-4789-8abc-def012345678"));
 
         // Simulate exception by disposing the context before handling
         context.Dispose();
