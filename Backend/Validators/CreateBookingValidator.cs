@@ -48,6 +48,10 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
         RuleFor(x => x)
             .MustAsync(async (request, _) => await ItemIsAvailableForPeriod(request))
             .WithMessage("Item is not available for the requested period (overlapping booking exists).");
+        
+        RuleFor(x => x)
+            .MustAsync(async (request, _) => await ModeratorIsDifferentFromOwner(request))
+            .WithMessage("Moderator must be different from the item owner.");
     }
 
     private async Task<bool> ItemIsAvailableForPeriod(CreateBookingRequest request)
@@ -68,6 +72,13 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
             _logger.LogError(ex, "Error while checking item availability for booking validation.");
             return false;
         }
+    }
+
+    private async Task<bool> ModeratorIsDifferentFromOwner(CreateBookingRequest request)
+    {
+        var dto = request.Booking!;
+        var item = await _context.Items.FirstOrDefaultAsync(i => i.Id == dto.ItemId);
+        return item.OwnerId != dto.BorrowerId;
     }
     
     private async Task<bool> ItemExists(Guid itemId)

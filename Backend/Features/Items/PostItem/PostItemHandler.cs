@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Backend.Persistence;
 using Backend.Data;
+using Backend.Features.Bookings.DTO;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -37,7 +38,7 @@ public class PostItemHandler(ApplicationContext dbContext,IMapper mapper) : IReq
             _logger.Information("Item {ItemId} with name {ItemName} created successfully by owner {OwnerId}.", 
                 item.Id, item.Name, item.OwnerId);
                 
-            return Results.Created($"/items/{item.Id}", item);
+            return Results.Created($"/items/{item.Id}", mapper.Map<ItemDto>(item));
         }
         catch (Exception ex)
         {
