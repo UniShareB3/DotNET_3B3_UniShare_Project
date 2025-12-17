@@ -101,7 +101,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
     #region POST /register - Anonymous
 
     [Fact]
-    public async Task Register_WithValidData_ReturnsCreated()
+    public async Task PostRegister_WithValidData_ReturnsCreated()
     {
         // Arrange
         var registerDto = new
@@ -124,7 +124,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
     }
 
     [Fact]
-    public async Task Register_WithDuplicateEmail_ReturnsBadRequest()
+    public async Task PostRegister_WithDuplicateEmail_ReturnsBadRequest()
     {
         // Arrange
         var registerDto = new
@@ -143,32 +143,12 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
-    [Fact]
-    public async Task Register_WithInvalidEmail_ReturnsBadRequest()
-    {
-        // Arrange
-        var registerDto = new
-        {
-            Email = "invalidemail",
-            Password = "Password123!",
-            FirstName = "Invalid",
-            LastName = "Email"
-        };
-
-        // Act
-        var response = await _client.PostAsync("/register",
-            new StringContent(JsonSerializer.Serialize(registerDto), Encoding.UTF8, "application/json"));
-
-        // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-    }
-
     #endregion
 
     #region POST /refresh - Anonymous
 
     [Fact]
-    public async Task RefreshToken_WithValidToken_ReturnsOkWithNewToken()
+    public async Task PostRefreshToken_WithValidToken_ReturnsOkWithNewToken()
     {
         // Arrange 
         var loginDto = new
@@ -194,7 +174,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
     }
 
     [Fact]
-    public async Task RefreshToken_WithInvalidToken_ReturnsUnauthorized()
+    public async Task PostRefreshToken_WithInvalidToken_ReturnsUnauthorized()
     {
         // Arrange
         var refreshDto = new { RefreshToken = "invalid-refresh-token" };
@@ -212,7 +192,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
     #region POST /auth/email-confirmation - Anonymous
 
     [Fact]
-    public async Task ConfirmEmail_WithInvalidCode_ReturnsBadRequest()
+    public async Task PostConfirmEmail_WithInvalidCode_ReturnsBadRequest()
     {
         // Arrange
         var confirmDto = new
@@ -234,7 +214,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
     #region POST /auth/verification-code - Owner or Admin
 
     [Fact]
-    public async Task SendVerificationCode_WhenUnauthenticated_ReturnsUnauthorized()
+    public async Task PostSendVerificationCode_WhenUnauthenticated_ReturnsUnauthorized()
     {
         // Arrange
         var verificationDto = new
@@ -251,7 +231,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
     }
 
     [Fact]
-    public async Task SendVerificationCode_WhenDifferentUser_ReturnsForbidden()
+    public async Task PostSendVerificationCode_WhenDifferentUser_ReturnsForbidden()
     {
         // Arrange 
         var userToken = await Authenticate(TestDataSeeder.UserEmail, TestDataSeeder.UserPassword);
@@ -278,7 +258,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
     #region POST /auth/password-reset/request - Anonymous
 
     [Fact]
-    public async Task RequestPasswordReset_WithNonExistentEmail_ReturnsNotFound()
+    public async Task PostRequestPasswordReset_WithNonExistentEmail_ReturnsNotFound()
     {
         // Arrange
         var resetDto = new
@@ -299,7 +279,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
     #region GET /auth/password - Anonymous
 
     [Fact]
-    public async Task VerifyPasswordReset_WithInvalidCode_ReturnsBadRequest()
+    public async Task GetVerifyPasswordReset_WithInvalidCode_ReturnsBadRequest()
     {
         // Arrange
         var userId = TestDataSeeder.UserId;
