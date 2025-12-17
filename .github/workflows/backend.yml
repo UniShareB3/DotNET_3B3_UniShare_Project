@@ -2,9 +2,9 @@ name: Backend Build and Run
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "master_local" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "master_local" ]
 
 jobs:
   build:
