@@ -257,7 +257,7 @@ class ApiService {
 
   // ----------------- Confirm Email -----------------
   static Future<bool> confirmEmail(String userId, String code) async {
-    final url = Uri.parse('$baseUrl/auth/confirm-email');
+    final url = Uri.parse('$baseUrl/auth/email-confirmation');
 
     final response = await http.post(
       url,
@@ -937,16 +937,26 @@ class ApiService {
 
   static Future<bool> sendVerificationCode(String userId) async {
     final url = Uri.parse('$baseUrl/auth/verification-code');
+    var token = await SecureStorageService.getAccessToken();
+    if (token == null) return false;
+    
+    // Extract userId from token to ensure consistency
+    final tokenUserId = getUserIdFromToken(token);
+    print('Sending verification code - Token userId: $tokenUserId, Provided userId: $userId');
+    
     final response = await http.post(
       url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'userId': userId}),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      },
+      body: jsonEncode({'userId': tokenUserId}), // Use userId from token instead
     );
 
     if (response.statusCode == 200) {
       return true;
     } else {
-      print('Failed to send verification code: ${response.body}');
+      print('Failed to send verification code: ${response.statusCode} - ${response.body}');
       return false;
     }
   }

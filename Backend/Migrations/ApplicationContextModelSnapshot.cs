@@ -731,7 +731,8 @@ namespace Backend.Migrations
 
                     b.HasOne("Backend.Data.User", "Moderator")
                         .WithMany()
-                        .HasForeignKey("ModeratorId");
+                        .HasForeignKey("ModeratorId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Backend.Data.User", "Owner")
                         .WithMany()

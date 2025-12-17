@@ -31,6 +31,25 @@ public class ApplicationContext(DbContextOptions<ApplicationContext> options) : 
             .Property(i=> i.Condition)
             .HasConversion<string>();
         
+        // Configure Report relationships
+        builder.Entity<Report>()
+            .HasOne(r => r.Owner)
+            .WithMany()
+            .HasForeignKey(r => r.OwnerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.Entity<Report>()
+            .HasOne(r => r.User)
+            .WithMany()
+            .HasForeignKey(r => r.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.Entity<Report>()
+            .HasOne(r => r.Moderator)
+            .WithMany()
+            .HasForeignKey(r => r.ModeratorId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Rename AspNetUsers table to Users
         builder.Entity<User>(b =>
         {
