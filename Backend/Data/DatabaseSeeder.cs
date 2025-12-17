@@ -48,7 +48,7 @@ public static class DatabaseSeeder
     {
         _logger.Information("Seeding roles...");
 
-        var roles = new[] { "Admin", "Moderator", "User" };
+        var roles = new[] { "Admin", "Moderator", "User", "Seller" };
 
         foreach (var roleName in roles)
         {

@@ -1,4 +1,5 @@
 ﻿using Backend.Data;
+using Backend.Features.Shared.IAM.Constants;
 using Backend.Persistence;
 using Backend.Services;
 using MediatR;
@@ -52,7 +53,7 @@ public class SendEmailVerificationHandler(
         {
             UserId = user.Id,
             Code = hashedCode,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(5),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(IAMConstants.ResetPasswordTokenExpiryMinutes),
             IsUsed = false
         };
 

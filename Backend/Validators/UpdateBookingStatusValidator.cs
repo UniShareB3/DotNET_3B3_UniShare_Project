@@ -54,6 +54,40 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
             }
         }
 
+        // Allow borrower or owner to mark Completed; preserve owner-only for other statuses
+        if (dto.BookingStatus == BookingStatus.Completed)
+        {
+            if (dto.UserId == booking.BorrowerId || dto.UserId == item.OwnerId)
+            {
+                return true;
+            }
+
+            logger.LogError("Only the borrower or owner can mark a booking as Completed.");
+            return false;
+        }
+
+        // Allow borrower to cancel a pending booking; owner can cancel anytime
+        if (dto.BookingStatus == BookingStatus.Canceled)
+        {
+            // If requester is owner -> allow
+            if (dto.UserId == item.OwnerId) return true;
+
+            // If requester is borrower, only allow cancel when booking is still Pending
+            if (dto.UserId == booking.BorrowerId)
+            {
+                if (booking.BookingStatus == BookingStatus.Pending)
+                {
+                    return true;
+                }
+                logger.LogError("Borrower can only cancel a booking when it is still Pending.");
+                return false;
+            }
+
+            logger.LogError("Only the owner or borrower can cancel a booking (borrower only when Pending).");
+            return false;
+        }
+
+        // For all other status updates, only the owner may act
         if (item.OwnerId != dto.UserId)
         {
             logger.LogError("Only the owner of the item can change booking status.");

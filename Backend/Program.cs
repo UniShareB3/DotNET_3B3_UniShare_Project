@@ -14,6 +14,11 @@ using Backend.Data;
 using Backend.Features.Universities;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
+using Backend.Features.ModeratorRequest;
+using Backend.Features.ModeratorRequest.CreateModeratorRequest;
+using Backend.Features.ModeratorRequest.DTO;
+using Backend.Features.ModeratorRequest.GetAllModeratorRequests;
+using Backend.Features.ModeratorRequest.UpdateModeratorRequest;
 using Backend.Features.Shared.Pipeline;
 using Backend.Features.Shared.Authorization;
 using Backend.Features.Users;
@@ -27,6 +32,17 @@ using Backend.Features.Shared.IAM.DTO;
 using Backend.Mapping;
 using Serilog;
 using DotNetEnv;
+using Backend.Features.Shared.Stripe;
+using Backend.Features.Shared.Stripe.DTO;
+using Backend.Features.Shared.StripeService.HandleStripeWebhook;
+using Backend.Features.Reports;
+using Backend.Features.Reports.CreateReport;
+using Backend.Features.Reports.DTO;
+using Backend.Features.Reports.GetAcceptedReportsCount;
+using Backend.Features.Reports.GetAllReports;
+using Backend.Features.Reports.GetReportsByItem;
+using Backend.Features.Reports.GetReportsByModerator;
+using Backend.Features.Reports.UpdateReportStatus;
 
 // Configure Serilog before building the application
 Log.Logger = new LoggerConfiguration()
@@ -174,7 +190,9 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<ItemMapper>();
     cfg.AddProfile<BookingMapper>();
     cfg.AddProfile<ReviewMapper>();
-}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper), typeof(BookingMapper), typeof(ReviewMapper));
+    cfg.AddProfile<Backend.Mappers.Report.ReportMapper>();
+    cfg.AddProfile<Backend.Mappers.ModeratorRequest.ModeratorRequestMapper>();
+}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper), typeof(BookingMapper), typeof(ReviewMapper), typeof(Backend.Mappers.Report.ReportMapper), typeof(Backend.Mappers.ModeratorRequest.ModeratorRequestMapper));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
@@ -185,6 +203,9 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateBookingRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateBookingStatusRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordRequest>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateModeratorRequestRequest>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateReportRequest>();
+
 builder.Services.AddFluentValidationAutoValidation();
 
 var app = builder.Build();
@@ -325,6 +346,11 @@ userByIdGroup.MapPost("/assign-admin", async (Guid userId, IMediator mediator) =
     .WithDescription("Assign admin role to a user (Admin only)")
     .RequireAdmin();
 
+userByIdGroup.MapPost("/assign-moderator", async (Guid userId, IMediator mediator) =>
+        await mediator.Send(new AssignModeratorRoleRequest(userId)))
+    .WithDescription("Assign moderator role to a user (Admin only)")
+    .RequireAdmin();
+
 // User-specific routes that require owner + email verification (or admin)
 var userVerifiedGroup = usersGroup.MapGroup("/{userId:guid}")
     .AllowAdmin()
@@ -429,6 +455,35 @@ bookingVerifiedGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator)
     .RequireAuthorization();
 
 
+/// Stripe Endpoints
+var stripeGroup = app.MapGroup("/stripe")
+    .WithTags("Stripe")
+    .RequireAuthorization();
+
+// Webhook endpoint - must be anonymous for Stripe to call it
+app.MapPost("/stripe/webhook", async (HttpContext httpContext, IMediator mediator) =>
+{
+    var json = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
+    var signatureHeader = httpContext.Request.Headers["Stripe-Signature"].ToString();
+    return await mediator.Send(new HandleStripeWebhookRequest(json, signatureHeader));
+})
+    .WithTags("Stripe")
+    .AllowAnonymous()
+    .WithDescription("Stripe webhook endpoint for payment events");
+
+// Create Stripe Connect account link for onboarding
+stripeGroup.MapPost("/connect/account-link", async (CreateStripeAccountLinkDto dto, IMediator mediator) =>
+        await mediator.Send(new CreateStripeAccountLinkRequest(dto)))
+    .WithDescription("Create a Stripe Connect account onboarding link for a user to become a seller")
+    .RequireEmailVerification();
+
+// Create checkout session for booking payment
+stripeGroup.MapPost("/checkout", async (CreateCheckoutSessionDto dto, IMediator mediator) =>
+        await mediator.Send(new CreateCheckoutSessionRequest(dto)))
+    .WithDescription("Create a Stripe checkout session for booking payment")
+    .RequireEmailVerification();
+
+
 /// Reviews Endpoints
 var reviewsGroup = app.MapGroup("/reviews")
     .WithTags("Reviews")
@@ -463,6 +518,70 @@ reviewsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
         await mediator.Send(new DeleteReviewRequest(id)))
     .WithDescription("Delete a review")
     .RequireEmailVerification();
+
+/// Reports Endpoints
+var reportsGroup = app.MapGroup("/reports")
+    .WithTags("Reports")
+    .RequireAuthorization();
+
+// Create a new report
+reportsGroup.MapPost("", async (CreateReportDto dto, IMediator mediator) =>
+        await mediator.Send(new CreateReportRequest(dto)))
+    .WithDescription("Create a new report for an item")
+    .RequireEmailVerification();
+
+// Get all reports (Admin only)
+reportsGroup.MapGet("", async (IMediator mediator) =>
+        await mediator.Send(new GetAllReportsRequest()))
+    .WithDescription("Get all reports in the system (Admin only)")
+    .RequireAdmin();
+
+// Get reports by item ID
+reportsGroup.MapGet("/item/{itemId:guid}", async (Guid itemId, IMediator mediator) =>
+        await mediator.Send(new GetReportsByItemRequest(itemId)))
+    .WithDescription("Get all reports for a specific item")
+    .RequireAdmin();
+
+// Get reports by moderator ID
+reportsGroup.MapGet("/moderator/{moderatorId:guid}", async (Guid moderatorId, IMediator mediator) =>
+        await mediator.Send(new GetReportsByModeratorRequest(moderatorId)))
+    .WithDescription("Get all reports handled by a specific moderator")
+    .RequireAdminOrModerator();
+
+// Get accepted reports count from last week for an item
+reportsGroup.MapGet("/item/{itemId:guid}/accepted-last-week", async (Guid itemId, int numberOfDays, IMediator mediator) =>
+        await mediator.Send(new GetAcceptedReportsCountLastWeekRequest(itemId, numberOfDays)))
+    .WithDescription("Get the number of accepted reports from the specified period of time for a specific item")
+    .AllowAnonymous();
+
+// Update report status (Admin or Moderator)
+reportsGroup.MapPatch("/{reportId:guid}", async (Guid reportId, UpdateReportStatusDto dto, IMediator mediator) =>
+        await mediator.Send(new UpdateReportStatusRequest(reportId, dto)))
+    .WithDescription("Update the status of a report (Admin or Moderator)")
+    .RequireAdminOrModerator();
+
+/// Moderator Request Endpoints
+var moderatorRequestsGroup = app.MapGroup("/moderator-requests")
+    .WithTags("ModeratorRequests")
+    .RequireAuthorization();
+
+// Submit a moderator request
+moderatorRequestsGroup.MapPost("", async (CreateModeratorRequestDto dto, IMediator mediator) =>
+        await mediator.Send(new CreateModeratorRequestRequest(dto)))
+    .WithDescription("Submit a request to become a moderator")
+    .RequireEmailVerification();
+
+// Get all moderator requests (Admin only)
+moderatorRequestsGroup.MapGet("", async (IMediator mediator) =>
+        await mediator.Send(new GetAllModeratorRequestsRequest()))
+    .WithDescription("Get all moderator requests in the system (Admin only)")
+    .RequireAdmin();
+
+// Update moderator request status (Admin only)
+moderatorRequestsGroup.MapPatch("/{requestId:guid}", async (Guid requestId, UpdateModeratorRequestStatusDto dto, IMediator mediator) =>
+        await mediator.Send(new UpdateModeratorRequestStatusRequest(requestId, dto)))
+    .WithDescription("Update the status of a moderator request (Admin only)")
+    .RequireAdmin();
 
 // Log the URLs where the application is listening
 

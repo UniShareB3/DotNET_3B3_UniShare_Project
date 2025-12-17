@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using System.Text;
 using Backend.Data;
+using Backend.Features.Shared.IAM.Constants;
 using Backend.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -75,7 +76,7 @@ public class VerifyPasswordResetHandler(
         return Results.Ok(new { 
             message = "Password reset token verified successfully",
             temporaryToken = tempToken,
-            expiresInMinutes = 5
+            expiresInMinutes = IAMConstants.ResetPasswordRightExpiryMinutes
         });
     }
 
@@ -87,13 +88,13 @@ public class VerifyPasswordResetHandler(
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim("password_reset", "true") // Special claim for password reset
+            new Claim("password_reset", "true")
         };
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(5), // Short-lived: 5 minutes
+            Expires = DateTime.UtcNow.AddMinutes(IAMConstants.ResetPasswordRightExpiryMinutes),
             Issuer = configuration["JwtSettings:Issuer"],
             Audience = configuration["JwtSettings:Audience"],
             SigningCredentials = new SigningCredentials(

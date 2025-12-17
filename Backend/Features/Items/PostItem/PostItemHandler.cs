@@ -2,12 +2,14 @@
 using Backend.Features.Items.DTO;
 using Backend.Persistence;
 using Backend.Data;
+using Backend.Features.Bookings.DTO;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
 namespace Backend.Features.Items;
+
 
 public class PostItemHandler(ApplicationContext dbContext,IMapper mapper) : IRequestHandler<PostItemRequest, IResult>
 {
@@ -42,6 +44,7 @@ public class PostItemHandler(ApplicationContext dbContext,IMapper mapper) : IReq
             await dbContext.Entry(item).Reference(i => i.Owner).LoadAsync(cancellationToken);
             var itemDto = mapper.Map<ItemDto>(item);
                 
+
             return Results.Created($"/items/{item.Id}", itemDto);
         }
         catch (Exception ex)

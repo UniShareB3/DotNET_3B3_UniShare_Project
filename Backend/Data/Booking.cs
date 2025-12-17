@@ -63,6 +63,11 @@ public class Booking
     /// </summary>
     public DateTime? CompletedOn { get; set; }
     
+    /// <summary>
+    /// Indicates whether the payment for this booking has been secured via Stripe.
+    /// </summary>
+    [Required]
+    public bool IsPaid { get; set; } = false;
 
     // Navigation properties (optional)
     public Item? Item { get; set; }

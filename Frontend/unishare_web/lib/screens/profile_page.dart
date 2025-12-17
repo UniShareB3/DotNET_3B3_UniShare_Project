@@ -21,6 +21,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String? firstName;
   String? lastName;
   String? universityName;
+  bool _isSubmittingModeratorRequest = false;
 
   Future<void> loadUserData() async {
     setState(() => isLoadingUserData = true);
@@ -164,6 +165,12 @@ class _ProfilePageState extends State<ProfilePage> {
     final token=auth.token;
     final userId = token != null ? ApiService.getUserIdFromToken(token) : null;
 
+    // Determine roles from token and compute account type
+    final roles = ApiService.getUserRolesFromToken(token).map((r) => r.toLowerCase()).toList();
+    final bool isAdmin = roles.contains('admin');
+    final bool isModerator = roles.contains('moderator');
+    final accountTypeLabel = isAdmin ? 'Admin' : (isModerator ? 'Moderator' : 'Standard User');
+
     // Compute displayed verification status synchronously: prefer local state, then provider, then decode token
     bool? displayedVerified = emailVerified ?? auth.emailVerified;
     if (displayedVerified == null && token != null && token.isNotEmpty) {
@@ -299,7 +306,7 @@ class _ProfilePageState extends State<ProfilePage> {
           ListTile(
             leading: const Icon(Icons.account_circle_outlined),
             title: const Text("Account Type"),
-            subtitle: const Text("Standard User"),
+            subtitle: Text(accountTypeLabel),
           ),
           ListTile(
             leading: const Icon(Icons.calendar_today_outlined),
@@ -357,10 +364,96 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ),
+              const SizedBox(width: 16),
+              // Request Moderator button
+              if (!isAdmin && !isModerator)
+                ElevatedButton.icon(
+                  onPressed: (userId != null && displayedVerified == true && !_isSubmittingModeratorRequest)
+                      ? () => _showModeratorRequestDialog(userId)
+                      : null,
+                  icon: _isSubmittingModeratorRequest
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.how_to_reg),
+                  label: const Text("Request Moderator"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
             ],
           ),
         ],
       ),
     );
   }
+
+  Future<void> _showModeratorRequestDialog(String userId) async {
+    final _formKey = GlobalKey<FormState>();
+    final _reasonController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Request Moderator Access'),
+          content: SizedBox(
+            width: 500,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Tell us why you should be a moderator (min 20 characters):'),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _reasonController,
+                    maxLines: 5,
+                    maxLength: 1000,
+                    decoration: const InputDecoration(border: OutlineInputBorder()),
+                    validator: (v) {
+                      if (v == null || v.trim().length < 20) return 'Please provide at least 20 characters';
+                      return null;
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                if (!_formKey.currentState!.validate()) return;
+                Navigator.of(ctx).pop(true);
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      // submit
+      final reason = _reasonController.text.trim();
+      setState(() => _isSubmittingModeratorRequest = true);
+      try {
+        final resp = await ApiService.createModeratorRequest(userId: userId, reason: reason);
+        if (!mounted) return;
+        if (resp['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Moderator request submitted successfully'), backgroundColor: Colors.green));
+        } else {
+          final msg = resp['message'] ?? 'Failed to submit moderator request';
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+        }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+      } finally {
+        if (mounted) setState(() => _isSubmittingModeratorRequest = false);
+      }
+    }
+  }
+
 }
