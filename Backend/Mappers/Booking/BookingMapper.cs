@@ -26,6 +26,7 @@ public class BookingMapper : Profile
         CreateMap<Item, ItemDto>();
 
         CreateMap<Booking, BookingDto>()
-            .ForMember(dest => dest.Item, opt => opt.MapFrom(src => src.Item));
+            .ForMember(dest => dest.Item, opt => opt.MapFrom(src => src.Item))
+            .MaxDepth(1);
     }
 }

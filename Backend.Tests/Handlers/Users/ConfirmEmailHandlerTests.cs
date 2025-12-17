@@ -24,7 +24,7 @@ public class ConfirmEmailHandlerTests
     }
 
     [Fact]
-    public async Task Handle_GivenUserNotFound_ReturnsBadRequest()
+    public async Task GivenUserNotFound_WhenConfirmingEmail_ThenReturnsBadRequest()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -47,7 +47,7 @@ public class ConfirmEmailHandlerTests
     }
 
     [Fact]
-    public async Task Handle_GivenEmailAlreadyConfirmed_ReturnsBadRequest()
+    public async Task GivenEmailAlreadyConfirmed_WhenConfirmingEmail_ThenReturnsBadRequest()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -70,7 +70,7 @@ public class ConfirmEmailHandlerTests
     }
 
     [Fact]
-    public async Task Handle_GivenValidRequest_UpdatesUserAndToken_ReturnsOk()
+    public async Task GivenValidRequest_WhenConfirmingEmail_ThenUpdatesUserAndToken()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -115,7 +115,7 @@ public class ConfirmEmailHandlerTests
     }
 
     [Fact]
-    public async Task Handle_GivenValidUserButWrongCode_ReturnsBadRequest()
+    public async Task GivenValidUserButWrongCode_WhenConfirmingEmail_ThenReturnsBadRequest()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -154,7 +154,7 @@ public class ConfirmEmailHandlerTests
     }
 
     [Fact]
-    public async Task Handle_GivenExpiredToken_ReturnsBadRequest()
+    public async Task GivenExpiredToken_WhenConfirmingEmail_ThenReturnsBadRequest()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -193,7 +193,7 @@ public class ConfirmEmailHandlerTests
     }
 
     [Fact]
-    public async Task Handle_GivenAlreadyUsedToken_ReturnsBadRequest()
+    public async Task GivenAlreadyUsedToken_WhenConfirmingEmail_ThenReturnsBadRequest()
     {
         // Arrange
         var userId = Guid.NewGuid();
@@ -232,7 +232,7 @@ public class ConfirmEmailHandlerTests
     }
 
     [Fact]
-    public async Task Handle_GivenMultipleTokens_UsesTheMostRecentValidOne()
+    public async Task GivenMultipleTokens_WhenConfirmingEmail_ThenUsesTheMostRecentValidOne()
     {
         // Arrange
         var userId = Guid.NewGuid();

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Backend.Features.Review.DTO;
 using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -7,7 +8,7 @@ using ILogger = Serilog.ILogger;
 
 namespace Backend.Features.Review;
 
-public class UpdateReviewHandler(ApplicationContext dbContext) : IRequestHandler<UpdateReviewRequest, IResult>
+public class UpdateReviewHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<UpdateReviewRequest, IResult>
 {
     private readonly ILogger _logger = Log.ForContext<UpdateReviewHandler>();
 
@@ -34,7 +35,8 @@ public class UpdateReviewHandler(ApplicationContext dbContext) : IRequestHandler
 
             _logger.Information("Review {ReviewId} updated successfully", request.ReviewId);
 
-            return Results.Ok(existingReview);
+            var reviewDto = mapper.Map<ReviewDto>(existingReview);
+            return Results.Ok(reviewDto);
         }
         catch (Exception ex)
         {

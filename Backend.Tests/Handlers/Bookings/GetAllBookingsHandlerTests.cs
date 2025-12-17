@@ -33,18 +33,18 @@ public class GetAllBookingsHandlerTests
     public async Task Given_BookingsExist_When_Handle_Then_ReturnsAllBookings()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("a1b2c3d4-eaf6-7a8b-9c0d-e1f2a3b4c5d6");
+        var context = CreateInMemoryDbContext(Guid.Parse("10000000-0000-0000-0000-000000000001").ToString());
         var mapper = CreateMapper();
         
-        var itemId1 = Guid.NewGuid();
-        var itemId2 = Guid.NewGuid();
+        var itemId1 = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var itemId2 = Guid.Parse("22222222-2222-2222-2222-222222222222");
         
         var item1 = new Item
         {
             Id = itemId1,
             Name = "Item 1",
             Description = "Description 1",
-            OwnerId = Guid.NewGuid()
+            OwnerId = Guid.Parse("33333333-3333-3333-3333-333333333333")
         };
         
         var item2 = new Item
@@ -52,25 +52,25 @@ public class GetAllBookingsHandlerTests
             Id = itemId2,
             Name = "Item 2",
             Description = "Description 2",
-            OwnerId = Guid.NewGuid()
+            OwnerId = Guid.Parse("44444444-4444-4444-4444-444444444444")
         };
         
         context.Items.AddRange(item1, item2);
         
         var booking1 = new Booking
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.Parse("55555555-5555-5555-5555-555555555555"),
             ItemId = itemId1,
-            BorrowerId = Guid.NewGuid(),
+            BorrowerId = Guid.Parse("66666666-6666-6666-6666-666666666666"),
             StartDate = DateTime.UtcNow,
             EndDate = DateTime.UtcNow.AddDays(2)
         };
         
         var booking2 = new Booking
         {
-            Id = Guid.NewGuid(),
+            Id = Guid.Parse("77777777-7777-7777-7777-777777777777"),
             ItemId = itemId2,
-            BorrowerId = Guid.NewGuid(),
+            BorrowerId = Guid.Parse("88888888-8888-8888-8888-888888888888"),
             StartDate = DateTime.UtcNow.AddDays(3),
             EndDate = DateTime.UtcNow.AddDays(5)
         };
@@ -100,7 +100,7 @@ public class GetAllBookingsHandlerTests
     public async Task Given_NoBookingsExist_When_Handle_Then_ReturnsEmptyList()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("a1b2c3d4-e0f6-7a8b-9c0d-e1f2a3b4c5d6");
+        var context = CreateInMemoryDbContext(Guid.Parse("20000000-0000-0000-0000-000000000002").ToString());
         var mapper = CreateMapper();
         
         var handler = new GetAllBookingsHandler(context, mapper);

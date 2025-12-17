@@ -1,10 +1,12 @@
-﻿using Backend.Data;
+﻿using AutoMapper;
+using Backend.Data;
 using Backend.Features.Review;
 using Backend.Features.Review.DTO;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Tests.Handlers.Reviews;
 
@@ -20,24 +22,34 @@ public class UpdateReviewHandlerTests
         return context;
     }
     
+    private static IMapper CreateMapper()
+    {
+        var config = new MapperConfiguration(cfg =>
+        {
+            cfg.CreateMap<Review, ReviewDto>();
+        }, new LoggerFactory());
+        return config.CreateMapper();
+    }
+    
     [Fact]
     public async Task Given_ReviewExists_When_Handle_Then_UpdatesReview()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("update-review-test-" + Guid.NewGuid());
-        var reviewId = Guid.NewGuid();
+        var mapper = CreateMapper();
+        var context = CreateInMemoryDbContext("02476839-a33e-4bba-b001-0165bf09e105");
+        var reviewId = Guid.Parse("02476839-a33e-4bba-b001-0165bf09e101");
         var review = new Review
         {
             Id = reviewId,
-            ReviewerId = Guid.NewGuid(),
-            TargetUserId = Guid.NewGuid(),
+            ReviewerId = Guid.Parse("02476839-a33e-4bba-b001-0165bf091105"),
+            TargetUserId = Guid.Parse("02476839-a33e-4bb1-b001-0165bf09e105"),
             Rating = 3,
             Comment = "Average experience."
         };
         context.Reviews.Add(review);
         await context.SaveChangesAsync();
 
-        var handler = new UpdateReviewHandler(context);
+        var handler = new UpdateReviewHandler(context,mapper);
         var updatedRating = 5;
         var updatedComment = "Excellent experience!";
         var dto = new UpdateReviewDto( updatedRating, updatedComment);
@@ -48,7 +60,6 @@ public class UpdateReviewHandlerTests
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
-        // Accept both 204 and 200 for flexibility, but prefer 204
         (statusResult.StatusCode == StatusCodes.Status204NoContent || statusResult.StatusCode == StatusCodes.Status200OK).Should().BeTrue();
 
         var updatedReview = await context.Reviews.FindAsync(reviewId);
@@ -60,9 +71,11 @@ public class UpdateReviewHandlerTests
     public async Task Given_ReviewDoesNotExist_When_Handle_Then_ReturnsNotFound()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("update-review-not-found-test-" + Guid.NewGuid());
-        var handler = new UpdateReviewHandler(context);
-        var nonExistentReviewId = Guid.NewGuid();
+        var context = CreateInMemoryDbContext("02476839-a33e-4bba-b001-0165bf09e111");
+        var mapper = CreateMapper();
+        
+        var handler = new UpdateReviewHandler(context,mapper);
+        var nonExistentReviewId = Guid.Parse("02476839-a33e-4bba-1001-0165bf09e105");
         var dto = new UpdateReviewDto(4, "Good experience.");
         var request = new UpdateReviewRequest(nonExistentReviewId, dto);
 
@@ -72,44 +85,5 @@ public class UpdateReviewHandlerTests
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
         statusResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
-    }
-    
-    [Fact]
-    public async Task Given_ExceptionOccurs_When_Handle_Then_ReturnsProblemResult()
-    {
-        // Arrange
-        var context = CreateInMemoryDbContext("update-review-exception-test-" + Guid.NewGuid());
-        var reviewId = Guid.NewGuid();
-        var review = new Review
-        {
-            Id = reviewId,
-            ReviewerId = Guid.NewGuid(),
-            TargetUserId = Guid.NewGuid(),
-            Rating = 2,
-            Comment = "Not great."
-        };
-        context.Reviews.Add(review);
-        await context.SaveChangesAsync();
-
-        // Simulate exception by passing a null context to the handler
-        UpdateReviewHandler handler = null;
-        var dto = new UpdateReviewDto(5, "Nice!");
-        var request = new UpdateReviewRequest(reviewId, dto);
-        
-        // Act
-        IResult result;
-        try
-        {
-            handler = new UpdateReviewHandler(context);
-            // Simulate exception by throwing manually
-            throw new Exception("Simulated exception");
-        }
-        catch
-        {
-            // Assert
-            result = Results.StatusCode(StatusCodes.Status500InternalServerError);
-            var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
-            statusResult.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
-        }
     }
 }

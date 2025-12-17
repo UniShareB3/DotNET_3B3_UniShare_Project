@@ -1,12 +1,16 @@
 ﻿using AutoMapper;
+using Backend.Features.Items.DTO;
 using Backend.Persistence;
 using Backend.Data;
+using Backend.Features.Bookings.DTO;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
+using ItemDto = Backend.Features.Items.DTO.ItemDto;
 
 namespace Backend.Features.Items;
+
 
 public class PostItemHandler(ApplicationContext dbContext,IMapper mapper) : IRequestHandler<PostItemRequest, IResult>
 {
@@ -36,8 +40,13 @@ public class PostItemHandler(ApplicationContext dbContext,IMapper mapper) : IReq
             
             _logger.Information("Item {ItemId} with name {ItemName} created successfully by owner {OwnerId}.", 
                 item.Id, item.Name, item.OwnerId);
+            
+            // Load the owner to map to DTO
+            await dbContext.Entry(item).Reference(i => i.Owner).LoadAsync(cancellationToken);
+            var itemDto = mapper.Map<ItemDto>(item);
                 
-            return Results.Created($"/items/{item.Id}", item);
+
+            return Results.Created($"/items/{item.Id}", itemDto);
         }
         catch (Exception ex)
         {

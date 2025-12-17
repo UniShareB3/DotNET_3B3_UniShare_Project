@@ -112,7 +112,7 @@ public class CreateBookingHandlerTests
         var item = new Item
         {
             Id = itemId,
-            OwnerId = Guid.NewGuid(),
+            OwnerId = Guid.Parse("02976839-a33e-4bba-b001-0165bf09e105"),
             Name = "Another Test Item",
             Description = "Another test item",
             Category = Features.Items.Enums.ItemCategory.Books,
@@ -150,8 +150,8 @@ public class CreateBookingHandlerTests
         
         var bookingDto = new CreateBookingDto
         (
-            Guid.NewGuid(),
-            Guid.NewGuid(),
+            Guid.Parse("02476839-a33e-4bba-b001-0165bf090105"),
+            Guid.Parse("02476839-a99e-4bba-b001-0165bf09e105"),
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             DateTime.UtcNow.AddDays(7)
@@ -184,8 +184,8 @@ public class CreateBookingHandlerTests
         
         var bookingDto = new CreateBookingDto
         (
-            Guid.NewGuid(),
-            Guid.NewGuid(),
+            Guid.Parse("99976839-a33e-4bba-b001-0165bf09e105"),
+            Guid.Parse("02476839-9999-4bba-b001-0165bf09e105"),
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             DateTime.UtcNow.AddDays(7)
@@ -201,12 +201,9 @@ public class CreateBookingHandlerTests
         statusResult.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
     }
     
-    private class ThrowingDbUpdateExceptionContext : ApplicationContext
+    private class ThrowingDbUpdateExceptionContext(DbContextOptions<ApplicationContext> options)
+        : ApplicationContext(options)
     {
-        public ThrowingDbUpdateExceptionContext(DbContextOptions<ApplicationContext> options) : base(options)
-        {
-        }
-
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
             throw new DbUpdateException("Simulated database error");

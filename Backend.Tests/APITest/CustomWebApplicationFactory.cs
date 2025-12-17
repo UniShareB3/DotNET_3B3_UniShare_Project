@@ -24,20 +24,15 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
 
         builder.ConfigureServices(services =>
         {
-            // 1. Remove the Context itself
             services.RemoveAll<ApplicationContext>();
-        
-            // 2. Remove the generic options (the one you already had)
+            
             services.RemoveAll<DbContextOptions<ApplicationContext>>();
-        
-            // 3. Remove the non-generic DbContextOptions
+            
             services.RemoveAll<DbContextOptions>();
-
-            // 4. Add the Test Database
+            
             services.AddDbContext<ApplicationContext>(options =>
             {
                 options.UseInMemoryDatabase(_dbName);
-                // Optional: Ignore the transaction warning for InMemory
                 options.ConfigureWarnings(x => x.Ignore(InMemoryEventId.TransactionIgnoredWarning));
             });
         });
@@ -53,7 +48,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
 
         await context.Database.EnsureCreatedAsync();
         
-        // Ensure we don't double-seed if tests run in parallel sharing the factory
         if (!context.Users.Any())
         {
             await TestDataSeeder.SeedTestDataAsync(context, userManager, roleManager);

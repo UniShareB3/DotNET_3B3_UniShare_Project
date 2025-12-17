@@ -26,13 +26,13 @@ public class DeleteReviewHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<DeleteReviewHandler>>().Object;
-        var context = CreateInMemoryDbContext("delete-review-exists-test-" + Guid.NewGuid());
-        var reviewId = Guid.NewGuid();
+        var context = CreateInMemoryDbContext("11476839-a33e-4bba-b001-0165bf09e105");
+        var reviewId = Guid.Parse("02476839-a33e-4bba-b001-0165bf09e105");
         var review = new Review
         {
             Id = reviewId,
-            ReviewerId = Guid.NewGuid(),
-            TargetItemId = Guid.NewGuid(),
+            ReviewerId = Guid.Parse("11476839-a33e-4bba-b001-0165bf09e105"),
+            TargetItemId = Guid.Parse("02276839-a33e-4bba-b001-0165bf09e105"),
             Rating = 5,
             Comment = "Great item!"
         };
@@ -58,8 +58,8 @@ public class DeleteReviewHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<DeleteReviewHandler>>().Object;
-        var context = CreateInMemoryDbContext("delete-nonexistent-review-test-" + Guid.NewGuid());
-        var nonExistentReviewId = Guid.NewGuid();
+        var context = CreateInMemoryDbContext("02476839-a33e-4bba-6001-0165bf09e105");
+        var nonExistentReviewId = Guid.Parse("02176839-a33e-4bba-b001-0165bf09e105");
 
         var handler = new DeleteReviewHandler(context, logger);
         var request = new DeleteReviewRequest(nonExistentReviewId);
@@ -77,23 +77,23 @@ public class DeleteReviewHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<DeleteReviewHandler>>().Object;
-        var context = CreateInMemoryDbContext("delete-multiple-reviews-test-" + Guid.NewGuid());
-        var review1Id = Guid.NewGuid();
-        var review2Id = Guid.NewGuid();
+        var context = CreateInMemoryDbContext("02476839-113e-4bba-b001-0165bf09e105");
+        var review1Id = Guid.Parse("02476839-a13e-4bba-b001-0165bf09e105");
+        var review2Id = Guid.Parse("02476819-a33e-4bba-b001-0165bf09e105");
         
         var review1 = new Review
         {
             Id = review1Id,
-            ReviewerId = Guid.NewGuid(),
-            TargetItemId = Guid.NewGuid(),
+            ReviewerId = Guid.Parse("02476839-a33e-4b11-b001-0165bf09e105"),
+            TargetItemId = Guid.Parse("01176839-a33e-4bba-b001-0165bf09e105"),
             Rating = 4,
             Comment = "Good item."
         };
         var review2 = new Review
         {
             Id = review2Id,
-            ReviewerId = Guid.NewGuid(),
-            TargetItemId = Guid.NewGuid(),
+            ReviewerId = Guid.Parse("02471139-a33e-4bba-b001-0165bf09e105"),
+            TargetItemId = Guid.Parse("02476119-a33e-4bba-b001-0165bf09e105"),
             Rating = 2,
             Comment = "Not as expected."
         };
@@ -123,13 +123,13 @@ public class DeleteReviewHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<DeleteReviewHandler>>().Object;
-        var context = CreateInMemoryDbContext("delete-review-twice-test-" + Guid.NewGuid());
-        var reviewId = Guid.NewGuid();
+        var context = CreateInMemoryDbContext("02476839-1331-4bba-b001-0165bf09e105");
+        var reviewId = Guid.Parse("02436839-a33e-4bba-b001-0165bf09e105");
         var review = new Review
         {
             Id = reviewId,
-            ReviewerId = Guid.NewGuid(),
-            TargetItemId = Guid.NewGuid(),
+            ReviewerId = Guid.Parse("02446839-a33e-4bba-b001-0165bf09e105"),
+            TargetItemId = Guid.Parse("02476839-a35e-4bba-b001-0165bf09e105"),
             Rating = 3,
             Comment = "Average item."
         };
@@ -146,7 +146,7 @@ public class DeleteReviewHandlerTests
         var firstStatusResult = firstResult.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
         firstStatusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
 
-        // Act - Second delete attempt
+        // Act - Second delete 
         var secondResult = await handler.Handle(request, CancellationToken.None);
 
         // Assert second delete returns NotFound

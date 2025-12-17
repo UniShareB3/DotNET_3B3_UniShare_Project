@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Backend.Features.Bookings.DTO;
 using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -24,8 +25,9 @@ public class CreateBookingHandler(ApplicationContext dbContext, IMapper mapper) 
             
             _logger.Information("Booking {BookingId} created successfully for item {ItemId}", 
                 booking.Id, booking.ItemId);
-                
-            return Results.Created($"/bookings/{booking.Id}", booking);
+            
+            var bookingDto = mapper.Map<BookingDto>(booking);
+            return Results.Created($"/bookings/{booking.Id}", bookingDto);
         }
         catch (DbUpdateException ex)
         {

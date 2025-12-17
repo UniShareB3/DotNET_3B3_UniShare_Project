@@ -2,6 +2,7 @@
 using Backend.Persistence;
 using Backend.Validators;
 using FluentAssertions;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Tests;
@@ -21,12 +22,12 @@ public class UniversityValidatorTests
     public async Task Given_NonExistentUniversityId_When_Validate_Then_ReturnsUniversityNotFoundError()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        var dbContext = CreateInMemoryDbContext("4444-4444-4444-44444444444a");
         var validator = new UniversityValidator(dbContext);
 
         var user = new User() 
         { 
-            UniversityId = Guid.NewGuid(),
+            UniversityId = Guid.Parse("44444444-4444-4444-4444-444444444444"),
             Email = "test@example.com"
         };
 
@@ -44,8 +45,8 @@ public class UniversityValidatorTests
     public async Task Given_ValidExistingUniversityId_When_Validate_Then_ReturnsSuccess()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
-        var validUniversityId = Guid.NewGuid();
+        var dbContext = CreateInMemoryDbContext("44444444-4444-4444-4444-4444444444aa");
+        var validUniversityId = Guid.Parse("44444444-4444-4444-4444-444444444441");
 
         dbContext.Universities.Add(new University
         {
@@ -76,7 +77,7 @@ public class UniversityValidatorTests
     public async Task Given_EmptyUniversityId_When_Validate_Then_ReturnsInvalidUniversityError()
     {
         // Arrange
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        var dbContext = CreateInMemoryDbContext("44444444-4444-4444-444a-444444444444");
         var validator = new UniversityValidator(dbContext);
 
         var user = new User

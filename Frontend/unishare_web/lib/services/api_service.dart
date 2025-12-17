@@ -16,7 +16,7 @@ class ApiService {
   // If not set, defaults to localhost which will cause connection errors in production
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:5000', 
+    defaultValue: 'http://localhost:5083',
   );
   
   static void _logBaseUrl() {
@@ -32,6 +32,181 @@ class ApiService {
         utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
     final ownerId = payload['sub']; // sau ce claim folosești pentru ID
     return ownerId;
+  }
+
+  static List<String> getUserRolesFromToken(String? token) {
+    if (token == null) return [];
+    try {
+      final parts = token.split('.');
+      final payload = jsonDecode(
+          utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+
+      // Try multiple common claim keys where roles might be stored
+      final candidateKeys = [
+        'http://schemas.microsoft.com/ws/2008/06/identity/claims/role',
+        'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role',
+        'role',
+        'roles',
+      ];
+
+      for (final key in candidateKeys) {
+        if (payload.containsKey(key)) {
+          final rolesClaim = payload[key];
+          if (rolesClaim == null) return [];
+
+          // If it's already a list
+          if (rolesClaim is List) {
+            return rolesClaim.map((e) => e.toString()).toList();
+          }
+
+          // If it's a single string, it may be a single role or comma-separated
+          if (rolesClaim is String) {
+            // Some tokens encode roles as comma separated string
+            final raw = rolesClaim as String;
+            if (raw.contains(',')) {
+              return raw.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+            }
+            return [raw.trim()];
+          }
+
+          // fallback: try to convert to string
+          return [rolesClaim.toString()];
+        }
+      }
+
+      return [];
+    } catch (e) {
+      print('Error extracting roles from token: $e');
+      return [];
+    }
+  }
+
+  static bool isAdminOrModerator(String? token) {
+    final roles = getUserRolesFromToken(token).map((r) => r.toLowerCase()).toList();
+    return roles.contains('admin') || roles.contains('moderator');
+  }
+
+  // New helper to check admin specifically
+  static bool isAdmin(String? token) {
+    final roles = getUserRolesFromToken(token).map((r) => r.toLowerCase()).toList();
+    return roles.contains('admin');
+  }
+
+  /// Refresh the access token using the refresh token
+  static Future<bool> refreshAccessToken() async {
+    try {
+      final refreshToken = await SecureStorageService.getRefreshToken();
+      if (refreshToken == null || refreshToken.isEmpty) {
+        print('No refresh token available');
+        return false;
+      }
+
+      final url = Uri.parse('$baseUrl/refresh');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshToken}),
+      );
+
+      print('API refresh-token status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final newAccessToken = data['accessToken'];
+        final newRefreshToken = data['refreshToken'];
+
+        if (newAccessToken != null) {
+          await SecureStorageService.saveAccessToken(newAccessToken);
+          if (newRefreshToken != null) {
+            await SecureStorageService.saveRefreshToken(newRefreshToken);
+          }
+          print('✅ Access token refreshed successfully');
+          return true;
+        }
+      }
+
+      print('❌ Failed to refresh token: ${response.statusCode}');
+      return false;
+    } catch (e) {
+      print('❌ Refresh token error: $e');
+      return false;
+    }
+  }
+
+  /// Helper to make authenticated GET request with automatic token refresh on 401
+  static Future<http.Response> _authenticatedGet(Uri url, {Map<String, String>? extraHeaders}) async {
+    var token = await SecureStorageService.getAccessToken();
+    var headers = {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      ...?extraHeaders,
+    };
+
+    var response = await http.get(url, headers: headers);
+
+    // If 401, try refreshing token once and retry
+    if (response.statusCode == 401) {
+      print('🔄 Got 401, attempting token refresh...');
+      final refreshed = await refreshAccessToken();
+      if (refreshed) {
+        token = await SecureStorageService.getAccessToken();
+        headers['Authorization'] = 'Bearer $token';
+        response = await http.get(url, headers: headers);
+        print('🔄 Retry after refresh: ${response.statusCode}');
+      }
+    }
+
+    return response;
+  }
+
+  /// Helper to make authenticated POST request with automatic token refresh on 401
+  static Future<http.Response> _authenticatedPost(Uri url, {Map<String, String>? extraHeaders, String? body}) async {
+    var token = await SecureStorageService.getAccessToken();
+    var headers = {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      ...?extraHeaders,
+    };
+
+    var response = await http.post(url, headers: headers, body: body);
+
+    if (response.statusCode == 401) {
+      print('🔄 Got 401, attempting token refresh...');
+      final refreshed = await refreshAccessToken();
+      if (refreshed) {
+        token = await SecureStorageService.getAccessToken();
+        headers['Authorization'] = 'Bearer $token';
+        response = await http.post(url, headers: headers, body: body);
+        print('🔄 Retry after refresh: ${response.statusCode}');
+      }
+    }
+
+    return response;
+  }
+
+  /// Helper to make authenticated PATCH request with automatic token refresh on 401
+  static Future<http.Response> _authenticatedPatch(Uri url, {Map<String, String>? extraHeaders, String? body}) async {
+    var token = await SecureStorageService.getAccessToken();
+    var headers = {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      ...?extraHeaders,
+    };
+
+    var response = await http.patch(url, headers: headers, body: body);
+
+    if (response.statusCode == 401) {
+      print('🔄 Got 401, attempting token refresh...');
+      final refreshed = await refreshAccessToken();
+      if (refreshed) {
+        token = await SecureStorageService.getAccessToken();
+        headers['Authorization'] = 'Bearer $token';
+        response = await http.patch(url, headers: headers, body: body);
+        print('🔄 Retry after refresh: ${response.statusCode}');
+      }
+    }
+
+    return response;
   }
 
   static Future<List<Map<String, dynamic>>> getMyItems() async {
@@ -82,7 +257,7 @@ class ApiService {
 
   // ----------------- Confirm Email -----------------
   static Future<bool> confirmEmail(String userId, String code) async {
-    final url = Uri.parse('$baseUrl/auth/confirm-email');
+    final url = Uri.parse('$baseUrl/auth/email-confirmation');
 
     final response = await http.post(
       url,
@@ -624,26 +799,46 @@ class ApiService {
     final token = await SecureStorageService.getAccessToken();
     if (token == null) return [];
 
-    final userId = getUserIdFromToken(token);
-    final url = Uri.parse('$baseUrl/users/$userId/booked-items');
+    try {
+      final userId = getUserIdFromToken(token);
+      print('API get-received-bookings: fetching items for user $userId');
 
-    final response = await http.get(url, headers: {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    });
+      // First, get items owned by the current user
+      final myItems = await getMyItems();
+      if (myItems.isEmpty) {
+        print('API get-received-bookings: no items found for user');
+        return [];
+      }
 
-    print('API get-user-booked-items status: ${response.statusCode}');
-    print('API get-user-booked-items body: ${response.body}');
+      final List<Map<String, dynamic>> allBookings = [];
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data is List) return List<Map<String, dynamic>>.from(data);
-    } else {
-      // capture error body so UI can show explanation
-      lastReceivedError = response.body;
+      // For each item, fetch its bookings and add to the list
+      for (final item in myItems) {
+        final itemId = item['id']?.toString();
+        if (itemId == null || itemId.isEmpty) continue;
+        print('API get-received-bookings: fetching bookings for item $itemId');
+        try {
+          final bookingsForItem = await getBookingsForItem(itemId);
+          // bookingsForItem is List<Map<String,dynamic>>
+          for (final b in bookingsForItem) {
+            // Ensure item information is present on the booking (some endpoints include it, others may not)
+            final bookingMap = Map<String, dynamic>.from(b);
+            if (!bookingMap.containsKey('item') || bookingMap['item'] == null) {
+              bookingMap['item'] = item; // attach item info to help UI
+            }
+            allBookings.add(bookingMap);
+          }
+        } catch (e) {
+          print('API get-received-bookings: failed to fetch bookings for item $itemId: $e');
+        }
+      }
+
+      print('API get-received-bookings: returning ${allBookings.length} bookings');
+      return allBookings;
+    } catch (e) {
+      print('API get-received-bookings error: $e');
+      return [];
     }
-
-    return [];
   }
 
   // ----------------- Get Single Item -----------------
@@ -680,22 +875,27 @@ class ApiService {
 
   static Future<bool> updateBookingStatus({
     required String bookingId,
-    required String newStatus, // "Approved" / "Rejected"
+    required int bookingStatus, // 1 = Approved, 2 = Rejected, 4 = Canceled
   }) async {
     final token = await SecureStorageService.getAccessToken();
     if (token == null) return false;
 
-    final url = Uri.parse('$baseUrl/bookings/$bookingId/status');
-    final response = await http.put(
+    final userId = getUserIdFromToken(token);
+
+    final url = Uri.parse('$baseUrl/bookings/$bookingId');
+    final response = await http.patch(
       url,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({'status': newStatus}),
+      body: jsonEncode({
+        'userId': userId,
+        'bookingStatus': bookingStatus,
+      }),
     );
 
-    print('Update booking $bookingId to $newStatus -> ${response.statusCode}');
+    print('Update booking $bookingId to status $bookingStatus -> ${response.statusCode}');
     if (response.statusCode == 200) {
       return true;
     } else {
@@ -704,15 +904,25 @@ class ApiService {
     }
   }
 
-  // Shortcut-uri
+  // Shortcut methods
   static Future<bool> approveBooking(String bookingId) async {
     return await updateBookingStatus(
-        bookingId: bookingId, newStatus: "Approved");
+        bookingId: bookingId, bookingStatus: 1); // Approved
   }
 
   static Future<bool> rejectBooking(String bookingId) async {
     return await updateBookingStatus(
-        bookingId: bookingId, newStatus: "Rejected");
+        bookingId: bookingId, bookingStatus: 2); // Rejected
+  }
+
+  static Future<bool> cancelBooking(String bookingId) async {
+    return await updateBookingStatus(
+        bookingId: bookingId, bookingStatus: 4); // Canceled
+  }
+
+  static Future<bool> completeBooking(String bookingId) async {
+    return await updateBookingStatus(
+        bookingId: bookingId, bookingStatus: 3); // Completed
   }
 
   static Future<List<dynamic>> getUniversities() async {
@@ -727,16 +937,26 @@ class ApiService {
 
   static Future<bool> sendVerificationCode(String userId) async {
     final url = Uri.parse('$baseUrl/auth/verification-code');
+    var token = await SecureStorageService.getAccessToken();
+    if (token == null) return false;
+    
+    // Extract userId from token to ensure consistency
+    final tokenUserId = getUserIdFromToken(token);
+    print('Sending verification code - Token userId: $tokenUserId, Provided userId: $userId');
+    
     final response = await http.post(
       url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'userId': userId}),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token'
+      },
+      body: jsonEncode({'userId': tokenUserId}), // Use userId from token instead
     );
 
     if (response.statusCode == 200) {
       return true;
     } else {
-      print('Failed to send verification code: ${response.body}');
+      print('Failed to send verification code: ${response.statusCode} - ${response.body}');
       return false;
     }
   }
@@ -941,5 +1161,419 @@ class ApiService {
       'status': response.statusCode,
       'body': response.body,
     };
+  }
+
+  // Returns structured result with message on failure to show helpful UI feedback
+  static Future<Map<String, dynamic>> completeBookingResult(String bookingId) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return {'success': false, 'status': 401, 'message': 'Not authenticated'};
+
+    final userId = getUserIdFromToken(token);
+    final url = Uri.parse('$baseUrl/bookings/$bookingId');
+
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'userId': userId,
+        'bookingStatus': 3,
+      }),
+    );
+
+    print('Complete booking $bookingId -> ${response.statusCode}');
+    print('Complete booking body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      return {'success': true, 'status': 200};
+    }
+
+    String message = 'Server error: ${response.statusCode}';
+    try {
+      final data = jsonDecode(response.body);
+      if (data is Map<String, dynamic>) {
+        // Prefer RFC-style detail
+        if (data['detail'] != null) {
+          message = data['detail'].toString();
+        } else {
+          // Flatten map values into a readable string
+          final parts = <String>[];
+          data.forEach((k, v) {
+            if (v is List) {
+              parts.addAll(v.map((e) => e.toString()));
+            } else if (v is String) {
+              parts.add(v);
+            } else {
+              parts.add(v.toString());
+            }
+          });
+          if (parts.isNotEmpty) message = parts.join('; ');
+        }
+      } else if (data is List && data.isNotEmpty) {
+        message = data.map((e) => e.toString()).join('; ');
+      } else {
+        message = response.body;
+      }
+    } catch (e) {
+      // Not JSON or parse failed, show raw body
+      message = response.body.isNotEmpty ? response.body : message;
+    }
+
+    return {'success': false, 'status': response.statusCode, 'message': message};
+  }
+
+  // Returns structured result for any booking status update (approve/reject/cancel/complete)
+  static Future<Map<String, dynamic>> updateBookingResult(String bookingId, int bookingStatus) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return {'success': false, 'status': 401, 'message': 'Not authenticated'};
+
+    final userId = getUserIdFromToken(token);
+    final url = Uri.parse('$baseUrl/bookings/$bookingId');
+
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'userId': userId,
+        'bookingStatus': bookingStatus,
+      }),
+    );
+
+    print('Update booking $bookingId to status $bookingStatus -> ${response.statusCode}');
+    print('Update booking body: ${response.body}');
+
+    // Treat 200 OK and 204 No Content as success
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return {'success': true, 'status': response.statusCode};
+    }
+
+    String message = 'Server error: ${response.statusCode}';
+    try {
+      if (response.body != null && response.body.isNotEmpty) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic>) {
+          if (data['detail'] != null) {
+            message = data['detail'].toString();
+          } else {
+            final parts = <String>[];
+            data.forEach((k, v) {
+              if (v is List) parts.addAll(v.map((e) => e.toString()));
+              else if (v is String) parts.add(v);
+              else parts.add(v.toString());
+            });
+            if (parts.isNotEmpty) message = parts.join('; ');
+          }
+        } else if (data is List && data.isNotEmpty) {
+          message = data.map((e) => e.toString()).join('; ');
+        } else {
+          message = response.body;
+        }
+      }
+    } catch (e) {
+      message = response.body.isNotEmpty ? response.body : message;
+    }
+
+    return {'success': false, 'status': response.statusCode, 'message': message};
+  }
+
+  // ----------------- Reports -----------------
+
+  /// Create a new report for an item
+  static Future<Map<String, dynamic>> createReport({
+    required String itemId,
+    required String userId,
+    required String description,
+  }) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) {
+      return {'success': false, 'message': 'No authentication token available'};
+    }
+
+    final url = Uri.parse('$baseUrl/reports');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'itemId': itemId,
+        'userId': userId,
+        'description': description,
+      }),
+    );
+
+    print('API create-report status: ${response.statusCode}');
+    print('API create-report body: ${response.body}');
+
+    if (response.statusCode == 201 || response.statusCode == 200) {
+      return {
+        'success': true,
+        'report': jsonDecode(response.body),
+      };
+    }
+
+    return {
+      'success': false,
+      'message': 'Failed to create report: ${response.statusCode}',
+    };
+  }
+
+  /// Get all reports (Admin only)
+  static Future<List<Map<String, dynamic>>> getAllReports() async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return [];
+
+    final url = Uri.parse('$baseUrl/reports');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    print('API get-all-reports status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) return List<Map<String, dynamic>>.from(data);
+    }
+
+    return [];
+  }
+
+  /// Get reports for a specific item (Admin only)
+  static Future<List<Map<String, dynamic>>> getReportsByItem(String itemId) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return [];
+
+    final url = Uri.parse('$baseUrl/reports/item/$itemId');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    print('API get-reports-by-item status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) return List<Map<String, dynamic>>.from(data);
+    }
+
+    return [];
+  }
+
+  /// Get reports assigned to a specific moderator (Admin/Moderator only)
+  static Future<List<Map<String, dynamic>>> getReportsByModerator(String moderatorId) async {
+    final url = Uri.parse('$baseUrl/reports/moderator/$moderatorId');
+    final response = await _authenticatedGet(url);
+
+    print('API get-reports-by-moderator status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) return List<Map<String, dynamic>>.from(data);
+    }
+
+    return [];
+  }
+
+  /// Get count of accepted reports for an item in the last N days (Public)
+  static Future<int> getAcceptedReportsCount({
+    required String itemId,
+    required int numberOfDays,
+  }) async {
+    final url = Uri.parse('$baseUrl/reports/item/$itemId/accepted-last-week?numberOfDays=$numberOfDays');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    );
+
+    print('API get-accepted-reports-count status: ${response.statusCode}');
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is Map && data['count'] != null) {
+        return data['count'] as int;
+      }
+    }
+
+    return 0;
+  }
+
+  /// Update report status (Admin/Moderator only)
+  static Future<Map<String, dynamic>> updateReportStatus({
+    required String reportId,
+    required String status,
+    required String moderatorId,
+  }) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) {
+      return {'success': false, 'message': 'No authentication token available'};
+    }
+
+    // Map status string to numeric enum value expected by backend
+    // Backend ReportStatus enum: PENDING = 0, ACCEPTED = 1, DECLINED = 2
+    int? statusValue;
+    final s = status.toString().toUpperCase();
+    if (s == 'PENDING') statusValue = 0;
+    else if (s == 'ACCEPTED') statusValue = 1;
+    else if (s == 'DECLINED') statusValue = 2;
+
+    if (statusValue == null) {
+      return {'success': false, 'message': 'Invalid status value'};
+    }
+
+    final url = Uri.parse('$baseUrl/reports/$reportId');
+
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'status': statusValue,
+        'moderatorId': moderatorId,
+      }),
+    );
+
+    print('API update-report-status status: ${response.statusCode}');
+    print('API update-report-status body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+        'report': jsonDecode(response.body),
+      };
+    }
+
+    return {
+      'success': false,
+      'message': 'Failed to update report status: ${response.statusCode}',
+    };
+  }
+
+  // ----------------- Moderator Requests -----------------
+  /// Submit a request to become a moderator
+  static Future<Map<String, dynamic>> createModeratorRequest({
+    required String userId,
+    required String reason,
+  }) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return {'success': false, 'message': 'No authentication token available'};
+
+    final url = Uri.parse('$baseUrl/moderator-requests');
+
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'userId': userId,
+        'reason': reason,
+      }),
+    );
+
+    print('API create-moderator-request status: ${response.statusCode}');
+    print('API create-moderator-request body: ${response.body}');
+
+    if (response.statusCode == 201) {
+      return {
+        'success': true,
+        'request': jsonDecode(response.body),
+      };
+    }
+
+    String message = 'Failed to create moderator request: ${response.statusCode}';
+    try {
+      if (response.body != null && response.body.isNotEmpty) {
+        final data = jsonDecode(response.body);
+        if (data is Map && data['message'] != null) message = data['message'];
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+
+    return {'success': false, 'message': message};
+  }
+
+  /// Get all moderator requests (Admin only)
+  static Future<List<Map<String, dynamic>>> getAllModeratorRequests() async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return [];
+
+    final url = Uri.parse('$baseUrl/moderator-requests');
+    final response = await http.get(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    print('API get-all-moderator-requests status: ${response.statusCode}');
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) return List<Map<String, dynamic>>.from(data);
+    }
+    return [];
+  }
+
+  /// Update moderator request status (Admin only)
+  static Future<Map<String, dynamic>> updateModeratorRequestStatus({
+    required String requestId,
+    required int statusValue, // 1 = ACCEPTED, 2 = REJECTED
+    required String adminId,
+  }) async {
+    final token = await SecureStorageService.getAccessToken();
+    if (token == null) return {'success': false, 'message': 'No authentication token available'};
+
+    final url = Uri.parse('$baseUrl/moderator-requests/$requestId');
+    final response = await http.patch(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'status': statusValue,
+        'reviewedByAdminId': adminId,
+      }),
+    );
+
+    print('API update-moderator-request-status status: ${response.statusCode}');
+    print('API update-moderator-request-status body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      return {'success': true, 'request': jsonDecode(response.body)};
+    }
+
+    String message = 'Failed to update moderator request: ${response.statusCode}';
+    try {
+      if (response.body != null && response.body.isNotEmpty) {
+        final data = jsonDecode(response.body);
+        if (data is Map && data['message'] != null) message = data['message'];
+      }
+    } catch (e) {}
+
+    return {'success': false, 'message': message};
   }
 }
