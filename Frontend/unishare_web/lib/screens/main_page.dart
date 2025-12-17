@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/api_service.dart';
+import '../services/secure_storage_service.dart';
 import 'home_page.dart';
 import 'dashboard_page.dart';
 import 'profile_page.dart';
 import 'login_page.dart';
+import 'moderator_reports_page.dart';
+import 'admin_moderator_requests_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -15,6 +19,22 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
+  bool _isAdminOrModerator = false;
+  bool _isAdmin = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkUserRole();
+  }
+
+  Future<void> _checkUserRole() async {
+    final token = await SecureStorageService.getAccessToken();
+    setState(() {
+      _isAdminOrModerator = ApiService.isAdminOrModerator(token);
+      _isAdmin = ApiService.isAdmin(token);
+    });
+  }
 
   void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
@@ -87,6 +107,37 @@ class _MainPageState extends State<MainPage> {
               title: const Text("Profile"),
               onTap: () => _onItemTapped(2),
             ),
+            if (_isAdminOrModerator) ...[
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.flag, color: Colors.red),
+                title: const Text("Moderator Reports"),
+                onTap: () {
+                  Navigator.pop(context); // Close drawer
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ModeratorReportsPage(),
+                    ),
+                  );
+                },
+              ),
+            ],
+            if (_isAdmin) ...[
+              ListTile(
+                leading: const Icon(Icons.admin_panel_settings, color: Colors.blue),
+                title: const Text('Admin: Moderator Requests'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AdminModeratorRequestsPage(),
+                    ),
+                  );
+                },
+              ),
+            ],
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout),

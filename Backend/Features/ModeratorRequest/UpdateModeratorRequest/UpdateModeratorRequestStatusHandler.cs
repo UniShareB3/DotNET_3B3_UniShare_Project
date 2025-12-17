@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
+using Backend.Features.Reports.Enums;
 
 namespace Backend.Features.ModeratorRequest.UpdateModeratorRequest;
 
@@ -68,6 +69,49 @@ public class UpdateModeratorRequestStatusHandler : IRequestHandler<UpdateModerat
                     if (result.Succeeded)
                     {
                         _logger.Information("Assigned Moderator role to user {UserId}", user.Id);
+
+                        // Reassign a few pending reports currently assigned to Admins to the newly promoted moderator
+                        try
+                        {
+                            // Find admin role id
+                            var adminRoleId = await _context.Roles
+                                .Where(r => r.Name == "Admin")
+                                .Select(r => r.Id)
+                                .FirstOrDefaultAsync(cancellationToken);
+
+                            if (adminRoleId != null)
+                            {
+                                // Get admin user ids
+                                var adminUserIds = await _context.UserRoles
+                                    .Where(ur => ur.RoleId == adminRoleId)
+                                    .Select(ur => ur.UserId)
+                                    .ToListAsync(cancellationToken);
+
+                                if (adminUserIds.Any())
+                                {
+                                    // Select up to 5 oldest pending reports that are currently assigned to admins
+                                    var pendingAdminReports = await _context.Reports
+                                        .Where(r => r.Status == ReportStatus.PENDING && r.ModeratorId != null && adminUserIds.Contains(r.ModeratorId.Value))
+                                        .OrderBy(r => r.CreatedDate)
+                                        .Take(5)
+                                        .ToListAsync(cancellationToken);
+
+                                    foreach (var rep in pendingAdminReports)
+                                    {
+                                        rep.ModeratorId = user.Id;
+                                    }
+
+                                    if (pendingAdminReports.Any())
+                                    {
+                                        _logger.Information("Reassigned {Count} pending reports to new moderator {UserId}", pendingAdminReports.Count, user.Id);
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Error(ex, "Failed to reassign pending reports to new moderator {UserId}", user.Id);
+                        }
                     }
                     else
                     {
@@ -87,4 +131,3 @@ public class UpdateModeratorRequestStatusHandler : IRequestHandler<UpdateModerat
         return Results.Ok(requestDto);
     }
 }
-

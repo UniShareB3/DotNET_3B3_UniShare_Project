@@ -543,7 +543,7 @@ reportsGroup.MapGet("/item/{itemId:guid}", async (Guid itemId, IMediator mediato
 reportsGroup.MapGet("/moderator/{moderatorId:guid}", async (Guid moderatorId, IMediator mediator) =>
         await mediator.Send(new GetReportsByModeratorRequest(moderatorId)))
     .WithDescription("Get all reports handled by a specific moderator")
-    .RequireAdmin();
+    .RequireAdminOrModerator();
 
 // Get accepted reports count from last week for an item
 reportsGroup.MapGet("/item/{itemId:guid}/accepted-last-week", async (Guid itemId, int numberOfDays, IMediator mediator) =>
@@ -551,11 +551,11 @@ reportsGroup.MapGet("/item/{itemId:guid}/accepted-last-week", async (Guid itemId
     .WithDescription("Get the number of accepted reports from the specified period of time for a specific item")
     .AllowAnonymous();
 
-// Update report status (Admin only)
+// Update report status (Admin or Moderator)
 reportsGroup.MapPatch("/{reportId:guid}", async (Guid reportId, UpdateReportStatusDto dto, IMediator mediator) =>
         await mediator.Send(new UpdateReportStatusRequest(reportId, dto)))
-    .WithDescription("Update the status of a report (Admin only)")
-    .RequireAdmin();
+    .WithDescription("Update the status of a report (Admin or Moderator)")
+    .RequireAdminOrModerator();
 
 /// Moderator Request Endpoints
 var moderatorRequestsGroup = app.MapGroup("/moderator-requests")

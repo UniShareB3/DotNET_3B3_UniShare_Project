@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../services/api_service.dart';
 import 'package:unishare_web/services/secure_storage_service.dart';
+import 'package:unishare_web/screens/report_item_dialog.dart';
 
 class ProductPage extends StatefulWidget {
   final String itemId;
@@ -242,6 +243,16 @@ class _ProductPageState extends State<ProductPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to create booking. Check availability or try again.')));
     }
+  }
+
+  Future<void> _showReportDialog(String itemTitle) async {
+    await showDialog(
+      context: context,
+      builder: (context) => ReportItemDialog(
+        itemId: widget.itemId,
+        itemTitle: itemTitle,
+      ),
+    );
   }
 
   double get _averageReviewScore {
@@ -953,6 +964,13 @@ class _ProductPageState extends State<ProductPage> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.flag),
+            tooltip: 'Report Item',
+            onPressed: () => _showReportDialog(name),
+          ),
+        ],
       ),
 
       // Buton de Booking fix la bază
