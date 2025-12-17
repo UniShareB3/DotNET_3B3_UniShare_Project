@@ -7,6 +7,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
+using ItemDto = Backend.Features.Items.DTO.ItemDto;
 
 namespace Backend.Features.Items;
 
