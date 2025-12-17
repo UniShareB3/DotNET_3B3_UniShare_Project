@@ -78,6 +78,8 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
     {
         var dto = request.Booking!;
         var item = await _context.Items.FirstOrDefaultAsync(i => i.Id == dto.ItemId);
+        if (item == null)
+            return false;
         return item.OwnerId != dto.BorrowerId;
     }
     
