@@ -2,13 +2,18 @@ name: Backend Tests
 
 on:
   push:
-    branches: [ "master", "master_local" ]
+    branches: [ "master",  "master_local" ]
   pull_request:
     branches: [ "master", "master_local" ]
 
+# 1. Add permissions so the bot can write the test report to the specific PR/Commit
+permissions:
+  contents: read
+  actions: read
+  checks: write
+
 jobs:
   test:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -36,10 +41,17 @@ jobs:
       working-directory: ./Backend.Tests
       
     - name: Run Tests
-      run: dotnet test Backend.Tests.csproj --no-build --configuration Release --verbosity normal
+      run: dotnet test Backend.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx"
       working-directory: ./Backend.Tests
       env:
         JwtSettings__Key: ${{ secrets.JWT_SECRET }}
         JwtSettings__Issuer: ${{ secrets.JWTSETTINGS_ISSUER }}
         JwtSettings__Audience: ${{ secrets.JWTSETTINGS_AUDIENCE }}
 
+    - name: Publish Test Report
+      uses: dorny/test-reporter@v1
+      if: success() || failure() 
+      with:
+        name: .NET Backend Tests
+        path: '**/test-results.trx'
+        reporter: dotnet-trx
