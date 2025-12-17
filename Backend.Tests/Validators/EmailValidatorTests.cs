@@ -72,6 +72,6 @@ public class EmailValidatorTests
     private static UserManager<User> GetMockUserManager()
     {
         var store = new Mock<IUserStore<User>>();
-        return new UserManager<User>(store.Object, null, null, null, null, null, null, null, null);
+        return new UserManager<User>(store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
     }
 }

@@ -1,4 +1,5 @@
-﻿﻿﻿using AutoMapper;
+﻿﻿﻿using System.Diagnostics;
+  using AutoMapper;
 using Backend.Data;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
@@ -80,9 +81,9 @@ public class UpdateBookingStatusHandlerTests
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
         statusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
-        
+
         var updatedBooking = await context.Bookings.FindAsync(bookingId);
-        updatedBooking.BookingStatus.Should().Be(BookingStatus.Approved);
+        updatedBooking?.BookingStatus.Should().Be(BookingStatus.Approved);
     }
     
     [Fact]

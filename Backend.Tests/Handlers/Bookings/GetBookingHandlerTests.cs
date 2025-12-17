@@ -46,7 +46,7 @@ public class GetBookingHandlerTests
             Id = itemId,
             Name = "Test Item",
             Description = "Test Description",
-            OwnerId = Guid.NewGuid()
+            OwnerId = Guid.Parse("a1b2c3d4-e116-4789-8abc-def012345678")
         };
         context.Items.Add(item);
         

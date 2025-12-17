@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Backend.Features.Bookings;
+using Backend.Features.Review.DTO;
 using Backend.Persistence;
 using MediatR;
 using Serilog;
@@ -24,8 +25,9 @@ public class CreateReviewHandler(ApplicationContext dbContext, IMapper mapper) :
 
             _logger.Information("Review {ReviewId} created successfully for item {TargetItemId} and targetUser {TargetUserId}",
                 review.Id, review.TargetItemId, review.TargetUserId);
-                
-            return Results.Created($"/reviews/{review.Id}", review);
+            
+            var reviewDto = mapper.Map<ReviewDto>(review);
+            return Results.Created($"/reviews/{review.Id}", reviewDto);
         }
         catch (Exception ex)
         {

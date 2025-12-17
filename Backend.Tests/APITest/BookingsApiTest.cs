@@ -36,6 +36,8 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         return Task.CompletedTask;
     }
 
+    #region POST /bookings - Create Booking
+
     [Fact]
     public async Task CreateBooking_ReturnsUnauthorizedStatusCode()
     {
@@ -92,7 +94,11 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
-    
+
+    #endregion
+
+    #region GET /bookings - Get All Bookings (Admin only)
+
     [Fact]
     public async Task GetAllBookings_ReturnsUnauthorizedStatusCode()
     {
@@ -118,7 +124,11 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         // Assert
         Assert.Equal(HttpStatusCode.OK, statusCode);
     }
-    
+
+    #endregion
+
+    #region GET /bookings/{id} - Get Booking by ID
+
     [Fact]
     public async Task GetBooking_WhenUnauthenticated_ReturnsUnauthorizedStatusCode()
     {
@@ -146,7 +156,11 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         // Assert
         Assert.Equal(HttpStatusCode.OK, statusCode);
     }
-    
+
+    #endregion
+
+    #region PATCH /bookings/{id} - Update Booking Status
+
     [Fact]
     public async Task UpdateBookingStatus_WhenUnauthenticated_ReturnsUnauthorizedStatusCode()
     {
@@ -199,6 +213,10 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         Assert.Equal(HttpStatusCode.BadRequest, statusCode);
     }
 
+    #endregion
+
+    #region DELETE /bookings/{id} - Delete Booking
+
     [Fact]
     public async Task DeleteBooking_WhenUnauthenticated_ReturnsUnauthorizedStatusCode()
     {
@@ -226,7 +244,11 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         // Assert
         Assert.Equal(HttpStatusCode.OK, statusCode);
     }
-    
+
+    #endregion
+
+    #region Helper Methods
+
     private async Task<string> Authenticate(string email, string password)
     {
         var loginRequest = new LoginUserRequest(email, password);
@@ -286,4 +308,6 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         var response = await _client.SendAsync(request);
         return response.StatusCode;
     }
+
+    #endregion
 }
