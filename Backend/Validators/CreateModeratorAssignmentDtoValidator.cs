@@ -1,19 +1,19 @@
 ﻿using AutoMapper;
 using Backend.Data;
-using Backend.Features.ModeratorRequest.DTO;
-using Backend.Features.ModeratorRequest.Enums;
+using Backend.Features.ModeratorAssignment.DTO;
+using Backend.Features.ModeratorAssignment.Enums;
 using Backend.Persistence;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 
 namespace Backend.Validators;
 
-public class CreateModeratorRequestDtoValidator : AbstractValidator<CreateModeratorRequestDto>
+public class CreateModeratorAssignmentDtoValidator : AbstractValidator<CreateModeratorAssignmentDto>
 {
     private readonly ApplicationContext _appContext;
     private readonly UserManager<User> _userManager;
 
-    public CreateModeratorRequestDtoValidator(ApplicationContext appContext, UserManager<User> userManager)
+    public CreateModeratorAssignmentDtoValidator(ApplicationContext appContext, UserManager<User> userManager)
     {
         _appContext = appContext;
         _userManager = userManager;
@@ -29,29 +29,29 @@ public class CreateModeratorRequestDtoValidator : AbstractValidator<CreateModera
             .WithMessage("Reason cannot exceed 1000 characters");
         
         RuleFor(x => x)
-            .MustAsync(async (request, _) => await IsRequestTimeValid(request))
-            .WithMessage("A month must pass between submitting a moderator request again");
+            .MustAsync(async (assignment, _) => await IsAssignmentTimeValid(assignment))
+            .WithMessage("A month must pass between submitting a moderator assignment again");
         
         RuleFor(x => x)
-            .MustAsync(async (request, _) => await IsModeratorAlready(request))
-            .WithMessage("You already have a moderator request");
+            .MustAsync(async (assignment, _) => await IsModeratorAlready(assignment))
+            .WithMessage("You already have a moderator assignment");
     }
-    private async Task<bool> IsRequestTimeValid(CreateModeratorRequestDto dto)
+    private async Task<bool> IsAssignmentTimeValid(CreateModeratorAssignmentDto dto)
     {
-        var lastRejectedModeratoRequest =
-            _appContext.ModeratorRequests
-                .Where(r => r.UserId == dto.UserId && r.Status == ModeratorRequestStatus.REJECTED)
+        var lastRejectedModeratorAssignment =
+            _appContext.ModeratorAssignments
+                .Where(r => r.UserId == dto.UserId && r.Status == ModeratorAssignmentStatus.REJECTED)
                 .OrderByDescending(r => r.CreatedDate)
                 .FirstOrDefault();
         
-        if (lastRejectedModeratoRequest == null)
+        if (lastRejectedModeratorAssignment == null)
             return true;
-        if(DateTime.UtcNow.AddDays(-30) >  lastRejectedModeratoRequest.CreatedDate)
+        if(DateTime.UtcNow.AddDays(-30) >  lastRejectedModeratorAssignment.CreatedDate)
             return true;
         return false;
     }
 
-    private async Task<bool> IsModeratorAlready(CreateModeratorRequestDto dto)
+    private async Task<bool> IsModeratorAlready(CreateModeratorAssignmentDto dto)
     {
         var user = await _userManager.FindByIdAsync(dto.UserId.ToString());
         IList<string> roles = await _userManager.GetRolesAsync(user);
@@ -64,4 +64,3 @@ public class CreateModeratorRequestDtoValidator : AbstractValidator<CreateModera
         return true;
     }
 }
-

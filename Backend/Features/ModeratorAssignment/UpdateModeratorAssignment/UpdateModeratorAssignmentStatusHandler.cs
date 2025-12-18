@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Backend.Data;
-using Backend.Features.ModeratorRequest.DTO;
-using Backend.Features.ModeratorRequest.Enums;
+using Backend.Features.ModeratorAssignment.DTO;
+using Backend.Features.ModeratorAssignment.Enums;
 using Backend.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -10,34 +10,34 @@ using Serilog;
 using ILogger = Serilog.ILogger;
 using Backend.Features.Reports.Enums;
 
-namespace Backend.Features.ModeratorRequest.UpdateModeratorRequest;
+namespace Backend.Features.ModeratorAssignment.UpdateModeratorAssignment;
 
-public class UpdateModeratorRequestStatusHandler : IRequestHandler<UpdateModeratorRequestStatusRequest, IResult>
+public class UpdateModeratorAssignmentStatusHandler : IRequestHandler<UpdateModeratorAssignmentStatusRequest, IResult>
 {
     private readonly ApplicationContext _context;
     private readonly IMapper _mapper;
     private readonly UserManager<User> _userManager;
-    private readonly ILogger _logger = Log.ForContext<UpdateModeratorRequestStatusHandler>();
+    private readonly ILogger _logger = Log.ForContext<UpdateModeratorAssignmentStatusHandler>();
 
-    public UpdateModeratorRequestStatusHandler(ApplicationContext context, IMapper mapper, UserManager<User> userManager)
+    public UpdateModeratorAssignmentStatusHandler(ApplicationContext context, IMapper mapper, UserManager<User> userManager)
     {
         _context = context;
         _mapper = mapper;
         _userManager = userManager;
     }
 
-    public async Task<IResult> Handle(UpdateModeratorRequestStatusRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> Handle(UpdateModeratorAssignmentStatusRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Updating moderator request {RequestId} status to {Status}", 
-            request.RequestId, request.Dto.Status);
+        _logger.Information("Updating moderator assignment {AssignmentId} status to {Status}", 
+            request.AssignmentId, request.Dto.Status);
 
-        var moderatorRequest = await _context.ModeratorRequests
-            .FirstOrDefaultAsync(mr => mr.Id == request.RequestId, cancellationToken);
+        var moderatorAssignment = await _context.ModeratorAssignments
+            .FirstOrDefaultAsync(mr => mr.Id == request.AssignmentId, cancellationToken);
 
-        if (moderatorRequest == null)
+        if (moderatorAssignment == null)
         {
-            _logger.Warning("Moderator request {RequestId} not found", request.RequestId);
-            return Results.NotFound(new { message = "Moderator request not found" });
+            _logger.Warning("Moderator assignment {AssignmentId} not found", request.AssignmentId);
+            return Results.NotFound(new { message = "Moderator assignment not found" });
         }
 
         // Verify admin exists
@@ -50,15 +50,15 @@ public class UpdateModeratorRequestStatusHandler : IRequestHandler<UpdateModerat
             return Results.NotFound(new { message = "Admin not found" });
         }
 
-        moderatorRequest.Status = request.Dto.Status;
-        moderatorRequest.ReviewedByAdminId = request.Dto.ReviewedByAdminId;
-        moderatorRequest.ReviewedDate = DateTime.UtcNow;
+        moderatorAssignment.Status = request.Dto.Status;
+        moderatorAssignment.ReviewedByAdminId = request.Dto.ReviewedByAdminId;
+        moderatorAssignment.ReviewedDate = DateTime.UtcNow;
 
         // If status is ACCEPTED, assign Moderator role to the user
-        if (request.Dto.Status == ModeratorRequestStatus.ACCEPTED)
+        if (request.Dto.Status == ModeratorAssignmentStatus.ACCEPTED)
         {
             var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Id == moderatorRequest.UserId, cancellationToken);
+                .FirstOrDefaultAsync(u => u.Id == moderatorAssignment.UserId, cancellationToken);
 
             if (user != null)
             {
@@ -124,10 +124,10 @@ public class UpdateModeratorRequestStatusHandler : IRequestHandler<UpdateModerat
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        var requestDto = _mapper.Map<ModeratorRequestDto>(moderatorRequest);
-        _logger.Information("Moderator request {RequestId} status updated to {Status}", 
-            request.RequestId, request.Dto.Status);
+        var assignmentDto = _mapper.Map<ModeratorAssignmentDto>(moderatorAssignment);
+        _logger.Information("Moderator assignment {AssignmentId} status updated to {Status}", 
+            request.AssignmentId, request.Dto.Status);
 
-        return Results.Ok(requestDto);
+        return Results.Ok(assignmentDto);
     }
 }

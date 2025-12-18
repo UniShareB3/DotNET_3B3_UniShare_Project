@@ -1,10 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Backend.Features.ModeratorRequest.Enums;
+using Backend.Features.ModeratorAssignment.Enums;
 
 namespace Backend.Data;
 
-public class ModeratorRequest
+public class ModeratorAssignment
 {
     [Key]
     public Guid Id { get; set; }
@@ -20,7 +20,7 @@ public class ModeratorRequest
     public string Reason { get; set; } = string.Empty;
 
     [Required]
-    public ModeratorRequestStatus Status { get; set; } = ModeratorRequestStatus.PENDING;
+    public ModeratorAssignmentStatus Status { get; set; } = ModeratorAssignmentStatus.PENDING;
 
     [Required]
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
@@ -32,4 +32,3 @@ public class ModeratorRequest
 
     public DateTime? ReviewedDate { get; set; }
 }
-

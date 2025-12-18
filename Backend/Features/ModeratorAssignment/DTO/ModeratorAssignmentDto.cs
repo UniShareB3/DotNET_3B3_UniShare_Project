@@ -1,6 +1,6 @@
-﻿namespace Backend.Features.ModeratorRequest.DTO;
+﻿namespace Backend.Features.ModeratorAssignment.DTO;
 
-public record ModeratorRequestDto(
+public record ModeratorAssignmentDto(
     Guid Id,
     Guid UserId,
     string Reason,
@@ -9,4 +9,3 @@ public record ModeratorRequestDto(
     Guid? ReviewedByAdminId,
     DateTime? ReviewedDate
 );
-
