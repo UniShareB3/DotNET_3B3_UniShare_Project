@@ -47,10 +47,3 @@ jobs:
         JwtSettings__Issuer: ${{ secrets.JWTSETTINGS_ISSUER }}
         JwtSettings__Audience: ${{ secrets.JWTSETTINGS_AUDIENCE }}
 
-    - name: Publish Test Report
-      uses: dorny/test-reporter@v1
-      if: success() || failure() 
-      with:
-        name: .NET Backend Tests
-        path: '**/test-results.trx'
-        reporter: dotnet-trx

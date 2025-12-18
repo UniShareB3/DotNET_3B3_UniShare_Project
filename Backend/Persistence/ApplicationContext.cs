@@ -19,6 +19,8 @@ public class ApplicationContext(DbContextOptions<ApplicationContext> options) : 
     public DbSet<Report> Reports { get; set; }
     public DbSet<ModeratorRequest> ModeratorRequests { get; set; }
     
+    public DbSet<ChatMessage> ChatMessages { get; set; }
+    
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -91,5 +93,18 @@ public class ApplicationContext(DbContextOptions<ApplicationContext> options) : 
         {
             b.ToTable("UserRoles");
         });
+        
+        // Configure ChatMessage relationships
+        builder.Entity<ChatMessage>()
+            .HasOne(m => m.Sender)
+            .WithMany()
+            .HasForeignKey(m => m.SenderId)
+            .OnDelete(DeleteBehavior.Restrict); // Prevent deleting user from deleting messages
+
+        builder.Entity<ChatMessage>()
+            .HasOne(m => m.Receiver)
+            .WithMany()
+            .HasForeignKey(m => m.ReceiverId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

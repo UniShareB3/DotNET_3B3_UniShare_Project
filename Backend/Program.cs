@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Backend.Features.Items;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -80,9 +81,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        // 1. USE SetIsOriginAllowed instead of AllowAnyOrigin
+        // This dynamically checks the origin and allows it, bypassing the "*" restriction
+        policy.SetIsOriginAllowed(origin => true) 
+              
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+              
+            // 2. THIS IS MANDATORY for SignalR
+            .AllowCredentials(); 
     });
 
     options.AddPolicy("Frontend", policy =>
@@ -135,6 +142,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddSignalR();
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -154,6 +163,25 @@ builder.Services.AddAuthentication(options =>
             ValidAudience = builder.Configuration["JwtSettings:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
+        
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                // If the request is for our hub...
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    (path.StartsWithSegments("/hubs/chat")))
+                {
+                    // Read the token from the query string
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+        
     });
 
 builder.Services.AddAuthorization();
@@ -281,6 +309,8 @@ app.MapPost("/register", async (RegisterUserDto dto, IMediator mediator) =>
         await mediator.Send(new RegisterUserRequest(dto)))
     .WithTags("Auth")
     .AllowAnonymous();
+
+app.MapHub<Backend.Hubs.ChatHub>("/hubs/chat");
 
 authGroup.MapPost("/verification-code", async (SendEmailVerificationDto dto, IMediator mediator) =>
         await mediator.Send(new SendEmailVerificationRequest(dto.UserId)))
@@ -584,6 +614,24 @@ moderatorRequestsGroup.MapPatch("/{requestId:guid}",
             await mediator.Send(new UpdateModeratorRequestStatusRequest(requestId, dto)))
     .WithDescription("Update the status of a moderator request (Admin only)")
     .RequireAdmin();
+
+// Add this inside a "Chat" group in Program.cs
+var chatGroup = app.MapGroup("/chat").RequireAuthorization();
+
+chatGroup.MapGet("/history/{otherUserId:guid}", async (Guid otherUserId, ClaimsPrincipal user, ApplicationContext db) =>
+{
+    var currentUserId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+    var messages = await db.ChatMessages
+        .Where(m => (m.SenderId == currentUserId && m.ReceiverId == otherUserId) || 
+                    (m.SenderId == otherUserId && m.ReceiverId == currentUserId))
+        .OrderBy(m => m.Timestamp)
+        .Select(m => new { m.SenderId, m.Content, m.Timestamp })
+        .ToListAsync();
+
+    return Results.Ok(messages);
+});
+
 
 // Log the URLs where the application is listening
 
