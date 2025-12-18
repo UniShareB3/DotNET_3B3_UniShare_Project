@@ -43,6 +43,7 @@
 
     <ItemGroup>
       <Folder Include="Features\Reports\Resolvers\" />
+      <Folder Include="wwwroot\" />
     </ItemGroup>
 
 </Project>
