@@ -1,4 +1,5 @@
 ﻿using Backend.Data;
+using Backend.Features.Shared.IAM.Constants;
 using Backend.Persistence;
 using Backend.Services;
 using MediatR;
@@ -44,7 +45,7 @@ public class RequestPasswordResetHandler(
         {
             UserId = user.Id,
             Code = resetToken, // Store the actual token
-            ExpiresAt = DateTime.UtcNow.AddMinutes(15), // 15 minutes expiration
+            ExpiresAt = DateTime.UtcNow.AddMinutes(IAMConstants.ResetPasswordTokenExpiryMinutes),
             CreatedAt = DateTime.UtcNow
         };
 

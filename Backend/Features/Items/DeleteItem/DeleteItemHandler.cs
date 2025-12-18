@@ -28,7 +28,7 @@ public class DeleteItemHandler(ApplicationContext dbContext) : IRequestHandler<D
 
             _logger.Information("Item {ItemId} deleted successfully.", item.Id);
             
-            return Results.NoContent();
+            return Results.Ok();
         }
         catch (Exception ex)
         {

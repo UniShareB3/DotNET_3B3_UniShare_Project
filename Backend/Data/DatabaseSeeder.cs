@@ -48,7 +48,7 @@ public static class DatabaseSeeder
     {
         _logger.Information("Seeding roles...");
 
-        var roles = new[] { "Admin", "Moderator", "User" };
+        var roles = new[] { "Admin", "Moderator", "User", "Seller" };
 
         foreach (var roleName in roles)
         {
@@ -82,7 +82,7 @@ public static class DatabaseSeeder
                 Id = Guid.NewGuid(),
                 Name = "Universitatea Alexandru Ioan Cuza",
                 ShortCode = "UAIC",
-                EmailDomain = "@uaic.ro",
+                EmailDomain = "@student.uaic.ro",
                 CreatedAt = DateTime.UtcNow
             },
             new University

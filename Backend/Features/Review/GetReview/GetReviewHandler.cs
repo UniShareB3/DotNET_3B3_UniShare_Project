@@ -1,9 +1,11 @@
-﻿using Backend.Persistence;
+﻿using AutoMapper;
+using Backend.Features.Review.DTO;
+using Backend.Persistence;
 using MediatR;
 
 namespace Backend.Features.Review;
 
-public class GetReviewHandler(ApplicationContext dbContext, ILogger<GetReviewHandler> logger) : IRequestHandler<GetReviewRequest, IResult>
+public class GetReviewHandler(ApplicationContext dbContext, IMapper mapper, ILogger<GetReviewHandler> logger) : IRequestHandler<GetReviewRequest, IResult>
 {
     public async Task<IResult> Handle(GetReviewRequest request, CancellationToken cancellationToken)
     {
@@ -16,6 +18,8 @@ public class GetReviewHandler(ApplicationContext dbContext, ILogger<GetReviewHan
         }
 
         logger.LogInformation("Retrieved review with ID {ReviewId} from the database.", request.Id);
-        return Results.Ok(review);
+        
+        var reviewDto = mapper.Map<ReviewDto>(review);
+        return Results.Ok(reviewDto);
     }
 }

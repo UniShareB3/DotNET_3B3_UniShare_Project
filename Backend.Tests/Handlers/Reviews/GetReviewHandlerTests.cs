@@ -1,5 +1,7 @@
-﻿using Backend.Data;
+﻿using AutoMapper;
+using Backend.Data;
 using Backend.Features.Review;
+using Backend.Features.Review.DTO;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -21,25 +23,46 @@ public class GetReviewHandlerTests
         return context;
     }
     
+    private static IMapper CreateMapper()
+    {
+        var mapperMock = new Mock<IMapper>();
+        mapperMock
+            .Setup(m => m.Map<Review>(It.IsAny<CreateReviewDTO>()))
+            .Returns((Func<CreateReviewDTO, Review>)(src => new Review
+            {
+                Id = Guid.Parse("02476839-a33e-4bba-b001-0165bf09e115"),
+                BookingId = src.BookingId,
+                ReviewerId = src.ReviewerId,
+                TargetUserId = src.TargetUserId,
+                TargetItemId = src.TargetItemId,
+                Rating = src.Rating,
+                Comment = src.Comment,
+                CreatedAt = src.CreatedAt
+            }));
+
+        return mapperMock.Object;
+    }
+    
     [Fact]
     public async Task Given_ReviewExists_When_Handle_Then_ReturnsOkWithReview()
     {
         // Arrange
         var logger = new Mock<ILogger<GetReviewHandler>>().Object;
-        var context = CreateInMemoryDbContext("get-review-exists-test-" + Guid.NewGuid());
-        var reviewId = Guid.NewGuid();
+        var mapper = CreateMapper();
+        var context = CreateInMemoryDbContext("09976839-a33e-4bba-b001-0165bf09e105");
+        var reviewId = Guid.Parse("02476839-933e-4bba-b001-0165bf09e105");
         var review = new Review
         {
             Id = reviewId,
-            ReviewerId = Guid.NewGuid(),
-            TargetUserId = Guid.NewGuid(),
+            ReviewerId = Guid.Parse("02476839-a33e-4bba-b001-0105bf09e105"),
+            TargetUserId = Guid.Parse("02479839-a33e-4bba-b001-0165bf09e105"),
             Rating = 5,
             Comment = "Great experience!"
         };
         context.Reviews.Add(review);
         await context.SaveChangesAsync();
 
-        var handler = new GetReviewHandler(context, logger);
+        var handler = new GetReviewHandler(context, mapper ,logger);
         var request = new GetReviewRequest(reviewId);
 
         // Act
@@ -55,10 +78,11 @@ public class GetReviewHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<GetReviewHandler>>().Object;
-        var context = CreateInMemoryDbContext("get-review-not-found-test-" + Guid.NewGuid());
-        var nonExistentReviewId = Guid.NewGuid();
+        var mapper = CreateMapper();
+        var context = CreateInMemoryDbContext("02476839-a33e-4bba-b001-0165bf09e105");
+        var nonExistentReviewId = Guid.Parse("99976839-a33e-4bba-b001-0165bf09e105");
 
-        var handler = new GetReviewHandler(context, logger);
+        var handler = new GetReviewHandler(context, mapper ,logger);
         var request = new GetReviewRequest(nonExistentReviewId);
 
         // Act
@@ -74,9 +98,10 @@ public class GetReviewHandlerTests
     {
         // Arrange
         var logger = new Mock<ILogger<GetReviewHandler>>().Object;
-        var context = CreateInMemoryDbContext("get-review-empty-guid-test-" + Guid.NewGuid());
+        var mapper = CreateMapper();
+        var context = CreateInMemoryDbContext("02476839-a33e-4bba-b001-0165bf099105");
 
-        var handler = new GetReviewHandler(context, logger);
+        var handler = new GetReviewHandler(context, mapper, logger);
         var request = new GetReviewRequest(Guid.Empty);
 
         // Act

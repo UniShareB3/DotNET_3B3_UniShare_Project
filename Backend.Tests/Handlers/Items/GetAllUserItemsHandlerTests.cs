@@ -26,18 +26,16 @@ public class GetAllUserItemsHandlerTests
 
     private static IMapper CreateMapper()
     {
-        using (var loggerFactory = new LoggerFactory())
+        using var loggerFactory = new LoggerFactory();
+        var config = new MapperConfiguration(cfg =>
         {
-            var config = new MapperConfiguration(cfg =>
-            {
-                cfg.CreateMap<Item, ItemDto>()
-                    .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.ToString()))
-                    .ForMember(dest => dest.Condition, opt => opt.MapFrom(src => src.Condition.ToString()))
-                    .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => (src.Owner.FirstName + " " + src.Owner.LastName).Trim()));
-            }, loggerFactory);
+            cfg.CreateMap<Item, ItemDto>()
+                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.ToString()))
+                .ForMember(dest => dest.Condition, opt => opt.MapFrom(src => src.Condition.ToString()))
+                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => (src.Owner.FirstName + " " + src.Owner.LastName).Trim()));
+        }, loggerFactory);
 
-            return config.CreateMapper();
-        }
+        return config.CreateMapper();
     }
 
     [Fact]
@@ -57,12 +55,12 @@ public class GetAllUserItemsHandlerTests
         {
             new Item
             {
-                Id = Guid.NewGuid(), OwnerId = userId, Owner = user, Name = "User Item 1", Description = "Desc 1",
+                Id = Guid.Parse("a112c3d4-e5f6-4789-8abc-def012345678"), OwnerId = userId, Owner = user, Name = "User Item 1", Description = "Desc 1",
                 Category = ItemCategory.Electronics, Condition = ItemCondition.New
             },
             new Item
             {
-                Id = Guid.NewGuid(), OwnerId = userId, Owner = user, Name = "User Item 2", Description = "Desc 2",
+                Id = Guid.Parse("11b2c3d4-e5f6-4789-8abc-def012345678"), OwnerId = userId, Owner = user, Name = "User Item 2", Description = "Desc 2",
                 Category = ItemCategory.Books, Condition = ItemCondition.Good
             }
         };
@@ -70,7 +68,7 @@ public class GetAllUserItemsHandlerTests
         {
             new Item
             {
-                Id = Guid.NewGuid(), OwnerId = otherUserId, Owner = otherUser, Name = "Other User Item 1", Description = "Desc 3",
+                Id = Guid.Parse("1112c3d4-e5f6-4789-8abc-def012345678"), OwnerId = otherUserId, Owner = otherUser, Name = "Other User Item 1", Description = "Desc 3",
                 Category = ItemCategory.Clothing, Condition = ItemCondition.Fair
             }
         };
@@ -130,14 +128,14 @@ public class GetAllUserItemsHandlerTests
     {
         // Arrange
         var context = CreateInMemoryDbContext("cb397a9b-ec7c-4bb4-b683-363f07dd9excp");
-        var userId = Guid.NewGuid();
+        var userId = Guid.Parse("a1b2c3d4-15f6-4789-8abc-def012345678");
         
-        // Add an item to trigger the mapper (null mapper will cause exception)
+        // Add an item to trigger the mapper 
         var user = new User { Id = userId, FirstName = "Test", LastName = "User", Email = "test@test.com", UserName = "testuser" };
         context.Users.Add(user);
         context.Items.Add(new Item
         {
-            Id = Guid.NewGuid(), OwnerId = userId, Owner = user, Name = "Item", Description = "Desc",
+            Id = Guid.Parse("a1b2c3d4-15f6-4789-81bc-def012345678"), OwnerId = userId, Owner = user, Name = "Item", Description = "Desc",
             Category = ItemCategory.Electronics, Condition = ItemCondition.New
         });
         await context.SaveChangesAsync();

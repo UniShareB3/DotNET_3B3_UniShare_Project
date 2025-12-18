@@ -74,5 +74,7 @@ public class Item
     // Navigation properties
     public User? Owner { get; set; }
     public List<Booking>? Bookings { get; set; }
+
+    public long Price { get; set; }
 }
 

@@ -1,5 +1,6 @@
 ﻿﻿using Backend.Data;
-using Backend.Persistence;
+ using Backend.Features.Shared.IAM.Constants;
+ using Backend.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,7 @@ public class ChangePasswordHandler(
     ApplicationContext context) : IRequestHandler<ChangePasswordRequest, IResult>
 {
     private readonly ILogger _logger = Log.ForContext<ChangePasswordHandler>();
-
+    
     public async Task<IResult> Handle(ChangePasswordRequest request, CancellationToken cancellationToken)
     {
         var dto = request.ChangePasswordDto;
@@ -26,19 +27,19 @@ public class ChangePasswordHandler(
             _logger.Warning("Password change failed: User {UserId} not found.", dto.UserId);
             return Results.NotFound(new { error = "User not found" });
         }
-
-        // Find the most recent used password reset token for this user
-        // (it was marked as used when they verified it in VerifyPasswordResetHandler)
+        
         var recentToken = await context.PasswordResetTokens
-            .Where(t => t.UserId == user.Id && t.IsUsed)
+            .Where(t => t.UserId == user.Id && !t.IsUsed)
             .OrderByDescending(t => t.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
-
-        if (recentToken == null || recentToken.CreatedAt < DateTime.UtcNow.AddMinutes(-10))
+        
+        if (recentToken == null || recentToken.CreatedAt < DateTime.UtcNow.AddMinutes(-IAMConstants.ResetPasswordTokenExpiryMinutes))
         {
             _logger.Warning("No valid password reset token found for user {UserId}", dto.UserId);
             return Results.BadRequest(new { error = "Password reset token expired or not found. Please request a new password reset." });
         }
+
+        recentToken.IsUsed = true;
 
         string resetToken = recentToken.Code;
         _logger.Information("Using stored password reset token for user {UserId}", dto.UserId);

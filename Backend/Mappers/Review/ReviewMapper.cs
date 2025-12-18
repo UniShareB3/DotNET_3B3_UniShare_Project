@@ -26,5 +26,7 @@ public class ReviewMapper : Profile
             .ForMember(dest => dest.Rating, opt => opt.MapFrom(src => src.Rating))
             .ForMember(dest => dest.Comment, opt => opt.MapFrom(src => src.Comment))
             .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt));
+        
+        CreateMap<Review, ReviewDto>();
     }
 }

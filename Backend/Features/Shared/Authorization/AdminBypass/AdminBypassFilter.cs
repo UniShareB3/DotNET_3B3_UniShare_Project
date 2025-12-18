@@ -32,6 +32,7 @@ public static class AdminBypassFilter
     {
         return group.AddEndpointFilter(async (context, next) =>
         {
+            Console.WriteLine("HERE2");
             var httpContext = context.HttpContext;
             if (httpContext.User.IsInRole("Admin"))
             {

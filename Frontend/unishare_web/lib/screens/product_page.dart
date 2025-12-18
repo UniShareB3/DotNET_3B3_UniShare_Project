@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../services/api_service.dart';
 import 'package:unishare_web/services/secure_storage_service.dart';
+import 'package:unishare_web/screens/report_item_dialog.dart';
 
 class ProductPage extends StatefulWidget {
   final String itemId;
@@ -51,6 +52,7 @@ class _ProductPageState extends State<ProductPage> {
   Set<DateTime> blockedDays = {};
   bool loading = true;
   String? error;
+  int _acceptedReportsCount = 0;
 
   @override
   void initState() {
@@ -68,11 +70,16 @@ class _ProductPageState extends State<ProductPage> {
     try {
       final it = await ApiService.getItemById(widget.itemId);
       final itemBookings = await ApiService.getBookingsForItem(widget.itemId);
+      final reportsCount = await ApiService.getAcceptedReportsCount(
+        itemId: widget.itemId,
+        numberOfDays: 7,
+      );
 
       setState(() {
         item = it;
         bookings = itemBookings.map((b) => Map<String, dynamic>.from(b)).toList();
         blockedDays = _computeBlockedDays(bookings);
+        _acceptedReportsCount = reportsCount;
         loading = false;
       });
     } catch (e) {
@@ -242,6 +249,16 @@ class _ProductPageState extends State<ProductPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to create booking. Check availability or try again.')));
     }
+  }
+
+  Future<void> _showReportDialog(String itemTitle) async {
+    await showDialog(
+      context: context,
+      builder: (context) => ReportItemDialog(
+        itemId: widget.itemId,
+        itemTitle: itemTitle,
+      ),
+    );
   }
 
   double get _averageReviewScore {
@@ -732,6 +749,35 @@ class _ProductPageState extends State<ProductPage> {
         // Titlu, Categorie & Condiție
         Text(name, style: TextStyle(fontSize: isLargeScreen ? 32 : 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
+
+        // Warning banner for accepted reports
+        if (_acceptedReportsCount > 0)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              border: Border.all(color: Colors.orange.shade300, width: 1.5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 24),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'This product has $_acceptedReportsCount ${_acceptedReportsCount == 1 ? 'report' : 'reports'} in the last 7 days',
+                    style: TextStyle(
+                      color: Colors.orange.shade900,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         if (_reviews.isNotEmpty)
           Row(
             children: [
@@ -953,6 +999,13 @@ class _ProductPageState extends State<ProductPage> {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.flag),
+            tooltip: 'Report Item',
+            onPressed: () => _showReportDialog(name),
+          ),
+        ],
       ),
 
       // Buton de Booking fix la bază
