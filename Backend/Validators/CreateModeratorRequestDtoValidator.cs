@@ -42,7 +42,7 @@ public class CreateModeratorRequestDtoValidator : AbstractValidator<CreateModera
             _appContext.ModeratorRequests
                 .Where(r => r.UserId == dto.UserId && r.Status == ModeratorRequestStatus.REJECTED)
                 .OrderByDescending(r => r.CreatedDate)
-                .First();
+                .FirstOrDefault();
         
         if (lastRejectedModeratoRequest == null)
             return true;

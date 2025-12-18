@@ -184,15 +184,16 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IHashingService, HashingService>();
 builder.Services.AddAutoMapper(cfg =>
-{
-    cfg.AddProfile<UserMapper>();
-    cfg.AddProfile<UniversityMapper>();
-    cfg.AddProfile<ItemMapper>();
-    cfg.AddProfile<BookingMapper>();
-    cfg.AddProfile<ReviewMapper>();
-    cfg.AddProfile<Backend.Mappers.Report.ReportMapper>();
-    cfg.AddProfile<Backend.Mappers.ModeratorRequest.ModeratorRequestMapper>();
-}, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper), typeof(BookingMapper), typeof(ReviewMapper), typeof(Backend.Mappers.Report.ReportMapper), typeof(Backend.Mappers.ModeratorRequest.ModeratorRequestMapper));
+    {
+        cfg.AddProfile<UserMapper>();
+        cfg.AddProfile<UniversityMapper>();
+        cfg.AddProfile<ItemMapper>();
+        cfg.AddProfile<BookingMapper>();
+        cfg.AddProfile<ReviewMapper>();
+        cfg.AddProfile<Backend.Mappers.Report.ReportMapper>();
+        cfg.AddProfile<Backend.Mappers.ModeratorRequest.ModeratorRequestMapper>();
+    }, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper), typeof(BookingMapper), typeof(ReviewMapper),
+    typeof(Backend.Mappers.Report.ReportMapper), typeof(Backend.Mappers.ModeratorRequest.ModeratorRequestMapper));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
@@ -218,7 +219,6 @@ if (!string.IsNullOrEmpty(dbConnectionString))
     {
         var services = scope.ServiceProvider;
         var context = services.GetRequiredService<ApplicationContext>();
-
 
         if (app.Environment.EnvironmentName != "Testing")
         {
@@ -462,11 +462,11 @@ var stripeGroup = app.MapGroup("/stripe")
 
 // Webhook endpoint - must be anonymous for Stripe to call it
 app.MapPost("/stripe/webhook", async (HttpContext httpContext, IMediator mediator) =>
-{
-    var json = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
-    var signatureHeader = httpContext.Request.Headers["Stripe-Signature"].ToString();
-    return await mediator.Send(new HandleStripeWebhookRequest(json, signatureHeader));
-})
+    {
+        var json = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
+        var signatureHeader = httpContext.Request.Headers["Stripe-Signature"].ToString();
+        return await mediator.Send(new HandleStripeWebhookRequest(json, signatureHeader));
+    })
     .WithTags("Stripe")
     .AllowAnonymous()
     .WithDescription("Stripe webhook endpoint for payment events");
@@ -549,8 +549,9 @@ reportsGroup.MapGet("/moderator/{moderatorId:guid}", async (Guid moderatorId, IM
     .RequireAdminOrModerator();
 
 // Get accepted reports count from last week for an item
-reportsGroup.MapGet("/item/{itemId:guid}/accepted-last-week", async (Guid itemId, int numberOfDays, IMediator mediator) =>
-        await mediator.Send(new GetAcceptedReportsCountLastWeekRequest(itemId, numberOfDays)))
+reportsGroup.MapGet("/item/{itemId:guid}/accepted-last-week",
+        async (Guid itemId, int numberOfDays, IMediator mediator) =>
+            await mediator.Send(new GetAcceptedReportsCountLastWeekRequest(itemId, numberOfDays)))
     .WithDescription("Get the number of accepted reports from the specified period of time for a specific item")
     .AllowAnonymous();
 
@@ -578,8 +579,9 @@ moderatorRequestsGroup.MapGet("", async (IMediator mediator) =>
     .RequireAdmin();
 
 // Update moderator request status (Admin only)
-moderatorRequestsGroup.MapPatch("/{requestId:guid}", async (Guid requestId, UpdateModeratorRequestStatusDto dto, IMediator mediator) =>
-        await mediator.Send(new UpdateModeratorRequestStatusRequest(requestId, dto)))
+moderatorRequestsGroup.MapPatch("/{requestId:guid}",
+        async (Guid requestId, UpdateModeratorRequestStatusDto dto, IMediator mediator) =>
+            await mediator.Send(new UpdateModeratorRequestStatusRequest(requestId, dto)))
     .WithDescription("Update the status of a moderator request (Admin only)")
     .RequireAdmin();
 

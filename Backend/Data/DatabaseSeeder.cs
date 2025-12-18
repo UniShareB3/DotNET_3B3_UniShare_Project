@@ -82,7 +82,7 @@ public static class DatabaseSeeder
                 Id = Guid.NewGuid(),
                 Name = "Universitatea Alexandru Ioan Cuza",
                 ShortCode = "UAIC",
-                EmailDomain = "@uaic.ro",
+                EmailDomain = "@student.uaic.ro",
                 CreatedAt = DateTime.UtcNow
             },
             new University
