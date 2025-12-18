@@ -237,6 +237,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateModeratorAssignmentRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateReportRequest>();
 
+
 builder.Services.AddFluentValidationAutoValidation();
 
 var app = builder.Build();
