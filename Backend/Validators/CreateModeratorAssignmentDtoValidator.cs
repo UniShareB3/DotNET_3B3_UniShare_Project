@@ -5,6 +5,7 @@ using Backend.Features.ModeratorAssignment.Enums;
 using Backend.Persistence;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Validators;
 
@@ -35,6 +36,10 @@ public class CreateModeratorAssignmentDtoValidator : AbstractValidator<CreateMod
         RuleFor(x => x)
             .MustAsync(async (assignment, _) => await IsModeratorAlready(assignment))
             .WithMessage("You already have a moderator assignment");
+        
+        RuleFor(x => x)
+            .MustAsync(async (assignment, _) => await IsRequestAlreadyPending(assignment))
+            .WithMessage("You already have a pending moderator assignment request");    
     }
     private async Task<bool> IsAssignmentTimeValid(CreateModeratorAssignmentDto dto)
     {
@@ -60,7 +65,14 @@ public class CreateModeratorAssignmentDtoValidator : AbstractValidator<CreateMod
             if (role == "Moderator")
                 return false;
         }
-
         return true;
+    }
+    
+    private async Task<bool> IsRequestAlreadyPending(CreateModeratorAssignmentDto dto)
+    {
+        var existingAssignment = await _appContext.ModeratorAssignments
+            .FirstOrDefaultAsync(mr => mr.UserId == dto.UserId 
+                && mr.Status == ModeratorAssignmentStatus.PENDING);
+        return existingAssignment == null;
     }
 }
