@@ -13,19 +13,19 @@ namespace Backend.Tests.Seeder;
 public static class TestDataSeeder
 {
     // Predefined test credentials - always consistent across test runs
-    public const string AdminEmail = "admin@uaic.ro";
+    public const string AdminEmail = "admin@student.uaic.ro";
     public const string AdminPassword = "Admin@1234";
     public static readonly Guid AdminId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     
-    public const string ModeratorEmail = "moderator@uaic.ro";
+    public const string ModeratorEmail = "moderator@student.uaic.ro";
     public const string ModeratorPassword = "Moderator@1234";
     public static readonly Guid ModeratorId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     
-    public const string UserEmail = "user@uaic.ro";
+    public const string UserEmail = "user@student.uaic.ro";
     public const string UserPassword = "User@1234";
     public static readonly Guid UserId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
     
-    public const string UnverifiedUserEmail = "unverified@uaic.ro";
+    public const string UnverifiedUserEmail = "unverified@student.uaic.ro";
     public const string UnverifiedUserPassword = "Unverified@1234";
     public static readonly Guid UnverifiedUserId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
 

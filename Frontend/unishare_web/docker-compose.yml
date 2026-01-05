@@ -1,0 +1,17 @@
+﻿version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: unishare-frontend
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    networks:
+      - unishare-network
+networks:
+  unishare-network:
+    driver: bridge
+
