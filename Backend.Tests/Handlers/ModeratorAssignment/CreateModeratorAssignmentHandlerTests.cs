@@ -87,7 +87,7 @@ public class CreateModeratorAssignmentHandlerTests
     {
         // Arrange
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         var mapper = CreateMapper();
 
         var dto = new CreateModeratorAssignmentDto(userId, "I want to help moderate the community");
@@ -108,7 +108,7 @@ public class CreateModeratorAssignmentHandlerTests
     {
         // Arrange
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var dbContext = CreateInMemoryDbContext( Guid.NewGuid().ToString());
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         var mapper = CreateMapper();
 
         var user = new User
@@ -118,16 +118,19 @@ public class CreateModeratorAssignmentHandlerTests
             Email = "test@example.com"
         };
         dbContext.Users.Add(user);
-
+        await dbContext.SaveChangesAsync();
+        
+        var moderatorAssignmentId = Guid.Parse("22222222-2222-2222-2222-222222222222");
         // Add existing pending assignment
         var existingAssignment = new Data.ModeratorAssignment
         {
-            Id = Guid.NewGuid(),
+            Id = moderatorAssignmentId,
             UserId = userId,
             Reason = "Previous application",
             Status = ModeratorAssignmentStatus.PENDING,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
+        
         dbContext.ModeratorAssignments.Add(existingAssignment);
         await dbContext.SaveChangesAsync();
 

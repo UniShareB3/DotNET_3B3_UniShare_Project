@@ -26,7 +26,7 @@ public class CreateBookingValidatorTests
     public async Task Given_NonExistentBorrower_When_Handle_Then_ReturnsNotFound()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("d1d2d3d4-d5d6-d7d8-d9d0-d1d2d3d4d5d6");
+        var context = CreateInMemoryDbContext("create-booking-" + Guid.NewGuid());
         var loggerValidator = new Mock<ILogger<CreateBookingValidator>>().Object;
         var validator = new CreateBookingValidator(context, loggerValidator);
         var itemId = Guid.Parse("44444444-4444-4444-4444-444444444444");
@@ -66,7 +66,7 @@ public class CreateBookingValidatorTests
     public async Task Given_InvalidCreateBookingRequest_When_Handle_Then_ReturnsBadRequest()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("f1e2d3c4-b5a6-7b8c-9d0e-f1a2b3c4d5e6");
+        var context = CreateInMemoryDbContext("create-booking-" + Guid.NewGuid());
         var loggerValidator = new Mock<ILogger<CreateBookingValidator>>().Object;
         var validator = new CreateBookingValidator(context, loggerValidator);
         
@@ -94,7 +94,7 @@ public class CreateBookingValidatorTests
     public async Task Given_EndDateBeforeStartDate_When_Handle_Then_ReturnsBadRequest()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+        var context = CreateInMemoryDbContext("create-booking-" + Guid.NewGuid());
         var loggerValidator = new Mock<ILogger<CreateBookingValidator>>().Object;
         var validator = new CreateBookingValidator(context, loggerValidator);
         var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
@@ -145,7 +145,7 @@ public class CreateBookingValidatorTests
     public async Task Given_NonExistentItem_When_Handle_Then_ReturnsNotFound()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("c1c2c3c4-c5c6-c7c8-c9c0-c1c2c3c4c5c6");
+        var context = CreateInMemoryDbContext("create-booking-" + Guid.NewGuid());
         var loggerValidator = new Mock<ILogger<CreateBookingValidator>>().Object;
         var validator = new CreateBookingValidator(context, loggerValidator);
         

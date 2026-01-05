@@ -62,4 +62,5 @@ public class User : IdentityUser<Guid>
     /// </summary>
     [MaxLength(255)]
     public string? StripeAccountId { get; set; }
+    
 }

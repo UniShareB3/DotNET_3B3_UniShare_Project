@@ -34,6 +34,14 @@ public class CreateReportDtoValidator : AbstractValidator<CreateReportDto>
         RuleFor(x => x)
             .MustAsync(async (request, _) => await IsItemReportedAggresively(request))
             .WithMessage("You already have a moderator assignment");
+        
+        RuleFor(x => x)
+            .MustAsync(async (request, _) => await IsItemReportAlreadyAccepted(request))
+            .WithMessage("You already have an accepted report for this item in the last 30");
+
+        RuleFor(x => x)
+            .MustAsync(async (request, _) => await IsItemReportAlreadyDeclined(request))
+            .WithMessage("You have exceeded the number of declined reports for this item in the last");
     }
     
     public async Task<bool> IsItemAlreadyReported(CreateReportDto request)
@@ -54,5 +62,23 @@ public class CreateReportDtoValidator : AbstractValidator<CreateReportDto>
             .CountAsync();
         return count <= 5;
     }
+    
+    public async Task<bool> IsItemReportAlreadyAccepted(CreateReportDto request)
+    {
+        var existingReport = await _applicationContext.Reports
+            .FirstOrDefaultAsync(
+                r => r.ItemId == request.ItemId && r.UserId == request.UserId &&
+                     r.Status == ReportStatus.ACCEPTED &&
+                     r.CreatedDate >= DateTime.UtcNow.AddDays(-30));
+        return existingReport == null; // Return true if NO accepted report within 30 days
+    }
+    
+    public async Task<bool> IsItemReportAlreadyDeclined(CreateReportDto request)
+    {
+        var existingReports = await _applicationContext.Reports
+            .Where(r => r.ItemId == request.ItemId && r.UserId == request.UserId &&
+                     r.Status == ReportStatus.DECLINED && r.CreatedDate >= DateTime.UtcNow.AddDays(-30))
+            .CountAsync();
+        return existingReports <= 5;
+    }
 }
-

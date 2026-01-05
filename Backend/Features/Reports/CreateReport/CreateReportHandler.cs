@@ -55,6 +55,22 @@ public class CreateReportHandler : IRequestHandler<CreateReportRequest, IResult>
         // Select a Moderator (user in 'Moderator' role) with the least number of PENDING reports assigned.
         // This ensures we distribute new reports to moderators first. If there are no moderators, fallback to a random Admin.
 
+        Guid? selectedModeratorId = await allocateModerator(cancellationToken);
+
+        report.ModeratorId = selectedModeratorId;
+        _logger.Information("Selected moderator for new report: {ModeratorId}", selectedModeratorId?.ToString() ?? "<none>");
+
+        _context.Reports.Add(report);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var reportDto = _mapper.Map<ReportDto>(report);
+        _logger.Information("Report {ReportId} created successfully", report.Id);
+
+        return Results.Created($"/reports/{report.Id}", reportDto);
+    }
+
+    private async Task<Guid?> allocateModerator(CancellationToken cancellationToken)
+    {
         Guid? selectedModeratorId = null;
 
         // Find Moderator role id
@@ -114,15 +130,6 @@ public class CreateReportHandler : IRequestHandler<CreateReportRequest, IResult>
              }
          }
 
-        report.ModeratorId = selectedModeratorId;
-        _logger.Information("Selected moderator for new report: {ModeratorId}", selectedModeratorId?.ToString() ?? "<none>");
-
-        _context.Reports.Add(report);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        var reportDto = _mapper.Map<ReportDto>(report);
-        _logger.Information("Report {ReportId} created successfully", report.Id);
-
-        return Results.Created($"/reports/{report.Id}", reportDto);
+         return selectedModeratorId;
     }
 }
