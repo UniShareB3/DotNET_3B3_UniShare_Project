@@ -15,9 +15,12 @@ class ApiService {
   // flutter build web --dart-define=API_BASE_URL=https://your-backend-url.azurewebsites.net
   // If not set, defaults to localhost which will cause connection errors in production
   static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:5083',
+    'API_BASE_URL'
   );
+  
+  if( baseUrl.isEmpty ) {
+    throw Exception('API_BASE_URL is not set. Please configure it during build.');
+  }
   
   static void _logBaseUrl() {
     print('🔧 ApiService initialized with baseUrl: $baseUrl');
