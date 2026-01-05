@@ -14,6 +14,7 @@ RUN flutter pub get
 COPY . .
 
 # Build the Flutter web app
+RUN echo "API_BASE_URL=$API_BASE_URL" > .env
 RUN flutter build web --release
 
 # Stage 2: Serve the app with nginx

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:unishare_web/services/secure_storage_service.dart';
 
 import '../main.dart';
@@ -14,13 +15,7 @@ class ApiService {
   // IMPORTANT: For Azure deployment, set API_BASE_URL during build:
   // flutter build web --dart-define=API_BASE_URL=https://your-backend-url.azurewebsites.net
   // If not set, defaults to localhost which will cause connection errors in production
-  static const String baseUrl = String.fromEnvironment(
-    'API_BASE_URL'
-  );
-  
-  if( baseUrl.isEmpty ) {
-    throw Exception('API_BASE_URL is not set. Please configure it during build.');
-  }
+  static final String baseUrl = dotenv.env['API_BASE_URL'] ?? 'http://localhost:5000';
   
   static void _logBaseUrl() {
     print('🔧 ApiService initialized with baseUrl: $baseUrl');
