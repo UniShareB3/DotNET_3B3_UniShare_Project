@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Backend.Features.Items;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -14,15 +15,17 @@ using Backend.Data;
 using Backend.Features.Universities;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
-using Backend.Features.ModeratorRequest;
-using Backend.Features.ModeratorRequest.CreateModeratorRequest;
-using Backend.Features.ModeratorRequest.DTO;
-using Backend.Features.ModeratorRequest.GetAllModeratorRequests;
-using Backend.Features.ModeratorRequest.UpdateModeratorRequest;
+using Backend.Features.ModeratorAssignment;
+using Backend.Features.ModeratorAssignment.CreateModeratorAssignment;
+using Backend.Features.ModeratorAssignment.DTO;
+using Backend.Features.ModeratorAssignment.GetAllModeratorAssignments;
+using Backend.Features.ModeratorAssignment.UpdateModeratorAssignment;
 using Backend.Features.Shared.Pipeline;
 using Backend.Features.Shared.Authorization;
 using Backend.Features.Users;
 using Backend.Features.Users.Dtos;
+using Backend.Features.Users.GetAdmins;
+using Backend.Features.Users.GetModerators;
 using MediatR;
 using FluentValidation.AspNetCore;
 using Backend.Features.Review;
@@ -80,9 +83,15 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
+        // 1. USE SetIsOriginAllowed instead of AllowAnyOrigin
+        // This dynamically checks the origin and allows it, bypassing the "*" restriction
+        policy.SetIsOriginAllowed(origin => true) 
+              
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+              
+            // 2. THIS IS MANDATORY for SignalR
+            .AllowCredentials(); 
     });
 
     options.AddPolicy("Frontend", policy =>
@@ -135,6 +144,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddSignalR();
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -154,6 +165,25 @@ builder.Services.AddAuthentication(options =>
             ValidAudience = builder.Configuration["JwtSettings:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
+        
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                // If the request is for our hub...
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    (path.StartsWithSegments("/hubs/chat")))
+                {
+                    // Read the token from the query string
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+        
     });
 
 builder.Services.AddAuthorization();
@@ -191,9 +221,9 @@ builder.Services.AddAutoMapper(cfg =>
         cfg.AddProfile<BookingMapper>();
         cfg.AddProfile<ReviewMapper>();
         cfg.AddProfile<Backend.Mappers.Report.ReportMapper>();
-        cfg.AddProfile<Backend.Mappers.ModeratorRequest.ModeratorRequestMapper>();
-    }, typeof(UserMapper), typeof(UniversityMapper), typeof(ItemMapper), typeof(BookingMapper), typeof(ReviewMapper),
-    typeof(Backend.Mappers.Report.ReportMapper), typeof(Backend.Mappers.ModeratorRequest.ModeratorRequestMapper));
+        cfg.AddProfile<Backend.Mappers.ModeratorAssignment.ModeratorAssignmentMapper>();
+    },
+    typeof(Backend.Mappers.Report.ReportMapper), typeof(Backend.Mappers.ModeratorAssignment.ModeratorAssignmentMapper));
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
@@ -204,8 +234,9 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateBookingRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateBookingStatusRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordRequest>();
-builder.Services.AddValidatorsFromAssemblyContaining<CreateModeratorRequestRequest>();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateModeratorAssignmentRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateReportRequest>();
+
 
 builder.Services.AddFluentValidationAutoValidation();
 
@@ -282,6 +313,8 @@ app.MapPost("/register", async (RegisterUserDto dto, IMediator mediator) =>
     .WithTags("Auth")
     .AllowAnonymous();
 
+app.MapHub<Backend.Hubs.ChatHub>("/hubs/chat");
+
 authGroup.MapPost("/verification-code", async (SendEmailVerificationDto dto, IMediator mediator) =>
         await mediator.Send(new SendEmailVerificationRequest(dto.UserId)))
     .RequireAuthorization()
@@ -318,6 +351,18 @@ usersGroup.MapPost("/password", async (ChangePasswordDto dto, IMediator mediator
 // Admin only - list all users
 usersGroup.MapGet("", async (IMediator mediator) =>
         await mediator.Send(new GetAllUsersRequest()))
+    .RequireAdmin();
+
+// Admin only - get all admins
+usersGroup.MapGet("/admins", async (IMediator mediator) =>
+        await mediator.Send(new GetAdminsRequest()))
+    .WithDescription("Get all admin users with their IDs and emails (Admin only)")
+    .RequireAdmin();
+
+// Admin only - get all moderators
+usersGroup.MapGet("/moderators", async (IMediator mediator) =>
+        await mediator.Send(new GetModeratorsRequest()))
+    .WithDescription("Get all moderator users with their IDs and emails (Admin only)")
     .RequireAdmin();
 
 // User-specific routes that require owner or admin
@@ -561,29 +606,47 @@ reportsGroup.MapPatch("/{reportId:guid}", async (Guid reportId, UpdateReportStat
     .WithDescription("Update the status of a report (Admin or Moderator)")
     .RequireAdminOrModerator();
 
-/// Moderator Request Endpoints
-var moderatorRequestsGroup = app.MapGroup("/moderator-requests")
-    .WithTags("ModeratorRequests")
+/// Moderator Assignment Endpoints
+var moderatorAssignmentsGroup = app.MapGroup("/moderator-assignments")
+    .WithTags("ModeratorAssignments")
     .RequireAuthorization();
 
-// Submit a moderator request
-moderatorRequestsGroup.MapPost("", async (CreateModeratorRequestDto dto, IMediator mediator) =>
-        await mediator.Send(new CreateModeratorRequestRequest(dto)))
+// Submit a moderator assignment
+moderatorAssignmentsGroup.MapPost("", async (CreateModeratorAssignmentDto dto, IMediator mediator) =>
+        await mediator.Send(new CreateModeratorAssignmentRequest(dto)))
     .WithDescription("Submit a request to become a moderator")
     .RequireEmailVerification();
 
-// Get all moderator requests (Admin only)
-moderatorRequestsGroup.MapGet("", async (IMediator mediator) =>
-        await mediator.Send(new GetAllModeratorRequestsRequest()))
-    .WithDescription("Get all moderator requests in the system (Admin only)")
+// Get all moderator assignments (Admin only)
+moderatorAssignmentsGroup.MapGet("", async (IMediator mediator) =>
+        await mediator.Send(new GetAllModeratorAssignmentsRequest()))
+    .WithDescription("Get all moderator assignments in the system (Admin only)")
     .RequireAdmin();
 
-// Update moderator request status (Admin only)
-moderatorRequestsGroup.MapPatch("/{requestId:guid}",
-        async (Guid requestId, UpdateModeratorRequestStatusDto dto, IMediator mediator) =>
-            await mediator.Send(new UpdateModeratorRequestStatusRequest(requestId, dto)))
-    .WithDescription("Update the status of a moderator request (Admin only)")
+// Update moderator assignment status (Admin only)
+moderatorAssignmentsGroup.MapPatch("/{assignmentId:guid}",
+        async (Guid assignmentId, UpdateModeratorAssignmentStatusDto dto, IMediator mediator) =>
+            await mediator.Send(new UpdateModeratorAssignmentStatusRequest(assignmentId, dto)))
+    .WithDescription("Update the status of a moderator assignment (Admin only)")
     .RequireAdmin();
+
+// Add this inside a "Chat" group in Program.cs
+var chatGroup = app.MapGroup("/chat").RequireAuthorization();
+
+chatGroup.MapGet("/history/{otherUserId:guid}", async (Guid otherUserId, ClaimsPrincipal user, ApplicationContext db) =>
+{
+    var currentUserId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+    var messages = await db.ChatMessages
+        .Where(m => (m.SenderId == currentUserId && m.ReceiverId == otherUserId) || 
+                    (m.SenderId == otherUserId && m.ReceiverId == currentUserId))
+        .OrderBy(m => m.Timestamp)
+        .Select(m => new { m.SenderId, m.Content, m.Timestamp })
+        .ToListAsync();
+
+    return Results.Ok(messages);
+});
+
 
 // Log the URLs where the application is listening
 

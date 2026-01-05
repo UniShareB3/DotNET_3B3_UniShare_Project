@@ -69,6 +69,34 @@ namespace Backend.Migrations
                     b.ToTable("Bookings");
                 });
 
+            modelBuilder.Entity("Backend.Data.ChatMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ReceiverId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiverId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("ChatMessages");
+                });
+
             modelBuilder.Entity("Backend.Data.Comment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -178,7 +206,7 @@ namespace Backend.Migrations
                     b.ToTable("Items");
                 });
 
-            modelBuilder.Entity("Backend.Data.ModeratorRequest", b =>
+            modelBuilder.Entity("Backend.Data.ModeratorAssignment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -210,7 +238,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ModeratorRequests");
+                    b.ToTable("ModeratorAssignments");
                 });
 
             modelBuilder.Entity("Backend.Data.PasswordResetToken", b =>
@@ -641,6 +669,25 @@ namespace Backend.Migrations
                     b.Navigation("Item");
                 });
 
+            modelBuilder.Entity("Backend.Data.ChatMessage", b =>
+                {
+                    b.HasOne("Backend.Data.User", "Receiver")
+                        .WithMany()
+                        .HasForeignKey("ReceiverId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Data.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Receiver");
+
+                    b.Navigation("Sender");
+                });
+
             modelBuilder.Entity("Backend.Data.Comment", b =>
                 {
                     b.HasOne("Backend.Data.User", "Commenter")
@@ -682,7 +729,7 @@ namespace Backend.Migrations
                     b.Navigation("Owner");
                 });
 
-            modelBuilder.Entity("Backend.Data.ModeratorRequest", b =>
+            modelBuilder.Entity("Backend.Data.ModeratorAssignment", b =>
                 {
                     b.HasOne("Backend.Data.User", "ReviewedByAdmin")
                         .WithMany()
