@@ -37,7 +37,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
         return config.CreateMapper();
     }
 
-    private Mock<UserManager<User>> GetMockUserManager()
+    private static Mock<UserManager<User>> GetMockUserManager()
     {
         var store = new Mock<IUserStore<User>>();
         var mgr = new Mock<UserManager<User>>(store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
@@ -376,7 +376,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
         var beforeUpdate = DateTime.UtcNow;
 
         // Act
-        var result = await handler.Handle(request, CancellationToken.None);
+        await handler.Handle(request, CancellationToken.None);
 
         // Assert
         var updatedAssignment = await dbContext.ModeratorAssignments.FindAsync(assignmentId);

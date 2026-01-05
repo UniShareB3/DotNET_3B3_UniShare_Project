@@ -248,7 +248,7 @@ public class CreateReportHandlerTests
         var handler = new CreateReportHandler(context, mapper);
 
         // Act
-        var result = await handler.Handle(request, CancellationToken.None);
+        await handler.Handle(request, CancellationToken.None);
 
         // Assert
         var newReport = await context.Reports
@@ -309,7 +309,7 @@ public class CreateReportHandlerTests
         var handler = new CreateReportHandler(context, mapper);
 
         // Act
-        var result = await handler.Handle(request, CancellationToken.None);
+        await handler.Handle(request, CancellationToken.None);
 
         // Assert
         var newReport = await context.Reports.FirstOrDefaultAsync();
@@ -348,7 +348,7 @@ public class CreateReportHandlerTests
         var handler = new CreateReportHandler(context, mapper);
 
         // Act
-        var result = await handler.Handle(request, CancellationToken.None);
+         await handler.Handle(request, CancellationToken.None);
 
         // Assert
         var newReport = await context.Reports.FirstOrDefaultAsync();

@@ -100,7 +100,7 @@ public class GetItemHandlerTests
         var request = new GetItemRequest(Guid.Parse("cb8f7efd-c4ad-4fd9-b100-0aa7fb0b3cc1"));
 
         // Simulate exception by disposing the context before handling
-        context.Dispose();
+        await context.DisposeAsync();
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
