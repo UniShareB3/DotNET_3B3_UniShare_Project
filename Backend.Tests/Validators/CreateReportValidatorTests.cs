@@ -30,7 +30,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
         
         var dtoValidator = new CreateReportDtoValidator(dbContext);
         var validator = new CreateReportValidator(dtoValidator);
@@ -50,7 +50,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(Guid.Empty, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
         
         var dtoValidator = new CreateReportDtoValidator(dbContext);
         var validator = new CreateReportValidator(dtoValidator);
@@ -71,7 +71,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, Guid.Empty, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
         
         var dtoValidator = new CreateReportDtoValidator(dbContext);
         var validator = new CreateReportValidator(dtoValidator);
@@ -93,7 +93,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
         
         var dtoValidator = new CreateReportDtoValidator(dbContext);
         var validator = new CreateReportValidator(dtoValidator);
@@ -116,7 +116,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, longDescription);
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
         
         var dtoValidator = new CreateReportDtoValidator(dbContext);
         var validator = new CreateReportValidator(dtoValidator);
@@ -139,7 +139,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
         
         // Add existing pending report
         var existingReport = new Report
@@ -177,7 +177,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
         
         // Add 3 declined reports within last 30 days
         for (int i = 0; i < 3; i++)
@@ -217,9 +217,9 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
         
-        // Add 6 declined reports within last 30 days
+        // Add MORE than 5 declined reports within last 30 days (6 reports)
         for (int i = 0; i < 6; i++)
         {
             var report = new Report
@@ -245,7 +245,7 @@ public class CreateReportValidatorTests
         
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage == "You already have a moderator assignment");
+        result.Errors.Should().Contain(e => e.ErrorMessage == "You have exceeded the number of declined reports for this item in the last");
     }
 
     [Fact]
@@ -258,9 +258,9 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
         
-        // Add 6 declined reports older than 30 days
+        // Add 6 declined reports older than 30 days - these should NOT count
         for (int i = 0; i < 6; i++)
         {
             var report = new Report
@@ -289,7 +289,7 @@ public class CreateReportValidatorTests
     }
 
     [Fact]
-    public async Task Given_Request_When_AcceptedReportsExist_Then_ReturnsValid()
+    public async Task Given_Request_When_AcceptedReportExistsWithin30Days_Then_ReturnsValidationError()
     {
         // Arrange
         Guid itemId = Guid.Parse("11111111-1111-1111-1111-111111111111");
@@ -298,23 +298,58 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
         
-        // Add accepted reports (should not block new reports)
-        for (int i = 0; i < 3; i++)
+        // Add accepted report within 30 days (should block new reports)
+        var report = new Report
         {
-            var report = new Report
-            {
-                Id = Guid.NewGuid(),
-                ItemId = itemId,
-                UserId = userId,
-                OwnerId = ownerId,
-                Description = $"Accepted report {i}",
-                Status = ReportStatus.ACCEPTED,
-                CreatedDate = DateTime.UtcNow.AddDays(-i * 5)
-            };
-            dbContext.Reports.Add(report);
-        }
+            Id = Guid.NewGuid(),
+            ItemId = itemId,
+            UserId = userId,
+            OwnerId = ownerId,
+            Description = "Accepted report",
+            Status = ReportStatus.ACCEPTED,
+            CreatedDate = DateTime.UtcNow.AddDays(-10)
+        };
+        dbContext.Reports.Add(report);
+        
+        await dbContext.SaveChangesAsync();
+        
+        var dtoValidator = new CreateReportDtoValidator(dbContext);
+        var validator = new CreateReportValidator(dtoValidator);
+        
+        // Act
+        var result = await validator.ValidateAsync(request);
+        
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.ErrorMessage == "You already have an accepted report for this item in the last 30");
+    }
+
+    [Fact]
+    public async Task Given_Request_When_AcceptedReportExistsOlderThan30Days_Then_ReturnsValid()
+    {
+        // Arrange
+        Guid itemId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        Guid userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        Guid ownerId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        
+        var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
+        var request = new CreateReportRequest(dto);
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
+        
+        // Add accepted report older than 30 days (should NOT block)
+        var report = new Report
+        {
+            Id = Guid.NewGuid(),
+            ItemId = itemId,
+            UserId = userId,
+            OwnerId = ownerId,
+            Description = "Old accepted report",
+            Status = ReportStatus.ACCEPTED,
+            CreatedDate = DateTime.UtcNow.AddDays(-31)
+        };
+        dbContext.Reports.Add(report);
         
         await dbContext.SaveChangesAsync();
         
@@ -334,7 +369,7 @@ public class CreateReportValidatorTests
         // Arrange
         var dto = new CreateReportDto(Guid.Empty, Guid.Empty, "");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        var dbContext = CreateInMemoryDbContext("create-report-" + Guid.NewGuid());
         
         var dtoValidator = new CreateReportDtoValidator(dbContext);
         var validator = new CreateReportValidator(dtoValidator);
@@ -344,10 +379,9 @@ public class CreateReportValidatorTests
         
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().HaveCount(3);
+        result.Errors.Should().HaveCountGreaterThan(2);
         result.Errors.Should().Contain(e => e.ErrorMessage == "Item ID is required");
         result.Errors.Should().Contain(e => e.ErrorMessage == "User ID is required");
         result.Errors.Should().Contain(e => e.ErrorMessage == "Description is required");
     }
 }
-

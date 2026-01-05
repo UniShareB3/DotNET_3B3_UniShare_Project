@@ -69,7 +69,7 @@ public class DeleteItemHandlerTests
         var request = new DeleteItemRequest(Guid.Parse("a9b2c3d4-e5f6-4789-8abc-def012345678"));
 
         // Simulate exception by disposing the context before handling
-        context.Dispose();
+        await context.DisposeAsync();
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);

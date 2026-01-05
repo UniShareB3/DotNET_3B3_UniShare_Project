@@ -68,6 +68,47 @@ public class EmailValidatorTests
         Assert.False(result.Succeeded);
         Assert.Contains(result.Errors, e => e.Code == "InvalidEmail");
     }
+    
+    [Fact]
+    public async Task Given_NullUniversityId_When_ValidatingEmail_Then_Success()
+    {
+        // Arrange
+        var user = new User
+        {
+            Email = "stefan@uaic.ro",
+            UniversityId = null
+        };
+        var userManager = GetMockUserManager();
+        var validator = new EmailValidator(_context);
+        
+        // Act
+        var result = await validator.ValidateAsync(userManager, user);
+        
+        // Assert
+        Assert.True(result.Succeeded);
+    }
+    
+    [Fact]
+    public async Task Given_NonExistentUniversityId_When_ValidatingEmail_Then_ThrowsError()
+    {
+        // Arrange
+        var universityId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+        var user = new User
+        {
+            Email = "stefan@uaic.ro",
+            UniversityId = universityId
+        };
+        var userManager = GetMockUserManager();
+        var validator = new EmailValidator(_context);
+
+        // Act
+        var result = await validator.ValidateAsync(userManager, user);
+        
+        // Assert
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Errors, e => e.Code == "UniversityNotFound");
+    }
+
 
     private static UserManager<User> GetMockUserManager()
     {

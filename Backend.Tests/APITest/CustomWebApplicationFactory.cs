@@ -48,7 +48,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
 
         await context.Database.EnsureCreatedAsync();
         
-        if (!context.Users.Any())
+        if (!await context.Users.AnyAsync())
         {
             await TestDataSeeder.SeedTestDataAsync(context, userManager, roleManager);
         }

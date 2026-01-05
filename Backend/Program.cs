@@ -596,7 +596,7 @@ reportsGroup.MapGet("/moderator/{moderatorId:guid}", async (Guid moderatorId, IM
 // Get accepted reports count from last week for an item
 reportsGroup.MapGet("/item/{itemId:guid}/accepted-last-week",
         async (Guid itemId, int numberOfDays, IMediator mediator) =>
-            await mediator.Send(new GetAcceptedReportsCountLastWeekRequest(itemId, numberOfDays)))
+            await mediator.Send(new GetAcceptedReportsCountRequest(itemId, numberOfDays)))
     .WithDescription("Get the number of accepted reports from the specified period of time for a specific item")
     .AllowAnonymous();
 

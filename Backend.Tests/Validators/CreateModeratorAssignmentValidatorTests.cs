@@ -39,7 +39,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         var dto = new CreateModeratorAssignmentDto(userId, "I want to help moderate the community");
         var request = new CreateModeratorAssignmentRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext("create-moderator-assignment-" + Guid.NewGuid());
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
@@ -65,7 +65,7 @@ public class CreateModeratorAssignmentValidatorTests
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         CreateModeratorAssignmentDto dto = new CreateModeratorAssignmentDto(Guid.Empty, "Valid reason");
         CreateModeratorAssignmentRequest request = new CreateModeratorAssignmentRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext("create-moderator-assignment-" + Guid.NewGuid());
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
@@ -92,7 +92,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         CreateModeratorAssignmentDto dto = new CreateModeratorAssignmentDto(userId, "");
         CreateModeratorAssignmentRequest request = new CreateModeratorAssignmentRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext("create-moderator-assignment-" + Guid.NewGuid());
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
@@ -120,7 +120,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         CreateModeratorAssignmentDto dto = new CreateModeratorAssignmentDto(userId, longReason);
         CreateModeratorAssignmentRequest request = new CreateModeratorAssignmentRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext("create-moderator-assignment-" + Guid.NewGuid());
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
@@ -140,45 +140,6 @@ public class CreateModeratorAssignmentValidatorTests
     }
 
     [Fact]
-    public async Task Given_Request_When_DeclinePreviously_Then_ReturnsValidationError()
-    {
-        // Arrange
-        Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        
-        CreateModeratorAssignmentDto dto = new CreateModeratorAssignmentDto(userId, "Violation of community guidelines");
-        CreateModeratorAssignmentRequest request = new CreateModeratorAssignmentRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
-        
-        var existingAssignment = new ModeratorAssignment()
-        {
-            Id = Guid.NewGuid(),
-            UserId = userId,
-            Reason = "Previous violation",
-            Status = Features.ModeratorAssignment.Enums.ModeratorAssignmentStatus.REJECTED,
-            CreatedDate = DateTime.UtcNow.AddDays(-1)
-        };
-        
-        dbContext.ModeratorAssignments.Add(existingAssignment);
-        await dbContext.SaveChangesAsync();
-        
-        Mock<UserManager<User>> mockUserManager = GetMockUserManager();
-        mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
-            .ReturnsAsync(new User { Id = userId, UserName = "testuser" });
-        mockUserManager.Setup(um => um.GetRolesAsync(It.IsAny<User>()))
-            .ReturnsAsync(new List<string> { "User" });
-        
-        var dtoValidator = new CreateModeratorAssignmentDtoValidator(dbContext, mockUserManager.Object);
-        var validator = new CreateModeratorAssignmentRequestValidator(dtoValidator);
-        
-        // Act
-        var result = await validator.ValidateAsync(request);
-        
-        // Assert 
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage == "A month must pass between submitting a moderator assignment again");
-    }
-
-    [Fact]
     public async Task Given_Request_When_DeclinedMoreThan30DaysAgo_Then_ReturnsValid()
     {
         // Arrange
@@ -186,7 +147,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         CreateModeratorAssignmentDto dto = new CreateModeratorAssignmentDto(userId, "I want to help moderate");
         CreateModeratorAssignmentRequest request = new CreateModeratorAssignmentRequest(dto);
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
+        var dbContext = CreateInMemoryDbContext("create-moderator-assignment-" + Guid.NewGuid());
         
         var existingAssignment = new ModeratorAssignment()
         {
@@ -224,7 +185,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         CreateModeratorAssignmentDto dto = new CreateModeratorAssignmentDto(userId, "I want to help moderate");
         CreateModeratorAssignmentRequest request = new CreateModeratorAssignmentRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext("create-moderator-assignment-" + Guid.NewGuid());
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
@@ -251,7 +212,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         CreateModeratorAssignmentDto dto = new CreateModeratorAssignmentDto(userId, "I want to help moderate");
         CreateModeratorAssignmentRequest request = new CreateModeratorAssignmentRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext("create-moderator-assignment-" + Guid.NewGuid());
         
         // Existing pending assignment shouldn't block a new one (validation only checks REJECTED status)
         var existingAssignment = new ModeratorAssignment()

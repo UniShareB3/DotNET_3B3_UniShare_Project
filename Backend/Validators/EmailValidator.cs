@@ -24,7 +24,11 @@ public class EmailValidator(ApplicationContext dbContext) : IUserValidator<User>
         // If university not found or has no email domain, skip validation
         if (university == null || string.IsNullOrEmpty(university.EmailDomain))
         {
-            return Task.FromResult(IdentityResult.Success);
+            return Task.FromResult(IdentityResult.Failed(new IdentityError
+            {
+                Code = "UniversityNotFound",
+                Description = "University not found or has no email domain."
+            }));
         }
 
         if (user.Email != null) {
