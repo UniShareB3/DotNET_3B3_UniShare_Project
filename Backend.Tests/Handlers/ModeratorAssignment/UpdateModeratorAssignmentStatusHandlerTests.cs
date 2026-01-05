@@ -178,7 +178,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
         Guid userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
         Guid adminId = Guid.Parse("33333333-3333-3333-3333-333333333333");
         
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         var mapper = CreateMapper();
         var mockUserManager = GetMockUserManager();
 

@@ -191,7 +191,7 @@ public class CreateModeratorAssignmentHandlerTests
     {
         // Arrange
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());g
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         var mapper = CreateMapper();
 
         var user = new User

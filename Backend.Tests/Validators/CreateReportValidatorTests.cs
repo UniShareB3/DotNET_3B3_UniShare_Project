@@ -30,7 +30,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         
         var dtoValidator = new CreateReportDtoValidator(dbContext);
         var validator = new CreateReportValidator(dtoValidator);
@@ -177,7 +177,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         
         // Add 3 declined reports within last 30 days
         for (int i = 0; i < 3; i++)
@@ -217,7 +217,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         
         // Add 6 declined reports within last 30 days
         for (int i = 0; i < 6; i++)
@@ -258,7 +258,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         
         // Add 6 declined reports older than 30 days
         for (int i = 0; i < 6; i++)
@@ -298,7 +298,7 @@ public class CreateReportValidatorTests
         
         var dto = new CreateReportDto(itemId, userId, "This item violates community guidelines");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         
         // Add accepted reports (should not block new reports)
         for (int i = 0; i < 3; i++)
@@ -334,7 +334,7 @@ public class CreateReportValidatorTests
         // Arrange
         var dto = new CreateReportDto(Guid.Empty, Guid.Empty, "");
         var request = new CreateReportRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         
         var dtoValidator = new CreateReportDtoValidator(dbContext);
         var validator = new CreateReportValidator(dtoValidator);
