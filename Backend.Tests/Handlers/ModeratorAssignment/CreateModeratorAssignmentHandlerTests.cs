@@ -108,7 +108,7 @@ public class CreateModeratorAssignmentHandlerTests
     {
         // Arrange
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext( Guid.NewGuid().ToString());
         var mapper = CreateMapper();
 
         var user = new User
@@ -149,7 +149,7 @@ public class CreateModeratorAssignmentHandlerTests
     {
         // Arrange
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         var mapper = CreateMapper();
 
         var user = new User
@@ -191,7 +191,7 @@ public class CreateModeratorAssignmentHandlerTests
     {
         // Arrange
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());g
         var mapper = CreateMapper();
 
         var user = new User
@@ -233,7 +233,7 @@ public class CreateModeratorAssignmentHandlerTests
     {
         // Arrange
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         var mapper = CreateMapper();
 
         var user = new User
@@ -268,7 +268,7 @@ public class CreateModeratorAssignmentHandlerTests
     {
         // Arrange
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         var mapper = CreateMapper();
 
         var user = new User

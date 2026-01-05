@@ -186,7 +186,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         CreateModeratorAssignmentDto dto = new CreateModeratorAssignmentDto(userId, "I want to help moderate");
         CreateModeratorAssignmentRequest request = new CreateModeratorAssignmentRequest(dto);
-        var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
+        var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         
         var existingAssignment = new ModeratorAssignment()
         {
