@@ -23,8 +23,7 @@ public class UpdateBookingStatusHandler(ApplicationContext dbContext, ILogger<Up
             logger.LogWarning("Booking with ID {BookingId} not found.", request.BookingId);
             return Results.NotFound();
         }
-
-        // Special-case: if borrower cancels a pending booking, remove the booking record
+        
         if (dto.BookingStatus == BookingStatus.Canceled && dto.UserId == booking.BorrowerId && booking.BookingStatus == BookingStatus.Pending)
         {
             dbContext.Bookings.Remove(booking);
