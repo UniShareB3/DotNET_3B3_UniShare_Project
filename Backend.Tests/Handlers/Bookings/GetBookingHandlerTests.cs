@@ -1,7 +1,8 @@
-﻿﻿﻿using AutoMapper;
+﻿using AutoMapper;
 using Backend.Data;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
+using Backend.Features.Bookings.GetBooking;
 using Backend.Mapping;
 using Backend.Persistence;
 using FluentAssertions;

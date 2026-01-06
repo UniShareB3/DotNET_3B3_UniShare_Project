@@ -1,9 +1,9 @@
-﻿﻿﻿using System.Diagnostics;
-  using AutoMapper;
+﻿using AutoMapper;
 using Backend.Data;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
 using Backend.Features.Bookings.Enums;
+using Backend.Features.Bookings.UpdateBooking;
 using Backend.Mapping;
 using Backend.Persistence;
 using FluentAssertions;

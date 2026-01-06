@@ -17,6 +17,8 @@ using Backend.Features.Bookings;
 using Backend.Features.Bookings.CreateBooking;
 using Backend.Features.Bookings.DeleteBooking;
 using Backend.Features.Bookings.DTO;
+using Backend.Features.Bookings.GetAllBookings;
+using Backend.Features.Bookings.GetBooking;
 using Backend.Features.ModeratorAssignment.CreateModeratorAssignment;
 using Backend.Features.ModeratorAssignment.DTO;
 using Backend.Features.ModeratorAssignment.GetAllModeratorAssignments;
