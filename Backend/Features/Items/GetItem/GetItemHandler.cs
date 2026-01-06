@@ -7,7 +7,7 @@ using MediatR;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Items;
+namespace Backend.Features.Items.GetItem;
 
 public class GetItemHandler(ApplicationContext dbContext,IMapper mapper) : IRequestHandler<GetItemRequest, IResult>
 {

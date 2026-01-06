@@ -1,4 +1,4 @@
-﻿namespace Backend.Features.Items;
+﻿namespace Backend.Features.Items.GetUserItem;
 
 using MediatR;
 
