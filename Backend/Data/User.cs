@@ -55,7 +55,7 @@ public class User : IdentityUser<Guid>
     [InverseProperty(nameof(Review.TargetUser))]
     public List<Review>? ReviewsReceived { get; set; }
 
-    public bool EmailConfirmed { get; set; }
+    public bool NewEmailConfirmed { get; set; }
     
     /// <summary>
     /// Stripe Connect Account ID for sellers

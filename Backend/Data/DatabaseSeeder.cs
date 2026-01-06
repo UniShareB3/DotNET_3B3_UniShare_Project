@@ -183,7 +183,7 @@ public static class DatabaseSeeder
             UserName = adminEmail,
             NormalizedEmail = adminEmail.ToUpper(),
             NormalizedUserName = adminEmail.ToUpper(),
-            EmailConfirmed = true, // Admin is always verified
+            NewEmailConfirmed = true, // Admin is always verified
             UniversityId = adminUniversity.Id,
             CreatedAt = DateTime.UtcNow,
             PhoneNumberConfirmed = false,
@@ -255,7 +255,7 @@ public static class DatabaseSeeder
             .RuleFor(u => u.FirstName, f => f.Name.FirstName())
             .RuleFor(u => u.LastName, f => f.Name.LastName())
             .RuleFor(u => u.CreatedAt, f => f.Date.Past(1, DateTime.UtcNow))
-            .RuleFor(u => u.EmailConfirmed, f => f.Random.Bool(0.7f)) // 70% will have email verified
+            .RuleFor(u => u.NewEmailConfirmed, f => f.Random.Bool(0.7f)) // 70% will have email verified
             .RuleFor(u => u.PhoneNumberConfirmed, f => false)
             .RuleFor(u => u.TwoFactorEnabled, f => false)
             .RuleFor(u => u.LockoutEnabled, f => false);
@@ -304,12 +304,12 @@ public static class DatabaseSeeder
                     await userManager.AddToRoleAsync(user, "Moderator");
                     hasModerator = true;
                     _logger.Information("Created moderator user: {Email} (Verified: {Verified})", 
-                        user.Email, user.EmailConfirmed);
+                        user.Email, user.NewEmailConfirmed);
                 }
                 else
                 {
                     _logger.Information("Created regular user: {Email} (Verified: {Verified})", 
-                        user.Email, user.EmailConfirmed);
+                        user.Email, user.NewEmailConfirmed);
                 }
 
                 users.Add(user);

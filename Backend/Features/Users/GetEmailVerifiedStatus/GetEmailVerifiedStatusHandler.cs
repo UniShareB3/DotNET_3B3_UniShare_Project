@@ -20,6 +20,6 @@ public class GetEmailVerifiedStatusHandler
         if (user == null)
             return Results.NotFound(new { message = "User not found" });
 
-        return Results.Ok(new { emailVerified = user.EmailConfirmed });
+        return Results.Ok(new { emailVerified = user.NewEmailConfirmed });
     }
 }

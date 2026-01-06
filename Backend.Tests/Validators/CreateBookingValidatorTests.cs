@@ -1,5 +1,6 @@
 using Backend.Data;
 using Backend.Features.Bookings;
+using Backend.Features.Bookings.CreateBooking;
 using Backend.Features.Bookings.DTO;
 using Backend.Persistence;
 using Backend.Validators;

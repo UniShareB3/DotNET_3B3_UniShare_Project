@@ -1,7 +1,4 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Backend.Features.Bookings;
+using Backend.Features.Bookings.CreateBooking;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Backend.Persistence;

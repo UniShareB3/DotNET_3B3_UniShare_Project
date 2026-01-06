@@ -51,7 +51,7 @@ public class UpdateUserHandler(
             user.NormalizedEmail = dto.Email.ToUpper();
             user.UserName = dto.Email;
             user.NormalizedUserName = dto.Email.ToUpper();
-            user.EmailConfirmed = false; // Reset email confirmation
+            user.NewEmailConfirmed = false; // Reset email confirmation
             _logger.Information("Updated Email for user {UserId}, email confirmation reset", request.UserId);
         }
 

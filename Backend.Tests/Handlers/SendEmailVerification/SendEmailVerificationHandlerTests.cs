@@ -50,7 +50,7 @@ public class SendEmailVerificationHandlerTests
         {
             Id = userId,
             Email = "test@example.com",
-            EmailConfirmed = false
+            NewEmailConfirmed = false
         };
         
         _userManager.FindByIdAsync(userId.ToString()).Returns(Task.FromResult<User?>(user));
@@ -108,7 +108,7 @@ public class SendEmailVerificationHandlerTests
         {
             Id = userId,
             Email = "test@example.com",
-            EmailConfirmed = true
+            NewEmailConfirmed = true
         };
         
         _userManager.FindByIdAsync(userId.ToString()).Returns(Task.FromResult<User?>(user));
@@ -136,7 +136,7 @@ public class SendEmailVerificationHandlerTests
         {
             Id = userId,
             Email = "test@example.com",
-            EmailConfirmed = false
+            NewEmailConfirmed = false
         };
         
         _userManager.FindByIdAsync(userId.ToString()).Returns(Task.FromResult<User?>(user));

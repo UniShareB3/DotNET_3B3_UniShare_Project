@@ -30,7 +30,7 @@ public class SendEmailVerificationHandler(
             return Results.BadRequest(new { error = "User not found" });
         }
         
-        if (user.EmailConfirmed)
+        if (user.NewEmailConfirmed)
         {
             _logger.Warning("Email already confirmed for user {UserId}", request.UserId);
             return Results.BadRequest(new { error = "Email already confirmed" });

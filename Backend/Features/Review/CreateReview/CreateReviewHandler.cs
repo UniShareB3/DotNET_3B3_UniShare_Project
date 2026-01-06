@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Backend.Features.Bookings;
+using Backend.Features.Bookings.CreateBooking;
 using Backend.Features.Review.DTO;
 using Backend.Persistence;
 using MediatR;

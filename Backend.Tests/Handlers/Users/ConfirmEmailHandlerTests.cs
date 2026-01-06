@@ -51,7 +51,7 @@ public class ConfirmEmailHandlerTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new User { Id = userId, Email = "test@example.com", EmailConfirmed = true };
+        var user = new User { Id = userId, Email = "test@example.com", NewEmailConfirmed = true };
         
         _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
 
@@ -74,7 +74,7 @@ public class ConfirmEmailHandlerTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new User { Id = userId, Email = "test@example.com", EmailConfirmed = false };
+        var user = new User { Id = userId, Email = "test@example.com", NewEmailConfirmed = false };
         
         var inputCode = "123456";
         var expectedHash = "hashed_123456";
@@ -106,7 +106,7 @@ public class ConfirmEmailHandlerTests
         var okResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
         okResult.StatusCode.Should().Be(StatusCodes.Status200OK);
 
-        user.EmailConfirmed.Should().BeTrue();
+        user.NewEmailConfirmed.Should().BeTrue();
         
         // Verify the token was marked as used
         var updatedToken = await context.EmailConfirmationTokens.FindAsync(dbToken.Id);
@@ -119,7 +119,7 @@ public class ConfirmEmailHandlerTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new User { Id = userId, Email = "test@example.com", EmailConfirmed = false };
+        var user = new User { Id = userId, Email = "test@example.com", NewEmailConfirmed = false };
         
         var inputCode = "123456";
         var wrongHash = "wrong_hash";
@@ -158,7 +158,7 @@ public class ConfirmEmailHandlerTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new User { Id = userId, Email = "test@example.com", EmailConfirmed = false };
+        var user = new User { Id = userId, Email = "test@example.com", NewEmailConfirmed = false };
         
         var inputCode = "123456";
         var expectedHash = "hashed_123456";
@@ -197,7 +197,7 @@ public class ConfirmEmailHandlerTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new User { Id = userId, Email = "test@example.com", EmailConfirmed = false };
+        var user = new User { Id = userId, Email = "test@example.com", NewEmailConfirmed = false };
         
         var inputCode = "123456";
         var expectedHash = "hashed_123456";
@@ -236,7 +236,7 @@ public class ConfirmEmailHandlerTests
     {
         // Arrange
         var userId = Guid.NewGuid();
-        var user = new User { Id = userId, Email = "test@example.com", EmailConfirmed = false };
+        var user = new User { Id = userId, Email = "test@example.com", NewEmailConfirmed = false };
         
         var inputCode = "123456";
         var expectedHash = "hashed_123456";

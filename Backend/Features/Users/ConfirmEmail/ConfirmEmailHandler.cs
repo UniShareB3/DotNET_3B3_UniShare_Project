@@ -28,7 +28,7 @@ public class ConfirmEmailHandler(
             return Results.BadRequest(new { error = "User not found" });
         }
 
-        if (user.EmailConfirmed)
+        if (user.NewEmailConfirmed)
         {
             _logger.Warning("Email already confirmed for user {UserId}", request.UserId);
             return Results.BadRequest(new { error = "Email already confirmed" });
@@ -55,7 +55,7 @@ public class ConfirmEmailHandler(
         _logger.Information("Confirming email for user {UserId}", request.UserId);
         
         token.IsUsed = true;
-        user.EmailConfirmed = true;
+        user.NewEmailConfirmed = true;
 
         var updateResult = await userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
