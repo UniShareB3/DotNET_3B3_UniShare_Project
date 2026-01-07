@@ -39,7 +39,7 @@ public class GetAllReportsHandlerTests
         var context = CreateInMemoryDbContext("get-all-reports-handler-" + Guid.NewGuid().ToString());
         var mapper = CreateMapper();
         
-        List<Report> reports = new List<Report>
+        var reports = new List<Report>
         {
             new Report { Id = Guid.NewGuid(), Description = "Description 1" },
             new Report { Id = Guid.NewGuid(), Description = "Description 2" }

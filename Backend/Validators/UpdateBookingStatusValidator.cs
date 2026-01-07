@@ -1,7 +1,7 @@
 ﻿using Backend.Data;
-using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
 using Backend.Features.Bookings.Enums;
+using Backend.Features.Bookings.UpdateBooking;
 using FluentValidation;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;

@@ -67,7 +67,7 @@ public class CreateReportDtoValidator : AbstractValidator<CreateReportDto>
         var existingReport = await _applicationContext.Reports
             .FirstOrDefaultAsync(
                 r => r.ItemId == request.ItemId && r.UserId == request.UserId &&
-                     r.Status == ReportStatus.ACCEPTED &&
+                     r.Status == ReportStatus.Accepted &&
                      r.CreatedDate >= DateTime.UtcNow.AddDays(-30));
         return existingReport == null; // Return true if NO accepted report within 30 days
     }
@@ -76,7 +76,7 @@ public class CreateReportDtoValidator : AbstractValidator<CreateReportDto>
     {
         var existingReports = await _applicationContext.Reports
             .Where(r => r.ItemId == request.ItemId && r.UserId == request.UserId &&
-                     r.Status == ReportStatus.DECLINED && r.CreatedDate >= DateTime.UtcNow.AddDays(-30))
+                     r.Status == ReportStatus.Declined && r.CreatedDate >= DateTime.UtcNow.AddDays(-30))
             .CountAsync();
         return existingReports <= 5;
     }

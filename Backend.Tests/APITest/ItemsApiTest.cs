@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Backend.Data;
-using Backend.Features.Users;
+using Backend.Features.Users.LoginUser;
 using Backend.Persistence;
 using Backend.Tests.Seeder;
 using Microsoft.AspNetCore.Identity;
@@ -330,16 +330,6 @@ public class ItemsApiTest(CustomWebApplicationFactory factory) : IClassFixture<C
         var jsonResponse = await response.Content.ReadFromJsonAsync<JsonDocument>();
         var token = jsonResponse!.RootElement.GetProperty("accessToken").GetString();
         return token!;
-    }
-
-    private async Task<HttpStatusCode> GetRequestStatusCode(string url, string token)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        
-        var response = await _client.SendAsync(request);
-        return response.StatusCode;
     }
 
     private async Task<HttpResponseMessage> PostRequestStatusCode(string url, string token, object? content)

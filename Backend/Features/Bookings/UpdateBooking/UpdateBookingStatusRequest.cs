@@ -1,6 +1,6 @@
 ﻿using Backend.Features.Bookings.DTO;
 using MediatR;
 
-namespace Backend.Features.Bookings;
+namespace Backend.Features.Bookings.UpdateBooking;
 
 public record UpdateBookingStatusRequest(Guid BookingId, UpdateBookingStatusDto BookingStatusDto) : IRequest<IResult>;

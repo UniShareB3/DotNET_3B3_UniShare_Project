@@ -1,7 +1,7 @@
 ﻿using Backend.Data;
-using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
 using Backend.Features.Bookings.Enums;
+using Backend.Features.Bookings.UpdateBooking;
 using Backend.Persistence;
 using Backend.Validators;
 using FluentValidation.TestHelper;
@@ -246,7 +246,7 @@ public class UpdateBookingStatusValidatorTests
         var logger = new Mock<ILogger<UpdateBookingStatusValidator>>().Object;
         var validator = new UpdateBookingStatusValidator(context, logger);
         
-        var request = new UpdateBookingStatusRequest(Guid.Empty, null);
+        var request = new UpdateBookingStatusRequest(Guid.Empty, null!);
         
         // Act
         var result = await validator.TestValidateAsync(request);
@@ -344,7 +344,7 @@ public class UpdateBookingStatusValidatorTests
         await context.SaveChangesAsync();
         
         var validator = new UpdateBookingStatusValidator(context, logger);
-        var dto = new UpdateBookingStatusDto(borrowerId, BookingStatus.Completed);
+        var dto = new UpdateBookingStatusDto(ownerId, BookingStatus.Completed);
         var request = new UpdateBookingStatusRequest(bookingId, dto);
         
         // Act
@@ -541,7 +541,7 @@ public class UpdateBookingStatusValidatorTests
         await context.SaveChangesAsync();
         
         var validator = new UpdateBookingStatusValidator(context, logger);
-        var dto = new UpdateBookingStatusDto(borrowerId, BookingStatus.Canceled);
+        var dto = new UpdateBookingStatusDto(ownerId, BookingStatus.Canceled);
         var request = new UpdateBookingStatusRequest(bookingId, dto);
         
         // Act
@@ -960,7 +960,7 @@ public class UpdateBookingStatusValidatorTests
         var itemId = Guid.Parse("33333333-3333-3333-3333-333333333333");
         var bookingId = Guid.Parse("44444444-4444-4444-4444-444444444444");
         
-        // Create booking without corresponding item
+        // Create booking without the corresponding item
         var booking = new Booking
         {
             Id = bookingId,

@@ -2,4 +2,4 @@
 
 using MediatR;
 
-public record GetAllItemsRequest() : IRequest<IResult>;
+public record GetAllItemsRequest : IRequest<IResult>;

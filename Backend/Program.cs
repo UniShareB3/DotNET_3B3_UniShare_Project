@@ -9,12 +9,12 @@ using Microsoft.AspNetCore.Identity;
 using FluentValidation;
 using Backend.Validators;
 using Backend.Data;
-using Backend.Features.Bookings;
 using Backend.Features.Bookings.CreateBooking;
 using Backend.Features.Bookings.DeleteBooking;
 using Backend.Features.Bookings.DTO;
 using Backend.Features.Bookings.GetAllBookings;
 using Backend.Features.Bookings.GetBooking;
+using Backend.Features.Bookings.UpdateBooking;
 using Backend.Features.Items.DeleteItem;
 using Backend.Features.Items.GetAllItems;
 using Backend.Features.Items.GetAllUserItems;
@@ -75,10 +75,10 @@ using Backend.Features.Users.LoginUser;
 using Backend.Features.Users.RegisterUser;
 using Backend.Features.Users.UpdateUser;
 using Backend.Mappers.Booking;
-using Backend.Mappers.Item;
 using Backend.Mappers.Review;
 using Backend.Mappers.University;
 using Backend.Mappers.User;
+using Backend.Mapping;
 using Backend.Services.EmailSender;
 using Backend.Services.Hashing;
 using Backend.Services.Token;
@@ -632,7 +632,7 @@ reportsGroup.MapGet("/moderator/{moderatorId:guid}", async (Guid moderatorId, IM
 // Get accepted reports count from last week for an item
 reportsGroup.MapGet("/item/{itemId:guid}/accepted-last-week",
         async (Guid itemId, int numberOfDays, IMediator mediator) =>
-            await mediator.Send(new GetAcceptedReportsCountRequest(itemId, numberOfDays)))
+            await mediator.Send(new GetAcceptedReportsCountLastWeekRequest(itemId, numberOfDays)))
     .WithDescription("Get the number of accepted reports from the specified period of time for a specific item")
     .AllowAnonymous();
 

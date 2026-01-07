@@ -1,5 +1,5 @@
 ﻿using Backend.Data;
-using Backend.Features.Shared.Auth;
+using Backend.Features.Shared.IAM.ChangePassword;
 using Backend.Features.Shared.IAM.DTO;
 using Backend.Persistence;
 using Backend.Validators;
@@ -93,9 +93,9 @@ public class ChangePasswordRequestTests
     {
         // Arrange
         var context = CreateInMemoryDbContext("test-null-dto");
-        UserManager<User> mockUserManager = CreateFilledUserManager(context);
-        ChangePasswordRequest request = new ChangePasswordRequest(null!);
-        ChangePasswordRequestValidator validator = new ChangePasswordRequestValidator(mockUserManager);
+        var mockUserManager = CreateFilledUserManager(context);
+        var request = new ChangePasswordRequest(null!);
+        var validator = new ChangePasswordRequestValidator(mockUserManager);
         
         // Act & Assert
         await Assert.ThrowsAsync<NullReferenceException>(async () => await validator.ValidateAsync(request));

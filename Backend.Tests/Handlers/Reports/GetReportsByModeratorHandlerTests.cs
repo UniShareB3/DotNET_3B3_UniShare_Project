@@ -51,7 +51,7 @@ public class GetReportsByModeratorHandlerTests
                 OwnerId = ownerId,
                 ModeratorId = moderatorId,
                 Description = "Report 1 for moderator",
-                Status = ReportStatus.PENDING, 
+                Status = ReportStatus.Pending, 
                 CreatedDate = DateTime.UtcNow.AddDays(-1)
             },
             new Report 
@@ -62,7 +62,7 @@ public class GetReportsByModeratorHandlerTests
                 OwnerId = ownerId,
                 ModeratorId = moderatorId,
                 Description = "Report 2 for moderator",
-                Status = ReportStatus.ACCEPTED, 
+                Status = ReportStatus.Accepted, 
                 CreatedDate = DateTime.UtcNow.AddDays(-2)
             },
             new Report 
@@ -73,7 +73,7 @@ public class GetReportsByModeratorHandlerTests
                 OwnerId = ownerId,
                 ModeratorId = otherModeratorId,
                 Description = "Report for other moderator",
-                Status = ReportStatus.PENDING, 
+                Status = ReportStatus.Pending, 
                 CreatedDate = DateTime.UtcNow.AddDays(-3)
             }
         );
@@ -136,7 +136,7 @@ public class GetReportsByModeratorHandlerTests
                 OwnerId = ownerId,
                 ModeratorId = moderatorId,
                 Description = "Report with moderator",
-                Status = ReportStatus.PENDING, 
+                Status = ReportStatus.Pending, 
                 CreatedDate = DateTime.UtcNow.AddDays(-1)
             },
             new Report 
@@ -147,7 +147,7 @@ public class GetReportsByModeratorHandlerTests
                 OwnerId = ownerId,
                 ModeratorId = null,
                 Description = "Report without moderator",
-                Status = ReportStatus.PENDING, 
+                Status = ReportStatus.Pending, 
                 CreatedDate = DateTime.UtcNow.AddDays(-2)
             }
         );
