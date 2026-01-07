@@ -9,7 +9,6 @@ public record ItemDto
     public bool IsAvailable { get; init; }
     public string? ImageUrl { get; init; }
     public Guid OwnerId { get; init; }
-    public string OwnerName { get; init; }
     public required string OwnerName { get; init; }
     
 }
