@@ -15,6 +15,8 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  await dotenv.load(fileName: ".env");
+  
   final authProvider = AuthProvider();
   await authProvider.tryAutoLogin(); // încercă să încarce token-ul
 

@@ -1,4 +1,4 @@
-﻿namespace Backend.Features.Items.DTO;
+﻿﻿namespace Backend.Features.Items.DTO;
 public record ItemDto
 {
     public Guid Id { get; init; }
@@ -8,6 +8,7 @@ public record ItemDto
     public required string Condition { get; init; }
     public bool IsAvailable { get; init; }
     public string? ImageUrl { get; init; }
+    public Guid OwnerId { get; init; }
     public required string OwnerName { get; init; }
     
 }

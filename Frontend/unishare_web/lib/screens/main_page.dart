@@ -3,12 +3,14 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../services/secure_storage_service.dart';
+import '../services/chat_service.dart';
 import 'home_page.dart';
 import 'dashboard_page.dart';
 import 'profile_page.dart';
 import 'login_page.dart';
 import 'moderator_reports_page.dart';
 import 'admin_moderator_requests_page.dart';
+import 'conversations_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -21,11 +23,48 @@ class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
   bool _isAdminOrModerator = false;
   bool _isAdmin = false;
+  bool _hasUnreadMessages = false;
 
   @override
   void initState() {
     super.initState();
     _checkUserRole();
+    _setupMessageListener();
+    _checkForUnreadMessages();
+  }
+
+  @override
+  void dispose() {
+    ChatService.removeMessageListener(_onNewMessage);
+    super.dispose();
+  }
+
+  void _setupMessageListener() {
+    // Connect to SignalR and listen for new messages
+    ChatService.getConnection();
+    ChatService.addMessageListener(_onNewMessage);
+  }
+
+  void _onNewMessage(Map<String, dynamic> message) {
+    // When a new message arrives, show the notification badge
+    if (mounted) {
+      setState(() {
+        _hasUnreadMessages = true;
+      });
+    }
+  }
+
+  Future<void> _checkForUnreadMessages() async {
+    try {
+      final conversations = await ChatService.getConversations();
+      // If there are any conversations, we could check for unread messages
+      // For now, just having conversations means potential messages
+      if (mounted && conversations.isNotEmpty) {
+        // You could add more sophisticated unread tracking here
+      }
+    } catch (e) {
+      print('Error checking unread messages: $e');
+    }
   }
 
   Future<void> _checkUserRole() async {
@@ -62,6 +101,42 @@ class _MainPageState extends State<MainPage> {
       appBar: AppBar(
         title: const Text("UniShare"),
         actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.message),
+                tooltip: 'Messages',
+                onPressed: () {
+                  // Clear the notification badge when opening messages
+                  setState(() {
+                    _hasUnreadMessages = false;
+                  });
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ConversationsPage(),
+                    ),
+                  );
+                },
+              ),
+              if (_hasUnreadMessages)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 12,
+                      minHeight: 12,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _logout,
@@ -101,6 +176,42 @@ class _MainPageState extends State<MainPage> {
               leading: const Icon(Icons.dashboard),
               title: const Text("Dashboard"),
               onTap: () => _onItemTapped(1),
+            ),
+            ListTile(
+              leading: Stack(
+                children: [
+                  const Icon(Icons.message),
+                  if (_hasUnreadMessages)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 10,
+                          minHeight: 10,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              title: const Text("Messages"),
+              onTap: () {
+                setState(() {
+                  _hasUnreadMessages = false;
+                });
+                Navigator.pop(context); // Close drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ConversationsPage(),
+                  ),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.person),

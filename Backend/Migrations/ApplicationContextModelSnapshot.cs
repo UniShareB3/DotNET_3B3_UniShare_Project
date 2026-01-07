@@ -79,6 +79,12 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text");
+
+                    b.Property<int>("MessageType")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("ReceiverId")
                         .HasColumnType("uuid");
 

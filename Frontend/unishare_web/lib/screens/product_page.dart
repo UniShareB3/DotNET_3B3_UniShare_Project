@@ -5,6 +5,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../services/api_service.dart';
 import 'package:unishare_web/services/secure_storage_service.dart';
 import 'package:unishare_web/screens/report_item_dialog.dart';
+import 'chat_page.dart';
 
 class ProductPage extends StatefulWidget {
   final String itemId;
@@ -69,6 +70,7 @@ class _ProductPageState extends State<ProductPage> {
 
     try {
       final it = await ApiService.getItemById(widget.itemId);
+      print('🔍 Item data received: $it'); // Debug log to see ownerId
       final itemBookings = await ApiService.getBookingsForItem(widget.itemId);
       final reportsCount = await ApiService.getAcceptedReportsCount(
         itemId: widget.itemId,
@@ -198,6 +200,34 @@ class _ProductPageState extends State<ProductPage> {
       if (!blockedDays.contains(d)) return d;
     }
     return null;
+  }
+
+  // Open chat with item owner
+  void _openChatWithOwner() {
+    // Check both camelCase and PascalCase
+    final ownerId = item!['ownerId']?.toString() ?? item!['OwnerId']?.toString();
+    final ownerName = (item!['ownerName'] is String && (item!['ownerName'] as String).trim().isNotEmpty)
+        ? item!['ownerName'] as String
+        : (item!['OwnerName'] is String && (item!['OwnerName'] as String).trim().isNotEmpty)
+            ? item!['OwnerName'] as String
+            : 'Seller';
+
+    if (ownerId == null || ownerId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot contact seller - owner info not available')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatPage(
+          otherUserId: ownerId,
+          otherUserName: ownerName,
+        ),
+      ),
+    );
   }
 
   // --- Dialogul Personalizat de Calendar ---
@@ -810,18 +840,44 @@ class _ProductPageState extends State<ProductPage> {
             const Icon(Icons.person, size: 20, color: Colors.deepPurple),
             const SizedBox(width: 5),
             Text('Owner: $ownerName', style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 16),
+            // Contact Seller button - don't show if user is the owner
+            Builder(
+              builder: (context) {
+                // Check both camelCase and PascalCase since backend might serialize differently
+                final ownerId = item!['ownerId']?.toString() ?? item!['OwnerId']?.toString();
+                final isOwner = ownerId != null && ownerId == _currentUserId;
+
+                // If ownerId is null, show a disabled button with explanation (for debugging)
+                if (ownerId == null) {
+                  return Tooltip(
+                    message: 'ownerId not available from API',
+                    child: ElevatedButton.icon(
+                      onPressed: null,
+                      icon: const Icon(Icons.message, size: 18),
+                      label: const Text('Contact Seller'),
+                    ),
+                  );
+                }
+
+                // Show button if we have ownerId and user is not the owner
+                if (!isOwner) {
+                  return ElevatedButton.icon(
+                    onPressed: () => _openChatWithOwner(),
+                    icon: const Icon(Icons.message, size: 18),
+                    label: const Text('Contact Seller'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
           ],
         ),
-        const Divider(height: 30),
-
-        // Descriere
-        const Text('Description', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Text(description, style: TextStyle(fontSize: 16, color: Colors.grey[800])),
-        const SizedBox(height: 30),
-
-        // --- Selector Perioadă & Disponibilitate ---
-        const Text('Request Borrowing Period', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 15),
 
         Container(
