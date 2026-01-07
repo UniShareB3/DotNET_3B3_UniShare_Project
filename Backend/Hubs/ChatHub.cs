@@ -1,4 +1,4 @@
-﻿﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using Backend.Persistence;
 using Backend.Data;
@@ -9,12 +9,7 @@ namespace Backend.Hubs;
 [Authorize]
 public class ChatHub(ApplicationContext context) : Hub
 {
-    private readonly ApplicationContext _context;
-
-    public ChatHub(ApplicationContext context)
-    {
-        _context = context;
-    }
+    private readonly ApplicationContext _context = context;
 
     // Frontend calls this method to send a text message
     public async Task SendMessage(string receiverId, string message)
@@ -48,8 +43,8 @@ public class ChatHub(ApplicationContext context) : Hub
             Timestamp = DateTime.UtcNow
         };
 
-        context.ChatMessages.Add(chatMessage);
-        await context.SaveChangesAsync();
+        _context.ChatMessages.Add(chatMessage);
+        await _context.SaveChangesAsync();
 
         var messageData = new
         {
