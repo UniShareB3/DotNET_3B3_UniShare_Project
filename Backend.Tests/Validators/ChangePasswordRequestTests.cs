@@ -55,14 +55,14 @@ public class ChangePasswordRequestTests
             passwordValidators,
             new UpperInvariantLookupNormalizer(),
             new IdentityErrorDescriber(),
-            null,
+            null!,
             mockLogger.Object);
         
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var user = new User
         {
             Id = userId,
-            UserName = "testuser",
+            UserName = "testUser",
             Email = "testuser@uaic.ro"
         };
 
@@ -76,10 +76,10 @@ public class ChangePasswordRequestTests
     {
         // Arrange
         var context = CreateInMemoryDbContext("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-        UserManager<User> mockUserManager = CreateFilledUserManager(context);
-        Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("StrongP@ssw0rd", userId));
-        ChangePasswordRequestValidator validator = new ChangePasswordRequestValidator(mockUserManager);
+        var mockUserManager = CreateFilledUserManager(context);
+        var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var request = new ChangePasswordRequest(new ChangePasswordDto("StrongP@ssw0rd", userId));
+        var validator = new ChangePasswordRequestValidator(mockUserManager);
         
         // Act
         var resultValidator = await validator.ValidateAsync(request);
@@ -252,7 +252,7 @@ public class ChangePasswordRequestTests
         UserManager<User> mockUserManager = CreateFilledUserManager(context);
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         
-        // Try to use the existing password "ExistingP@ssw0rd" which was set in CreateFilledUserManager
+        // Try to use the existing password "ExistingP@ssw0rd," which was set in CreateFilledUserManager
         ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("ExistingP@ssw0rd", userId));
         ChangePasswordRequestValidator validator = new ChangePasswordRequestValidator(mockUserManager);
         
