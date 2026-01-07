@@ -1,4 +1,4 @@
-﻿using Backend.Features.Items;
+﻿using Backend.Features.Items.PostItem;
 using FluentValidation;
 
 namespace Backend.Validators;

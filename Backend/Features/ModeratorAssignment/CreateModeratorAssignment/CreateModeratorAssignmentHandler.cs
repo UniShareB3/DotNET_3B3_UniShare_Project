@@ -9,24 +9,17 @@ using ILogger = Serilog.ILogger;
 
 namespace Backend.Features.ModeratorAssignment.CreateModeratorAssignment;
 
-public class CreateModeratorAssignmentHandler : IRequestHandler<CreateModeratorAssignmentRequest, IResult>
+public class CreateModeratorAssignmentHandler(ApplicationContext context, IMapper mapper)
+    : IRequestHandler<CreateModeratorAssignmentRequest, IResult>
 {
-    private readonly ApplicationContext _context;
-    private readonly IMapper _mapper;
     private readonly ILogger _logger = Log.ForContext<CreateModeratorAssignmentHandler>();
-
-    public CreateModeratorAssignmentHandler(ApplicationContext context, IMapper mapper)
-    {
-        _context = context;
-        _mapper = mapper;
-    }
 
     public async Task<IResult> Handle(CreateModeratorAssignmentRequest request, CancellationToken cancellationToken)
     {
         _logger.Information("Creating moderator assignment for user {UserId}", request.Dto.UserId);
 
         // Verify user exists
-        var user = await _context.Users
+        var user = await context.Users
             .FirstOrDefaultAsync(u => u.Id == request.Dto.UserId, cancellationToken);
 
         if (user == null)
@@ -36,9 +29,9 @@ public class CreateModeratorAssignmentHandler : IRequestHandler<CreateModeratorA
         }
 
         // Check if user already has a pending assignment
-        var existingAssignment = await _context.ModeratorAssignments
+        var existingAssignment = await context.ModeratorAssignments
             .FirstOrDefaultAsync(mr => mr.UserId == request.Dto.UserId 
-                && mr.Status == ModeratorAssignmentStatus.PENDING, cancellationToken);
+                && mr.Status == ModeratorAssignmentStatus.Pending, cancellationToken);
 
         if (existingAssignment != null)
         {
@@ -46,14 +39,14 @@ public class CreateModeratorAssignmentHandler : IRequestHandler<CreateModeratorA
             return Results.Conflict(new { message = "User already has a pending moderator assignment" });
         }
 
-        var moderatorAssignment = _mapper.Map<Data.ModeratorAssignment>(request.Dto);
+        var moderatorAssignment = mapper.Map<Data.ModeratorAssignment>(request.Dto);
         moderatorAssignment.CreatedDate = DateTime.UtcNow;
-        moderatorAssignment.Status = ModeratorAssignmentStatus.PENDING;
+        moderatorAssignment.Status = ModeratorAssignmentStatus.Pending;
 
-        _context.ModeratorAssignments.Add(moderatorAssignment);
-        await _context.SaveChangesAsync(cancellationToken);
+        context.ModeratorAssignments.Add(moderatorAssignment);
+        await context.SaveChangesAsync(cancellationToken);
 
-        var assignmentDto = _mapper.Map<ModeratorAssignmentDto>(moderatorAssignment);
+        var assignmentDto = mapper.Map<ModeratorAssignmentDto>(moderatorAssignment);
         _logger.Information("Moderator assignment {AssignmentId} created successfully for user {UserId}", 
             moderatorAssignment.Id, request.Dto.UserId);
 

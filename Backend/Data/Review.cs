@@ -47,6 +47,7 @@ public class Review
     /// Optional textual feedback.
     /// </summary>
     [Column(TypeName = "text")]
+    [MaxLength(255)]
     public string? Comment { get; set; }
 
     /// <summary>

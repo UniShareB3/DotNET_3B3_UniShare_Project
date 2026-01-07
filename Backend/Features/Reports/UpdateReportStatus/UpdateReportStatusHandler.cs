@@ -8,24 +8,17 @@ using ILogger = Serilog.ILogger;
 
 namespace Backend.Features.Reports.UpdateReportStatus;
 
-public class UpdateReportStatusHandler : IRequestHandler<UpdateReportStatusRequest, IResult>
+public class UpdateReportStatusHandler(ApplicationContext context, IMapper mapper)
+    : IRequestHandler<UpdateReportStatusRequest, IResult>
 {
-    private readonly ApplicationContext _context;
-    private readonly IMapper _mapper;
     private readonly ILogger _logger = Log.ForContext<UpdateReportStatusHandler>();
-
-    public UpdateReportStatusHandler(ApplicationContext context, IMapper mapper)
-    {
-        _context = context;
-        _mapper = mapper;
-    }
 
     public async Task<IResult> Handle(UpdateReportStatusRequest request, CancellationToken cancellationToken)
     {
         _logger.Information("Updating status of report {ReportId} to {Status}", 
             request.ReportId, request.Dto.Status);
 
-        var report = await _context.Reports
+        var report = await context.Reports
             .FirstOrDefaultAsync(r => r.Id == request.ReportId, cancellationToken);
 
         if (report == null)
@@ -35,7 +28,7 @@ public class UpdateReportStatusHandler : IRequestHandler<UpdateReportStatusReque
         }
 
         // Verify moderator exists
-        var moderator = await _context.Users
+        var moderator = await context.Users
             .FirstOrDefaultAsync(u => u.Id == request.Dto.ModeratorId, cancellationToken);
 
         if (moderator == null)
@@ -47,9 +40,9 @@ public class UpdateReportStatusHandler : IRequestHandler<UpdateReportStatusReque
         report.Status = request.Dto.Status;
         report.ModeratorId = request.Dto.ModeratorId;
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
 
-        var reportDto = _mapper.Map<ReportDto>(report);
+        var reportDto = mapper.Map<ReportDto>(report);
         _logger.Information("Report {ReportId} status updated successfully to {Status}", 
             request.ReportId, request.Dto.Status);
 

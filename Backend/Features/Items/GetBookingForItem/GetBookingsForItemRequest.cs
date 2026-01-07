@@ -1,8 +1,6 @@
 using MediatR;
-using Microsoft.AspNetCore.Http;
-using System;
 
-namespace Backend.Features.Items
+namespace Backend.Features.Items.GetBookingForItem
 {
     public record GetBookingsForItemRequest(Guid ItemId) : IRequest<IResult>;
 }

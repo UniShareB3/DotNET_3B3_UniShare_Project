@@ -1,5 +1,5 @@
-﻿using Backend.Features.Items;
-using Backend.Features.Items.DTO;
+﻿using Backend.Features.Items.DTO;
+using Backend.Features.Items.PostItem;
 using Backend.Validators;
 using FluentValidation.TestHelper;
 

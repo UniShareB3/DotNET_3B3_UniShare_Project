@@ -1,6 +1,6 @@
 ﻿using Backend.Data;
 
-namespace Backend.TokenGenerators;
+namespace Backend.Services.Token;
 
 public interface ITokenService
 {

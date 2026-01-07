@@ -8,17 +8,17 @@ using Backend.Features.Reports.Enums;
 
 namespace Backend.Features.Reports.GetAcceptedReportsCount;
 
-public class GetAcceptedReportsCountHandler : IRequestHandler<GetAcceptedReportsCountRequest, IResult>
+public class GetAcceptedReportsCountLastWeekHandler : IRequestHandler<GetAcceptedReportsCountLastWeekRequest, IResult>
 {
     private readonly ApplicationContext _context;
-    private readonly ILogger _logger = Log.ForContext<GetAcceptedReportsCountHandler>();
+    private readonly ILogger _logger = Log.ForContext<GetAcceptedReportsCountLastWeekHandler>();
 
-    public GetAcceptedReportsCountHandler(ApplicationContext context)
+    public GetAcceptedReportsCountLastWeekHandler(ApplicationContext context)
     {
         _context = context;
     }
 
-    public async Task<IResult> Handle(GetAcceptedReportsCountRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> Handle(GetAcceptedReportsCountLastWeekRequest request, CancellationToken cancellationToken)
     {
         _logger.Information("Retrieving accepted reports count for last week for item {ItemId}", request.ItemId);
         

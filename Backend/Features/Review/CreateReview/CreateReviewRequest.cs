@@ -1,6 +1,6 @@
 ﻿using Backend.Features.Review.DTO;
 using MediatR;
 
-namespace Backend.Features.Review;
+namespace Backend.Features.Review.CreateReview;
 
-public record CreateReviewRequest(CreateReviewDTO Review) : IRequest<IResult>;
+public record CreateReviewRequest(CreateReviewDto Review) : IRequest<IResult>;

@@ -14,7 +14,7 @@ public class ModeratorAssignmentMapper : Profile
         CreateMap<CreateModeratorAssignmentDto, Data.ModeratorAssignment>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow))
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ModeratorAssignmentStatus.PENDING))
+            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => ModeratorAssignmentStatus.Pending))
             .ForMember(dest => dest.ReviewedByAdminId, opt => opt.Ignore())
             .ForMember(dest => dest.ReviewedDate, opt => opt.Ignore());
     }

@@ -1,6 +1,4 @@
-﻿using Backend.Data;
-using Backend.Features.Reports.DTO;
-using Backend.Features.Reports.Enums;
+﻿using Backend.Features.Reports.DTO;
 using FluentValidation;
 
 namespace Backend.Validators;

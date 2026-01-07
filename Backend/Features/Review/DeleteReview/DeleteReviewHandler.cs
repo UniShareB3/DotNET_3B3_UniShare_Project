@@ -1,14 +1,14 @@
 ﻿using Backend.Persistence;
 using MediatR;
 
-namespace Backend.Features.Review;
+namespace Backend.Features.Review.DeleteReview;
 
 public class DeleteReviewHandler(ApplicationContext dbContext, ILogger<DeleteReviewHandler> logger) : IRequestHandler<DeleteReviewRequest, IResult>
 {
     public async Task<IResult> Handle(DeleteReviewRequest request, CancellationToken cancellationToken)
     {
         
-        var review = dbContext.Reviews.Find(request.Id);
+        var review = await dbContext.Reviews.FindAsync(request.Id, cancellationToken);
         
         if (review == null)
         {

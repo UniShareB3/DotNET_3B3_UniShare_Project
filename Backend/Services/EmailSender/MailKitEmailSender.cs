@@ -2,35 +2,28 @@
 using MailKit.Security;
 using MimeKit;
 
-namespace Backend.Services;
+namespace Backend.Services.EmailSender;
 
-public class MailKitEmailSender : IEmailSender
+public class MailKitEmailSender(IConfiguration configuration) : IEmailSender
 {
-    private readonly IConfiguration _configuration;
-
-    public MailKitEmailSender(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
-
     public async Task SendEmailAsync(string toEmail, string subject, string body)
     {
         var message = new MimeMessage();
-        message.From.Add(MailboxAddress.Parse(_configuration["Smtp:From"]));
+        message.From.Add(MailboxAddress.Parse(configuration["Smtp:From"]));
         message.To.Add(MailboxAddress.Parse(toEmail));
         message.Subject = subject;
         message.Body = new TextPart("plain") { Text = body };
 
         using var client = new SmtpClient();
         
-        var host = _configuration["Smtp:Host"];
-        var port = int.Parse(_configuration["Smtp:Port"] ?? "587");
-        var useSsl = _configuration.GetValue<bool>("Smtp:UseSsl", true);
+        var host = configuration["Smtp:Host"];
+        var port = int.Parse(configuration["Smtp:Port"] ?? "587");
+        var useSsl = configuration.GetValue("Smtp:UseSsl", true);
         
         await client.ConnectAsync(host, port, useSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
         
-        var username = _configuration["Smtp:Username"];
-        var password = _configuration["Smtp:Password"];
+        var username = configuration["Smtp:Username"];
+        var password = configuration["Smtp:Password"];
         
         if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password)) {
             await client.AuthenticateAsync(username, password);
@@ -60,7 +53,7 @@ UniShare Team";
     public async Task SendPasswordResetEmailAsync(string toEmail, string resetToken, Guid userId)
     {
         // Get frontend URL from configuration or use default
-        var frontendUrl = _configuration["Frontend:BaseUrl"] ?? "http://localhost:3000";
+        var frontendUrl = configuration["Frontend:BaseUrl"] ?? "http://localhost:3000";
         
         // URL encode the token to ensure it's safe for URLs
         var encodedToken = Uri.EscapeDataString(resetToken);
@@ -69,7 +62,7 @@ UniShare Team";
         var resetUrl = $"{frontendUrl}/reset-password?token={encodedToken}&userId={userId}";
         
         var message = new MimeMessage();
-        message.From.Add(MailboxAddress.Parse(_configuration["Smtp:From"] ?? "noreply@unishare.com"));
+        message.From.Add(MailboxAddress.Parse(configuration["Smtp:From"] ?? "noreply@unishare.com"));
         message.To.Add(MailboxAddress.Parse(toEmail));
         message.Subject = "Password Reset - UniShare";
 
@@ -131,14 +124,14 @@ UniShare Team";
 
         using var client = new SmtpClient();
         
-        var host = _configuration["Smtp:Host"];
-        var port = int.Parse(_configuration["Smtp:Port"] ?? "587");
-        var useSsl = _configuration.GetValue<bool>("Smtp:UseSsl", true);
+        var host = configuration["Smtp:Host"];
+        var port = int.Parse(configuration["Smtp:Port"] ?? "587");
+        var useSsl = configuration.GetValue("Smtp:UseSsl", true);
         
         await client.ConnectAsync(host, port, useSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
         
-        var username = _configuration["Smtp:Username"];
-        var password = _configuration["Smtp:Password"];
+        var username = configuration["Smtp:Username"];
+        var password = configuration["Smtp:Password"];
         
         if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password)) {
             await client.AuthenticateAsync(username, password);

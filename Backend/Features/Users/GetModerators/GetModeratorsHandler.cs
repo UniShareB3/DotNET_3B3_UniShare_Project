@@ -1,8 +1,7 @@
 ﻿using Backend.Data;
-using Backend.Features.Users.Dtos;
+using Backend.Features.Users.DTO;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
@@ -17,14 +16,14 @@ public class GetModeratorsHandler(UserManager<User> userManager) : IRequestHandl
         _logger.Information("Retrieving all moderator users");
         
         var moderators = await userManager.GetUsersInRoleAsync("Moderator");
-        var moderatorDtos = moderators.Select(m => new UserRoleDto
+        var moderatorDto = moderators.Select(m => new UserRoleDto
         {
             Id = m.Id,
             Email = m.Email ?? string.Empty
         }).ToList();
         
-        _logger.Information("Retrieved {ModeratorCount} moderator users", moderatorDtos.Count);
-        return Results.Ok(moderatorDtos);
+        _logger.Information("Retrieved {ModeratorCount} moderator users", moderatorDto.Count);
+        return Results.Ok(moderatorDto);
     }
 }
 

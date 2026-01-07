@@ -3,7 +3,7 @@ using Backend.Data;
 using Backend.Persistence;
 using MediatR;
 
-namespace Backend.Features.Universities;
+namespace Backend.Features.Universities.PostUniversities;
 
 public class PostUniversitiesHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<PostUniversitiesRequest, IResult>
 {

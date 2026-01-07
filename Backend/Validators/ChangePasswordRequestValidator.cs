@@ -1,7 +1,5 @@
 ﻿using Backend.Data;
-using Backend.Features.Shared.Auth;
-using Backend.Features.Users;
-using Backend.Persistence;
+using Backend.Features.Shared.IAM.ChangePassword;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

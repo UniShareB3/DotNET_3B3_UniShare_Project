@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Backend.Data;
-using Backend.Features.Users;
+using Backend.Features.Users.LoginUser;
 using Backend.Persistence;
 using Backend.Tests.Seeder;
 using Microsoft.AspNetCore.Identity;
@@ -129,7 +129,7 @@ public class ReviewsApiTest(CustomWebApplicationFactory factory) : IClassFixture
         var response = await PostRequestStatusCode("/reviews", moderatorToken, newReview);
         
         // Assert
-        // Expecting BadRequest because Moderator already has a review for this booking in seed data
+        // Expecting BadRequest because the Moderator already has a review for this booking in seed data
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Bookings;
+namespace Backend.Features.Bookings.DeleteBooking;
 
 public class DeleteBookingHandler(ApplicationContext dbContext): IRequestHandler<DeleteBookingRequest,IResult>
 {

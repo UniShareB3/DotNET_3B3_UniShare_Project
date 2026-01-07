@@ -1,8 +1,8 @@
-﻿﻿﻿using AutoMapper;
+﻿using AutoMapper;
 using Backend.Data;
-using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
-using Backend.Mapping;
+using Backend.Features.Bookings.GetBooking;
+using Backend.Mappers.Booking;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;

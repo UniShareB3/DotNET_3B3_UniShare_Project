@@ -1,5 +1,4 @@
-﻿using Backend.Data;
-using Backend.Features.Reports.Enums;
+﻿using Backend.Features.Reports.Enums;
 
 namespace Backend.Features.Reports.DTO;
 

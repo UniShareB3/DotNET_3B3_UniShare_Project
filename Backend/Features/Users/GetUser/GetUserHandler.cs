@@ -1,12 +1,12 @@
-﻿using Backend.Features.Users.Dtos;
-using Backend.Persistence;
+﻿using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
+using Backend.Features.Users.DTO;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Users.GetUser;
 
 public class GetUserHandler(ApplicationContext context, IMapper mapper) : IRequestHandler<GetUserRequest, IResult>
 {

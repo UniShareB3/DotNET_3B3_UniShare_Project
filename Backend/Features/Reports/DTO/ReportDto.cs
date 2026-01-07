@@ -1,6 +1,4 @@
-﻿using Backend.Data;
-
-namespace Backend.Features.Reports.DTO;
+﻿namespace Backend.Features.Reports.DTO;
 
 public record ReportDto(
     Guid Id,

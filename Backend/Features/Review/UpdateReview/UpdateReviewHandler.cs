@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Review;
+namespace Backend.Features.Review.UpdateReview;
 
 public class UpdateReviewHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<UpdateReviewRequest, IResult>
 {

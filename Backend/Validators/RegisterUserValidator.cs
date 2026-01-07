@@ -1,4 +1,4 @@
-﻿using Backend.Features.Users;
+﻿using Backend.Features.Users.RegisterUser;
 using Backend.Persistence;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;

@@ -246,7 +246,7 @@ public class UpdateBookingStatusValidatorTests
         var logger = new Mock<ILogger<UpdateBookingStatusValidator>>().Object;
         var validator = new UpdateBookingStatusValidator(context, logger);
         
-        var request = new UpdateBookingStatusRequest(Guid.Empty, null!);
+        var request = new UpdateBookingStatusRequest(Guid.Empty, null);
         
         // Act
         var result = await validator.TestValidateAsync(request);

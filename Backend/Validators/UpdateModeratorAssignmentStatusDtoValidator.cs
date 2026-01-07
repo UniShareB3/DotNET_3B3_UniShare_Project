@@ -1,5 +1,4 @@
 ﻿using Backend.Features.ModeratorAssignment.DTO;
-using Backend.Features.ModeratorAssignment.Enums;
 using FluentValidation;
 
 namespace Backend.Validators;
