@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Authorization;
 using Backend.Persistence;
 using Backend.Data;
@@ -16,8 +16,19 @@ public class ChatHub : Hub
         _context = context;
     }
 
-    // Frontend calls this method to send a message
+    // Frontend calls this method to send a text message
     public async Task SendMessage(string receiverId, string message)
+    {
+        await SendMessageInternal(receiverId, message, null, MessageType.Text);
+    }
+
+    // Frontend calls this method to send an image message
+    public async Task SendImageMessage(string receiverId, string imageUrl, string? caption = null)
+    {
+        await SendMessageInternal(receiverId, caption ?? "", imageUrl, MessageType.Image);
+    }
+
+    private async Task SendMessageInternal(string receiverId, string content, string? imageUrl, MessageType messageType)
     {
         var senderId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         
@@ -31,28 +42,28 @@ public class ChatHub : Hub
         {
             SenderId = senderGuid,
             ReceiverId = receiverGuid,
-            Content = message,
+            Content = content,
+            ImageUrl = imageUrl,
+            MessageType = messageType,
             Timestamp = DateTime.UtcNow
         };
 
         _context.ChatMessages.Add(chatMessage);
         await _context.SaveChangesAsync();
 
+        var messageData = new
+        {
+            SenderId = senderId,
+            Content = content,
+            ImageUrl = imageUrl,
+            MessageType = messageType.ToString(),
+            Timestamp = chatMessage.Timestamp
+        };
+
         // 2. Send to Receiver (Live)
-        // SignalR automatically maps "UserIdentifier" to the JWT "sub" or "NameIdentifier" claim
-        await Clients.User(receiverId).SendAsync("ReceiveMessage", new 
-        {
-            SenderId = senderId,
-            Content = message,
-            Timestamp = chatMessage.Timestamp
-        });
-        
+        await Clients.User(receiverId).SendAsync("ReceiveMessage", messageData);
+
         // 3. Send back to Sender (so their UI updates immediately with the server timestamp)
-        await Clients.Caller.SendAsync("ReceiveMessage", new 
-        {
-            SenderId = senderId,
-            Content = message,
-            Timestamp = chatMessage.Timestamp
-        });
+        await Clients.Caller.SendAsync("ReceiveMessage", messageData);
     }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/secure_storage_service.dart';
 import 'add_item_page.dart';
+import 'product_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -205,9 +206,19 @@ class _DashboardPageState extends State<DashboardPage>
               children: [
                 TextButton(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Managing ${item['name']}')),
-                    );
+                    final itemId = item['id']?.toString();
+                    if (itemId != null && itemId.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProductPage(itemId: itemId),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Cannot open item - missing ID')),
+                      );
+                    }
                   },
                   child: const Text('Manage Item', style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold)),
                 ),
