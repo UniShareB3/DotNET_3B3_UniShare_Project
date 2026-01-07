@@ -28,6 +28,7 @@ public class Comment
     /// The comment text.
     /// </summary>
     [Required]
+    [MaxLength(255)]
     [Column(TypeName = "text")]
     public string Message { get; set; } = string.Empty;
 

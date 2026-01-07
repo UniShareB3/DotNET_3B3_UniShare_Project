@@ -49,7 +49,7 @@ public class GetReportsByItemHandlerTests
                 UserId = userId,
                 OwnerId = ownerId,
                 Description = "Report 1 for item",
-                Status = ReportStatus.PENDING, 
+                Status = ReportStatus.Pending, 
                 CreatedDate = DateTime.UtcNow.AddDays(-1)
             },
             new Report 
@@ -59,7 +59,7 @@ public class GetReportsByItemHandlerTests
                 UserId = userId,
                 OwnerId = ownerId,
                 Description = "Report 2 for item",
-                Status = ReportStatus.ACCEPTED, 
+                Status = ReportStatus.Accepted, 
                 CreatedDate = DateTime.UtcNow.AddDays(-2)
             },
             new Report 
@@ -69,7 +69,7 @@ public class GetReportsByItemHandlerTests
                 UserId = userId,
                 OwnerId = ownerId,
                 Description = "Report for other item",
-                Status = ReportStatus.PENDING, 
+                Status = ReportStatus.Pending, 
                 CreatedDate = DateTime.UtcNow.AddDays(-3)
             }
         );

@@ -15,13 +15,13 @@ public class Booking
     public Guid Id { get; set; } = Guid.NewGuid();
 
     /// <summary>
-    /// The item being booked (foreign key to Item.Id).
+    /// The item being booked (foreign key to Item ID).
     /// </summary>
     [ForeignKey(nameof(Item))]
     public Guid ItemId { get; set; }
 
     /// <summary>
-    /// The user borrowing the item (foreign key to User.Id).
+    /// The user borrowing the item (foreign key to User ID).
     /// </summary>
     [ForeignKey(nameof(User))]
     public Guid BorrowerId { get; set; }
@@ -67,7 +67,7 @@ public class Booking
     /// Indicates whether the payment for this booking has been secured via Stripe.
     /// </summary>
     [Required]
-    public bool IsPaid { get; set; } = false;
+    public bool IsPaid { get; set; } 
 
     // Navigation properties (optional)
     public Item? Item { get; set; }

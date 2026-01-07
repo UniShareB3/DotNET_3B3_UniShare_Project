@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Bookings;
+namespace Backend.Features.Bookings.GetAllBookings;
 
 public class GetAllBookingsHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<GetAllBookingsRequest, IResult>
 {

@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Backend.Features.Items;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -8,37 +7,35 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using FluentValidation;
-using Backend.TokenGenerators;
 using Backend.Validators;
-using Backend.Services;
 using Backend.Data;
-using Backend.Features.Universities;
-using Backend.Features.Bookings;
+using Backend.Features.Bookings.CreateBooking;
+using Backend.Features.Bookings.DeleteBooking;
 using Backend.Features.Bookings.DTO;
-using Backend.Features.ModeratorAssignment;
+using Backend.Features.Bookings.GetAllBookings;
+using Backend.Features.Bookings.GetBooking;
+using Backend.Features.Bookings.UpdateBooking;
+using Backend.Features.Items.DeleteItem;
+using Backend.Features.Items.GetAllItems;
+using Backend.Features.Items.GetAllUserItems;
+using Backend.Features.Items.GetBookingForItem;
+using Backend.Features.Items.GetItem;
+using Backend.Features.Items.GetUserItem;
+using Backend.Features.Items.PostItem;
 using Backend.Features.ModeratorAssignment.CreateModeratorAssignment;
 using Backend.Features.ModeratorAssignment.DTO;
 using Backend.Features.ModeratorAssignment.GetAllModeratorAssignments;
 using Backend.Features.ModeratorAssignment.UpdateModeratorAssignment;
-using Backend.Features.Shared.Pipeline;
 using Backend.Features.Shared.Authorization;
-using Backend.Features.Users;
-using Backend.Features.Users.Dtos;
 using Backend.Features.Users.GetAdmins;
 using Backend.Features.Users.GetModerators;
 using MediatR;
 using FluentValidation.AspNetCore;
-using Backend.Features.Review;
 using Backend.Features.Review.DTO;
-using Backend.Features.Shared.Auth;
 using Backend.Features.Shared.IAM.DTO;
-using Backend.Mapping;
 using Serilog;
 using DotNetEnv;
-using Backend.Features.Shared.Stripe;
-using Backend.Features.Shared.Stripe.DTO;
 using Backend.Features.Shared.StripeService.HandleStripeWebhook;
-using Backend.Features.Reports;
 using Backend.Features.Reports.CreateReport;
 using Backend.Features.Reports.DTO;
 using Backend.Features.Reports.GetAcceptedReportsCount;
@@ -46,6 +43,45 @@ using Backend.Features.Reports.GetAllReports;
 using Backend.Features.Reports.GetReportsByItem;
 using Backend.Features.Reports.GetReportsByModerator;
 using Backend.Features.Reports.UpdateReportStatus;
+using Backend.Features.Review.CreateReview;
+using Backend.Features.Review.DeleteReview;
+using Backend.Features.Review.GetAllReviews;
+using Backend.Features.Review.GetReview;
+using Backend.Features.Review.UpdateReview;
+using Backend.Features.Shared.IAM.AssignAdminRole;
+using Backend.Features.Shared.IAM.ChangePassword;
+using Backend.Features.Shared.IAM.GetRefreshTokens;
+using Backend.Features.Shared.IAM.RefreshToken;
+using Backend.Features.Shared.IAM.RequestPasswordReset;
+using Backend.Features.Shared.IAM.SendEmailVerification;
+using Backend.Features.Shared.IAM.VerifyPasswordReset;
+using Backend.Features.Shared.Pipeline.Logging;
+using Backend.Features.Shared.Pipeline.Validation;
+using Backend.Features.Shared.StripeService.CreateCheckoutSession;
+using Backend.Features.Shared.StripeService.CreateStripeAccountLink;
+using Backend.Features.Shared.StripeService.DTO;
+using Backend.Features.Universities.GetAllUniversities;
+using Backend.Features.Universities.PostUniversities;
+using Backend.Features.Users.AssignModeratorRole;
+using Backend.Features.Users.ConfirmEmail;
+using Backend.Features.Users.DeleteUser;
+using Backend.Features.Users.DTO;
+using Backend.Features.Users.GetAllUserBookedItems;
+using Backend.Features.Users.GetAllUsers;
+using Backend.Features.Users.GetUser;
+using Backend.Features.Users.GetUserBookedItem;
+using Backend.Features.Users.GetUserBookings;
+using Backend.Features.Users.LoginUser;
+using Backend.Features.Users.RegisterUser;
+using Backend.Features.Users.UpdateUser;
+using Backend.Mappers.Booking;
+using Backend.Mappers.Review;
+using Backend.Mappers.University;
+using Backend.Mappers.User;
+using Backend.Mapping;
+using Backend.Services.EmailSender;
+using Backend.Services.Hashing;
+using Backend.Services.Token;
 
 // Configure Serilog before building the application
 Log.Logger = new LoggerConfiguration()
@@ -544,7 +580,7 @@ reviewsGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
     .WithDescription("Get a specific review by ID")
     .AllowAnonymous();
 
-reviewsGroup.MapPost("", async (CreateReviewDTO dto, IMediator mediator) =>
+reviewsGroup.MapPost("", async (CreateReviewDto dto, IMediator mediator) =>
         await mediator.Send(new CreateReviewRequest(dto)))
     .WithDescription("Create a new review")
     .RequireEmailVerification();
@@ -596,7 +632,7 @@ reportsGroup.MapGet("/moderator/{moderatorId:guid}", async (Guid moderatorId, IM
 // Get accepted reports count from last week for an item
 reportsGroup.MapGet("/item/{itemId:guid}/accepted-last-week",
         async (Guid itemId, int numberOfDays, IMediator mediator) =>
-            await mediator.Send(new GetAcceptedReportsCountRequest(itemId, numberOfDays)))
+            await mediator.Send(new GetAcceptedReportsCountLastWeekRequest(itemId, numberOfDays)))
     .WithDescription("Get the number of accepted reports from the specified period of time for a specific item")
     .AllowAnonymous();
 
@@ -646,9 +682,6 @@ chatGroup.MapGet("/history/{otherUserId:guid}", async (Guid otherUserId, ClaimsP
 
     return Results.Ok(messages);
 });
-
-
-// Log the URLs where the application is listening
 
 Log.Information("UniShare API started successfully");
 

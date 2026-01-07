@@ -13,22 +13,13 @@ namespace Backend.Features.Shared.StripeService.HandleStripeWebhook;
 /// <summary>
 /// Handler for processing Stripe webhook events
 /// </summary>
-public class HandleStripeWebhookHandler : IRequestHandler<HandleStripeWebhookRequest, IResult>
+public class HandleStripeWebhookHandler(
+    ApplicationContext dbContext,
+    UserManager<User> userManager,
+    IConfiguration configuration)
+    : IRequestHandler<HandleStripeWebhookRequest, IResult>
 {
-    private readonly ApplicationContext _dbContext;
-    private readonly UserManager<User> _userManager;
-    private readonly IConfiguration _configuration;
     private readonly ILogger _logger = Log.ForContext<HandleStripeWebhookHandler>();
-
-    public HandleStripeWebhookHandler(
-        ApplicationContext dbContext,
-        UserManager<User> userManager,
-        IConfiguration configuration)
-    {
-        _dbContext = dbContext;
-        _userManager = userManager;
-        _configuration = configuration;
-    }
 
     public async Task<IResult> Handle(HandleStripeWebhookRequest request, CancellationToken cancellationToken)
     {
@@ -37,10 +28,10 @@ public class HandleStripeWebhookHandler : IRequestHandler<HandleStripeWebhookReq
             _logger.Information("Processing Stripe webhook");
 
             // Get the environment to determine which API key to use
-            var environment = _configuration["Environment"] ?? "Development";
+            var environment = configuration["Environment"] ?? "Development";
             var stripeSecretKey = environment == "Production"
-                ? _configuration["Stripe:Live_Secret_Key"]
-                : _configuration["Stripe:Test_Secret_Key"];
+                ? configuration["Stripe:Live_Secret_Key"]
+                : configuration["Stripe:Test_Secret_Key"];
 
             if (string.IsNullOrEmpty(stripeSecretKey))
             {
@@ -54,7 +45,7 @@ public class HandleStripeWebhookHandler : IRequestHandler<HandleStripeWebhookReq
             StripeConfiguration.ApiKey = stripeSecretKey;
 
             // Verify the webhook signature
-            var webhookSecret = _configuration["Stripe:WebhookSecret"];
+            var webhookSecret = configuration["Stripe:WebhookSecret"];
             Event stripeEvent;
 
             try
@@ -142,8 +133,8 @@ public class HandleStripeWebhookHandler : IRequestHandler<HandleStripeWebhookReq
             return;
         }
 
-        var booking = await _dbContext.Bookings
-            .FirstOrDefaultAsync(b => b.Id == clientGuid);
+        var booking = await dbContext.Bookings
+            .FirstOrDefaultAsync(b => b.Id == clientGuid, cancellationToken: cancellationToken);
 
         if (booking == null)
         {
@@ -153,7 +144,7 @@ public class HandleStripeWebhookHandler : IRequestHandler<HandleStripeWebhookReq
         
         // Mark the booking as paid
         booking.IsPaid = true;
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
 
         _logger.Information("Marked booking {BookingId} as paid", booking.Id);
     }
@@ -170,8 +161,8 @@ public class HandleStripeWebhookHandler : IRequestHandler<HandleStripeWebhookReq
         _logger.Information("Stripe account updated: {AccountId}, ChargesEnabled: {ChargesEnabled}, DetailsSubmitted: {DetailsSubmitted}",
             account.Id, account.ChargesEnabled, account.DetailsSubmitted);
 
-        // Find user with this Stripe account
-        var user = await _dbContext.Users
+        // Find the user with this Stripe account
+        var user = await dbContext.Users
             .FirstOrDefaultAsync(u => u.StripeAccountId == account.Id, cancellationToken);
 
         if (user == null)
@@ -180,24 +171,24 @@ public class HandleStripeWebhookHandler : IRequestHandler<HandleStripeWebhookReq
             return;
         }
 
-        // If the account is fully onboarded and can accept charges, grant Seller role
-        if (account.ChargesEnabled && account.DetailsSubmitted)
+        // If the account is fully onboarded and can accept charges, grant the Seller role
+        if (account is { ChargesEnabled: true, DetailsSubmitted: true })
         {
-            var hasSellerRole = await _userManager.IsInRoleAsync(user, "Seller");
+            var hasSellerRole = await userManager.IsInRoleAsync(user, "Seller");
             if (!hasSellerRole)
             {
-                await _userManager.AddToRoleAsync(user, "Seller");
+                await userManager.AddToRoleAsync(user, "Seller");
                 _logger.Information("Granted Seller role to user {UserId} with Stripe account {AccountId}",
                     user.Id, account.Id);
             }
         }
         else
         {
-            // If account is not fully enabled, remove Seller role if they have it
-            var hasSellerRole = await _userManager.IsInRoleAsync(user, "Seller");
+            // If the account is not fully enabled, remove the Seller role if they have it
+            var hasSellerRole = await userManager.IsInRoleAsync(user, "Seller");
             if (hasSellerRole)
             {
-                await _userManager.RemoveFromRoleAsync(user, "Seller");
+                await userManager.RemoveFromRoleAsync(user, "Seller");
                 _logger.Information("Removed Seller role from user {UserId} with Stripe account {AccountId}",
                     user.Id, account.Id);
             }

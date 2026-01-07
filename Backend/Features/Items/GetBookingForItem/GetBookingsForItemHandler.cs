@@ -1,16 +1,11 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Backend.Features.Bookings.DTO;
 using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Http;
 
-namespace Backend.Features.Items
+namespace Backend.Features.Items.GetBookingForItem
 {
     public class GetBookingsForItemHandler(ApplicationContext dbContext, IMapper mapper)
         : IRequestHandler<GetBookingsForItemRequest, IResult>

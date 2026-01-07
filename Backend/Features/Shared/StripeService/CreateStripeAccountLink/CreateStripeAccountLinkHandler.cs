@@ -1,5 +1,5 @@
 ﻿using Backend.Data;
-using Backend.Features.Shared.Stripe.DTO;
+using Backend.Features.Shared.StripeService.DTO;
 using Backend.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -8,27 +8,18 @@ using Serilog;
 using Stripe;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Shared.Stripe;
+namespace Backend.Features.Shared.StripeService.CreateStripeAccountLink;
 
 /// <summary>
 /// Handler for creating Stripe Connect account onboarding links
 /// </summary>
-public class CreateStripeAccountLinkHandler : IRequestHandler<CreateStripeAccountLinkRequest, IResult>
+public class CreateStripeAccountLinkHandler(
+    ApplicationContext dbContext,
+    UserManager<User> userManager,
+    IConfiguration configuration)
+    : IRequestHandler<CreateStripeAccountLinkRequest, IResult>
 {
-    private readonly ApplicationContext _dbContext;
-    private readonly UserManager<User> _userManager;
-    private readonly IConfiguration _configuration;
     private readonly ILogger _logger = Log.ForContext<CreateStripeAccountLinkHandler>();
-
-    public CreateStripeAccountLinkHandler(
-        ApplicationContext dbContext,
-        UserManager<User> userManager,
-        IConfiguration configuration)
-    {
-        _dbContext = dbContext;
-        _userManager = userManager;
-        _configuration = configuration;
-    }
 
     public async Task<IResult> Handle(CreateStripeAccountLinkRequest request, CancellationToken cancellationToken)
     {
@@ -37,10 +28,10 @@ public class CreateStripeAccountLinkHandler : IRequestHandler<CreateStripeAccoun
             _logger.Information("Creating Stripe account link for user {UserId}", request.Dto.UserId);
 
             // Get the environment to determine which API key to use
-            var environment = _configuration["Environment"] ?? "Development";
+            var environment = configuration["Environment"] ?? "Development";
             var stripeSecretKey = environment == "Production"
-                ? _configuration["Stripe:Live_Secret_Key"]
-                : _configuration["Stripe:Test_Secret_Key"];
+                ? configuration["Stripe:Live_Secret_Key"]
+                : configuration["Stripe:Test_Secret_Key"];
 
             if (string.IsNullOrEmpty(stripeSecretKey))
             {
@@ -54,7 +45,7 @@ public class CreateStripeAccountLinkHandler : IRequestHandler<CreateStripeAccoun
             StripeConfiguration.ApiKey = stripeSecretKey;
 
             // Find the user
-            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == request.Dto.UserId, cancellationToken);    
+            var user = await userManager.Users.FirstOrDefaultAsync(u => u.Id == request.Dto.UserId, cancellationToken);    
             if (user == null)
             {
                 _logger.Warning("User {UserId} not found", request.Dto.UserId);
@@ -83,7 +74,7 @@ public class CreateStripeAccountLinkHandler : IRequestHandler<CreateStripeAccoun
 
                 // Save the Stripe account ID
                 user.StripeAccountId = accountId;
-                await _dbContext.SaveChangesAsync(cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
 
                 _logger.Information("Created new Stripe account {AccountId} for user {UserId}", accountId, user.Id);
             }

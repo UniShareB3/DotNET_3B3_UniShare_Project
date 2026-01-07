@@ -1,14 +1,14 @@
 ﻿using Backend.Data;
 using Backend.Features.Shared.IAM.Constants;
 using Backend.Persistence;
-using Backend.Services;
+using Backend.Services.EmailSender;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Shared.Auth;
+namespace Backend.Features.Shared.IAM.RequestPasswordReset;
 
 public class RequestPasswordResetHandler(
     UserManager<User> userManager,
@@ -45,7 +45,7 @@ public class RequestPasswordResetHandler(
         {
             UserId = user.Id,
             Code = resetToken, // Store the actual token
-            ExpiresAt = DateTime.UtcNow.AddMinutes(IAMConstants.ResetPasswordTokenExpiryMinutes),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(IamConstants.ResetPasswordTokenExpiryMinutes),
             CreatedAt = DateTime.UtcNow
         };
 

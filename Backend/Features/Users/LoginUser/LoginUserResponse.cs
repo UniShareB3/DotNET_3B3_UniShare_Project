@@ -1,4 +1,4 @@
-﻿namespace Backend.Features.Users;
+﻿namespace Backend.Features.Users.LoginUser;
 
 public record LoginUserResponse(
     string AccessToken, 

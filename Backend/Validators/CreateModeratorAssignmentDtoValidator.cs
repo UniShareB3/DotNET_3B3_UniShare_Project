@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Backend.Data;
+﻿using Backend.Data;
 using Backend.Features.ModeratorAssignment.DTO;
 using Backend.Features.ModeratorAssignment.Enums;
 using Backend.Persistence;
@@ -43,11 +42,11 @@ public class CreateModeratorAssignmentDtoValidator : AbstractValidator<CreateMod
     }
     private async Task<bool> IsAssignmentTimeValid(CreateModeratorAssignmentDto dto)
     {
-        var lastRejectedModeratorAssignment =
+        var lastRejectedModeratorAssignment = await 
             _appContext.ModeratorAssignments
-                .Where(r => r.UserId == dto.UserId && r.Status == ModeratorAssignmentStatus.REJECTED)
+                .Where(r => r.UserId == dto.UserId && r.Status == ModeratorAssignmentStatus.Rejected)
                 .OrderByDescending(r => r.CreatedDate)
-                .FirstOrDefault();
+                .FirstOrDefaultAsync();
         
         if (lastRejectedModeratorAssignment == null)
             return true;
@@ -59,20 +58,15 @@ public class CreateModeratorAssignmentDtoValidator : AbstractValidator<CreateMod
     private async Task<bool> IsModeratorAlready(CreateModeratorAssignmentDto dto)
     {
         var user = await _userManager.FindByIdAsync(dto.UserId.ToString());
-        IList<string> roles = await _userManager.GetRolesAsync(user);
-        foreach (var role in roles)
-        {
-            if (role == "Moderator")
-                return false;
-        }
-        return true;
+        var roles = await _userManager.GetRolesAsync(user!);
+        return roles.All(role => role != "Moderator");
     }
     
     private async Task<bool> IsRequestAlreadyPending(CreateModeratorAssignmentDto dto)
     {
         var existingAssignment = await _appContext.ModeratorAssignments
             .FirstOrDefaultAsync(mr => mr.UserId == dto.UserId 
-                && mr.Status == ModeratorAssignmentStatus.PENDING);
+                && mr.Status == ModeratorAssignmentStatus.Pending);
         return existingAssignment == null;
     }
 }

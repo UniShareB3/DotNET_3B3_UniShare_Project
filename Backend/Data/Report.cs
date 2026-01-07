@@ -35,7 +35,7 @@ public class Report
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
     [Required]
-    public ReportStatus Status { get; set; } = ReportStatus.PENDING;
+    public ReportStatus Status { get; set; } = ReportStatus.Pending;
 
     public Guid? ModeratorId { get; set; }
 

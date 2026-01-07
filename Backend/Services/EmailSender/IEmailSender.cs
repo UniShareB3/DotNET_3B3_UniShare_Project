@@ -1,4 +1,4 @@
-﻿namespace Backend.Services;
+﻿namespace Backend.Services.EmailSender;
 
 public interface IEmailSender
 {

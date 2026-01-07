@@ -3,9 +3,10 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Backend.Data;
-using Backend.Features.Users;
+using Backend.Features.Users.LoginUser;
 using Backend.Persistence;
 using Backend.Tests.Seeder;
+using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -54,10 +55,10 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             new StringContent(JsonSerializer.Serialize(loginDto), Encoding.UTF8, "application/json"));
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("accessToken", content);
-        Assert.Contains("refreshToken", content);
+        content.Should().Contain("accessToken");
+        content.Should().Contain("refreshToken");
     }
 
     [Fact]
@@ -75,7 +76,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             new StringContent(JsonSerializer.Serialize(loginDto), Encoding.UTF8, "application/json"));
 
         // Assert
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -93,7 +94,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             new StringContent(JsonSerializer.Serialize(loginDto), Encoding.UTF8, "application/json"));
 
         // Assert
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     #endregion
@@ -118,9 +119,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             new StringContent(JsonSerializer.Serialize(registerDto), Encoding.UTF8, "application/json"));
 
         // Assert
-        Assert.True(
-            response.StatusCode == HttpStatusCode.Created
-        );
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
     }
 
     [Fact]
@@ -140,7 +139,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             new StringContent(JsonSerializer.Serialize(registerDto), Encoding.UTF8, "application/json"));
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     #endregion
@@ -168,9 +167,9 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             new StringContent(JsonSerializer.Serialize(refreshDto), Encoding.UTF8, "application/json"));
 
         // Assert
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = await response.Content.ReadAsStringAsync();
-        Assert.Contains("accessToken", content);
+        content.Should().Contain("accessToken");
     }
 
     [Fact]
@@ -184,7 +183,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             new StringContent(JsonSerializer.Serialize(refreshDto), Encoding.UTF8, "application/json"));
 
         // Assert
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     #endregion
@@ -206,7 +205,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             new StringContent(JsonSerializer.Serialize(confirmDto), Encoding.UTF8, "application/json"));
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     #endregion
@@ -227,7 +226,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             new StringContent(JsonSerializer.Serialize(verificationDto), Encoding.UTF8, "application/json"));
 
         // Assert
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -250,7 +249,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
         var response = await _client.SendAsync(request);
 
         // Assert
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     #endregion
@@ -271,7 +270,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
             new StringContent(JsonSerializer.Serialize(resetDto), Encoding.UTF8, "application/json"));
 
         // Assert
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     #endregion
@@ -289,7 +288,7 @@ public class AuthApiTest(CustomWebApplicationFactory factory)
         var response = await _client.GetAsync($"/auth/password?userId={userId}&code={invalidCode}");
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     #endregion

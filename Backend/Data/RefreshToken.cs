@@ -9,6 +9,7 @@ public class RefreshToken
     public Guid Id { get; set; } = Guid.NewGuid();
     
     [Required]
+    [MaxLength(255)]
     public string Token { get; set; } = string.Empty;
     
     [Required]
@@ -25,10 +26,11 @@ public class RefreshToken
     
     public bool IsExpired => DateTime.UtcNow >= ExpiresAt;
     
-    public bool IsRevoked { get; set; } = false;
+    public bool IsRevoked { get; set; }
     
     public DateTime? RevokedAt { get; set; }
     
+    [MaxLength(255)]
     public string? ReasonRevoked { get; set; }
     
     /// <summary>

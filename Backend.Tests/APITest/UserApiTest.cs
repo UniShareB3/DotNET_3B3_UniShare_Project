@@ -3,11 +3,10 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Backend.Data;
-using Backend.Features.Users;
+using Backend.Features.Users.LoginUser;
 using Backend.Persistence;
 using Backend.Tests.Seeder;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Backend.Tests.APITest;
@@ -30,10 +29,11 @@ public class UserApiTest(CustomWebApplicationFactory factory) : IClassFixture<Cu
             _scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<Guid>>>());
     }
     
-    public async Task DisposeAsync()
+    public Task DisposeAsync()
     {
         _scope.Dispose();
         _client.Dispose();
+        return Task.CompletedTask;
     }
     
     #region GET /users - Get All Users Tests

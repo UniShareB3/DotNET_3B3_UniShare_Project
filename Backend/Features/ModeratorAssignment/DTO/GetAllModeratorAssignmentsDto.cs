@@ -1,6 +1,4 @@
-﻿using Backend.Features.ModeratorAssignment.Enums;
-
-namespace Backend.Features.ModeratorAssignment.DTO;
+﻿namespace Backend.Features.ModeratorAssignment.DTO;
 
 public class GetAllModeratorAssignmentsDto
 {

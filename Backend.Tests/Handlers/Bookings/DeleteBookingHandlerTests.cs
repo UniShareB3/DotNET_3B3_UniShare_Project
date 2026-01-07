@@ -1,5 +1,5 @@
 ﻿using Backend.Data;
-using Backend.Features.Bookings;
+using Backend.Features.Bookings.DeleteBooking;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;

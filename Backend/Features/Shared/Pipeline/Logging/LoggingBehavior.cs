@@ -2,7 +2,7 @@ using System.Diagnostics;
 using MediatR;
 using Serilog;
 
-namespace Backend.Features.Shared.Pipeline;
+namespace Backend.Features.Shared.Pipeline.Logging;
 
 /// <summary>
 /// MediatR pipeline behavior that logs each request with timing information
@@ -24,7 +24,7 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
 
         try
         {
-            var response = await next();
+            var response = await next(cancellationToken);
             
             stopwatch.Stop();
             

@@ -1,6 +1,7 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿﻿using System.IdentityModel.Tokens.Jwt;
 using Backend.Data;
-using Backend.TokenGenerators;
+using Backend.Services.Token;
+using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 
 namespace Backend.Tests.Services;
@@ -29,13 +30,13 @@ public class TokenServiceTests
         
         // Arrange
         var configuration = CrateInMemoryConfiguration();
-        var tokenService = new TokenGenerators.TokenService(configuration);
+        var tokenService = new TokenService(configuration);
         var user = new User
         {
             Id = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94d6"),
             Email = "email@student.uaic.ro",
         };
-        List<string> roles = new List<string>{}; // No roles needed for this test
+        var roles = new List<string>(); // No roles needed for this test
         
         // Act
         var token = tokenService.GenerateToken(user, roles);
@@ -45,10 +46,10 @@ public class TokenServiceTests
         var emailClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email);
         
         // Assert
-        Assert.NotNull(userIdClaim);
-        Assert.Equal(user.Id.ToString(), userIdClaim!.Value);
-        Assert.NotNull(emailClaim);
-        Assert.Equal(user.Email, emailClaim!.Value);
+        userIdClaim.Should().NotBeNull();
+        userIdClaim.Value.Should().Be(user.Id.ToString());
+        emailClaim.Should().NotBeNull();
+        emailClaim.Value.Should().Be(user.Email);
     }
     
     [Fact]
@@ -63,13 +64,13 @@ public class TokenServiceTests
         var token2 = tokenService.GenerateRefreshToken();
 
         // Assert
-        Assert.False(string.IsNullOrWhiteSpace(token1));
+        token1.Should().NotBeNullOrWhiteSpace();
 
         var bytes = Convert.FromBase64String(token1);
         
-        Assert.Equal(64, bytes.Length);
-        Assert.Equal(88, token1.Length);
-        Assert.NotEqual(token1, token2);
+        bytes.Length.Should().Be(64);
+        token1.Length.Should().Be(88);
+        token1.Should().NotBe(token2);
     }
 
     [Fact]
@@ -83,7 +84,7 @@ public class TokenServiceTests
         var seconds = tokenService.GetAccessTokenExpirationInSeconds();
 
         // Assert
-        Assert.Equal(30 * 30, seconds);
+        seconds.Should().Be(30 * 30);
     }
 
     [Fact]
@@ -104,7 +105,7 @@ public class TokenServiceTests
 
         // Assert
         // default is 15 minutes
-        Assert.Equal(15 * 60, seconds);
+        seconds.Should().Be(15 * 60);
     }
 
     [Fact]
@@ -119,7 +120,7 @@ public class TokenServiceTests
             {"JwtSettings:Audience", "audience"}
         };
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(inMemorySettings).Build();
-        var tokenService = new TokenGenerators.TokenService(configuration);
+        var tokenService = new TokenService(configuration);
 
         // Act
         var expiration = tokenService.GetRefreshTokenExpirationDate();
@@ -128,7 +129,7 @@ public class TokenServiceTests
         // now + 10 days 
         var expected = DateTime.UtcNow.AddDays(10);
         var diff = (expiration - expected).Duration();
-        Assert.True(diff < TimeSpan.FromSeconds(2));
+        diff.Should().BeLessThan(TimeSpan.FromSeconds(2));
     }
     
     

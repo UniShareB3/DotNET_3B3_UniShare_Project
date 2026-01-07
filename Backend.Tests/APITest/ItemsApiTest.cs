@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Backend.Data;
-using Backend.Features.Users;
+using Backend.Features.Users.LoginUser;
 using Backend.Persistence;
 using Backend.Tests.Seeder;
 using Microsoft.AspNetCore.Identity;
@@ -331,7 +331,7 @@ public class ItemsApiTest(CustomWebApplicationFactory factory) : IClassFixture<C
         var token = jsonResponse!.RootElement.GetProperty("accessToken").GetString();
         return token!;
     }
-    
+
     private async Task<HttpResponseMessage> PostRequestStatusCode(string url, string token, object? content)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, url);

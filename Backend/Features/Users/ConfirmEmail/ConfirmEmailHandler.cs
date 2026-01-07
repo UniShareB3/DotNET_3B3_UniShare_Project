@@ -1,13 +1,13 @@
 ﻿using Backend.Data;
 using Backend.Persistence;
-using Backend.Services;
+using Backend.Services.Hashing;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MediatR;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Users.ConfirmEmail;
 
 public class ConfirmEmailHandler(
     UserManager<User> userManager,
@@ -28,7 +28,7 @@ public class ConfirmEmailHandler(
             return Results.BadRequest(new { error = "User not found" });
         }
 
-        if (user.EmailConfirmed)
+        if (user.NewEmailConfirmed)
         {
             _logger.Warning("Email already confirmed for user {UserId}", request.UserId);
             return Results.BadRequest(new { error = "Email already confirmed" });
@@ -55,7 +55,7 @@ public class ConfirmEmailHandler(
         _logger.Information("Confirming email for user {UserId}", request.UserId);
         
         token.IsUsed = true;
-        user.EmailConfirmed = true;
+        user.NewEmailConfirmed = true;
 
         var updateResult = await userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)

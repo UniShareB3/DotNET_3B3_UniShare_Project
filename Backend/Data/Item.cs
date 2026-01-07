@@ -16,7 +16,7 @@ public class Item
     public Guid Id { get; set; } = Guid.NewGuid();
 
     /// <summary>
-    /// The user who owns the item (foreign key to User.Id).
+    /// The user who owns the item (foreign key to User ID).
     /// </summary>
     [ForeignKey(nameof(Owner))]
     public Guid OwnerId { get; set; }
@@ -33,7 +33,9 @@ public class Item
     /// Detailed description of the item.
     /// </summary>
     [Required]
+    [MaxLength(255)]
     [Column(TypeName = "text")]
+    
     public string Description { get; set; } = string.Empty;
 
     /// <summary>

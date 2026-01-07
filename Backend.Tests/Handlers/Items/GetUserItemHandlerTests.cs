@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Backend.Data;
-using Backend.Features.Items;
 using Backend.Features.Items.DTO;
+using Backend.Features.Items.GetUserItem;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;

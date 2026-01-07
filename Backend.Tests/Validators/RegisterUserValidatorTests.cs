@@ -1,6 +1,6 @@
 ﻿using Backend.Data;
-using Backend.Features.Users;
-using Backend.Features.Users.Dtos;
+using Backend.Features.Users.DTO;
+using Backend.Features.Users.RegisterUser;
 using Backend.Persistence;
 using Backend.Validators;
 using FluentAssertions;

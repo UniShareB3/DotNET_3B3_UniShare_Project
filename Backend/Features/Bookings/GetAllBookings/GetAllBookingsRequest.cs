@@ -1,5 +1,5 @@
 ﻿using MediatR;
 
-namespace Backend.Features.Bookings;
+namespace Backend.Features.Bookings.GetAllBookings;
 
-public record GetAllBookingsRequest() : IRequest<IResult>;
+public record GetAllBookingsRequest : IRequest<IResult>;

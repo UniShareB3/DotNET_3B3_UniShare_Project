@@ -1,10 +1,10 @@
 ﻿using Backend.Data;
-using Backend.Features.Users;
-using Backend.Features.Users.Dtos;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using AutoMapper;
+using Backend.Features.Users.DTO;
+using Backend.Features.Users.RegisterUser;
 using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -28,8 +28,26 @@ public class RegisterUserHandlerTests
 
     private static Mock<UserManager<User>> CreateUserManagerMock()
     {
+        var store = new Mock<IUserStore<User>>();
+        var optionsMock = new Mock<Microsoft.Extensions.Options.IOptions<IdentityOptions>>();
+        var passwordHasherMock = new Mock<IPasswordHasher<User>>();
+        var userValidators = new List<IUserValidator<User>>();
+        var passwordValidators = new List<IPasswordValidator<User>>();
+        var keyNormalizer = new Mock<ILookupNormalizer>();
+        var errors = new Mock<IdentityErrorDescriber>();
+        var servicesMock = new Mock<IServiceProvider>();
+        var loggerMock = new Mock<Microsoft.Extensions.Logging.ILogger<UserManager<User>>>();
+
         return new Mock<UserManager<User>>(
-            Mock.Of<IUserStore<User>>(), null, null, null, null, null, null, null, null);
+            store.Object,
+            optionsMock.Object,
+            passwordHasherMock.Object,
+            userValidators,
+            passwordValidators,
+            keyNormalizer.Object,
+            errors.Object,
+            servicesMock.Object,
+            loggerMock.Object);
     }
 
     [Fact]
@@ -55,7 +73,7 @@ public class RegisterUserHandlerTests
         userManagerMock.Setup(x => x.CreateAsync(It.IsAny<User>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Failed(expectedError));
         
-        ApplicationContext context = CreateInMemoryDbContext(System.Guid.NewGuid().ToString());
+        ApplicationContext context = CreateInMemoryDbContext(Guid.NewGuid().ToString());
 
         var handler = new RegisterUserHandler(userManagerMock.Object, mediatorMock.Object, mapperMock.Object, context);
 
@@ -81,7 +99,7 @@ public class RegisterUserHandlerTests
         var mapperMock = CreateMapperMock();
 
         userManagerMock.Setup(x => x.FindByEmailAsync(email))
-            .ReturnsAsync((User)null);
+            .ReturnsAsync(default(User?));
 
         var userEntity = new User { Email = email, UserName = email };
         mapperMock.Setup(m => m.Map<User>(userDto)).Returns(userEntity);
@@ -89,13 +107,13 @@ public class RegisterUserHandlerTests
         userManagerMock.Setup(x => x.CreateAsync(userEntity, userDto.Password))
             .ReturnsAsync(IdentityResult.Success);
         
-        ApplicationContext context = CreateInMemoryDbContext(System.Guid.NewGuid().ToString());
+        ApplicationContext context = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         context.Universities.Add(
             new University()
             {
                 Name = "Alexandru Ioan Cuza University",
                 EmailDomain = "student.uaic.ro",
-                Id = System.Guid.NewGuid()
+                Id = Guid.NewGuid()
             });
         await context.SaveChangesAsync();
         
@@ -134,7 +152,7 @@ public class RegisterUserHandlerTests
         userManagerMock.Setup(x => x.CreateAsync(userEntity, weakPassword))
             .ReturnsAsync(IdentityResult.Failed(identityErrors));
         
-        ApplicationContext context = CreateInMemoryDbContext(System.Guid.NewGuid().ToString());
+        ApplicationContext context = CreateInMemoryDbContext(Guid.NewGuid().ToString());
 
         var handler = new RegisterUserHandler(userManagerMock.Object, mediatorMock.Object, mapperMock.Object, context);
 

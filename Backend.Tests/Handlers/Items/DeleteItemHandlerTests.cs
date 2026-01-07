@@ -1,6 +1,6 @@
 ﻿using Backend.Features.Items.Enums;
 using Backend.Data;
-using Backend.Features.Items;
+using Backend.Features.Items.DeleteItem;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;

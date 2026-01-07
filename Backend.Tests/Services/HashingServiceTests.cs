@@ -1,4 +1,5 @@
-﻿using Backend.Services;
+﻿using Backend.Services.Hashing;
+using FluentAssertions;
 
 namespace Backend.Tests.Services;
 
@@ -17,6 +18,6 @@ public class HashingServiceTests
         var actualHash = hashingService.HashCode(input);
         
         // Assert
-        Assert.True(actualHash == expectedHash);
+        actualHash.Should().Be(expectedHash);
     }
 }
