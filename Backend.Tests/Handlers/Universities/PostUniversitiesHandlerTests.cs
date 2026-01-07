@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Backend.Data;
-using Backend.Features.Universities;
 using Backend.Features.Universities.DTO;
 using Backend.Features.Universities.PostUniversities;
 using Backend.Persistence;

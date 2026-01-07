@@ -2,6 +2,8 @@
 using Backend.Features.Shared.IAM.Constants;
 using Backend.Persistence;
 using Backend.Services;
+using Backend.Services.EmailSender;
+using Backend.Services.Hashing;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

@@ -16,29 +16,29 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         
-        RuleFor(x => x.Booking!.ItemId)
+        RuleFor(x => x.Booking.ItemId)
             .MustAsync(async (itemId, _) => await ItemExists(itemId))
             .NotEmpty().WithMessage("ItemId is required.");
 
-        RuleFor(x => x.Booking!.BorrowerId)
+        RuleFor(x => x.Booking.BorrowerId)
             .MustAsync(async (userId, _) => await UserExists(userId))
             .NotEmpty().WithMessage("BorrowerId is required.");
 
-        RuleFor(x => x.Booking!.StartDate)
+        RuleFor(x => x.Booking.StartDate)
             .NotEmpty().WithMessage("StartDate is required.")
-            .LessThan(x => x.Booking!.EndDate).WithMessage("StartDate must be before EndDate.")
+            .LessThan(x => x.Booking.EndDate).WithMessage("StartDate must be before EndDate.")
             .Must(start => start > DateTime.UtcNow.AddMinutes(-5))
             .WithMessage("StartDate cannot be in the past.");
 
-        RuleFor(x => x.Booking!.EndDate)
+        RuleFor(x => x.Booking.EndDate)
             .NotEmpty().WithMessage("EndDate is required.")
-            .GreaterThan(x => x.Booking!.StartDate).WithMessage("EndDate must be after StartDate.");
+            .GreaterThan(x => x.Booking.StartDate).WithMessage("EndDate must be after StartDate.");
 
         RuleFor(x => x)
-            .Must(x => (x.Booking!.EndDate - x.Booking!.StartDate).TotalDays <= 365)
+            .Must(x => (x.Booking.EndDate - x.Booking.StartDate).TotalDays <= 365)
             .WithMessage("Booking duration cannot exceed 365 days.");
 
-        RuleFor(x => x.Booking!.RequestedOn)
+        RuleFor(x => x.Booking.RequestedOn)
             .Must(r => r <= DateTime.UtcNow.AddMinutes(10))
             .WithMessage("RequestedOn cannot be in the future.");
 
@@ -55,7 +55,7 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
     {
         try
         {
-            var dto = request.Booking!;
+            var dto = request.Booking;
             var overlapping = await _context.Bookings
                 .Where(b => b.ItemId == dto.ItemId)
                 .Where(b => b.BookingStatus != BookingStatus.Rejected && b.BookingStatus != BookingStatus.Canceled)
@@ -73,7 +73,7 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
 
     private async Task<bool> ModeratorIsDifferentFromOwner(CreateBookingRequest request)
     {
-        var dto = request.Booking!;
+        var dto = request.Booking;
         var item = await _context.Items.FirstOrDefaultAsync(i => i.Id == dto.ItemId);
         if (item == null)
             return false;

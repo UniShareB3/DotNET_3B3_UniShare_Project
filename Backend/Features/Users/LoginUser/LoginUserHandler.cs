@@ -2,7 +2,7 @@
 using Backend.Persistence;
 using Backend.Data;
 using Backend.Features.Users.DTO;
-using Backend.TokenGenerators;
+using Backend.Services.Token;
 using Microsoft.EntityFrameworkCore;
 using MediatR;
 using Serilog;

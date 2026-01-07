@@ -1,5 +1,4 @@
 ﻿using Backend.Data;
-using Backend.Features.Review;
 using Backend.Features.Review.DeleteReview;
 using Backend.Persistence;
 using FluentAssertions;
@@ -116,7 +115,7 @@ public class DeleteReviewHandlerTests
         
         var remainingReview = await context.Reviews.FindAsync(review2Id);
         remainingReview.Should().NotBeNull();
-        remainingReview!.Comment.Should().Be("Not as expected.");
+        remainingReview.Comment.Should().Be("Not as expected.");
     }
     
     [Fact]

@@ -30,9 +30,9 @@ public static class TestDataSeeder
     public static readonly Guid UnverifiedUserId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
     // Predefined university IDs
-    public static readonly Guid UaicId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-    public static readonly Guid TuiasiId = Guid.Parse("22222222-2222-2222-2222-222222222222");
-    public static readonly Guid UpbId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+    private static readonly Guid UaicId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid TuiasiId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid UpbId = Guid.Parse("33333333-3333-3333-3333-333333333333");
 
     // Predefined item IDs
     public static readonly Guid LaptopItemId = Guid.Parse("10000000-0000-0000-0000-000000000001");
@@ -63,10 +63,10 @@ public static class TestDataSeeder
         var universities = await SeedUniversities(context);
         
         // 3. Seed Test Users (static users only)
-        var users = await SeedTestUsers(context, userManager, universities);
+        var users = await SeedTestUsers( userManager, universities);
         
         // 4. Seed Test Items
-        await SeedTestItems(context, users);
+        await SeedTestItems(context);
         
         // 5. Seed Test Bookings
         await SeedTestBookings(context, users);
@@ -132,7 +132,6 @@ public static class TestDataSeeder
     }
 
     private static async Task<List<User>> SeedTestUsers(
-        ApplicationContext context,
         UserManager<User> userManager,
         List<University> universities)
     {
@@ -152,7 +151,7 @@ public static class TestDataSeeder
             NewEmailConfirmed = true,
             UniversityId = uaicUniversity.Id,
             CreatedAt = DateTime.UtcNow
-        }, AdminPassword, new[] { "Admin", "User" });
+        }, AdminPassword, ["Admin", "User"]);
         
         if (admin != null) users.Add(admin);
 
@@ -169,7 +168,7 @@ public static class TestDataSeeder
             NewEmailConfirmed = true,
             UniversityId = uaicUniversity.Id,
             CreatedAt = DateTime.UtcNow
-        }, ModeratorPassword, new[] { "Moderator", "User" });
+        }, ModeratorPassword, ["Moderator", "User"]);
         
         if (moderator != null) users.Add(moderator);
 
@@ -186,7 +185,7 @@ public static class TestDataSeeder
             NewEmailConfirmed = true,
             UniversityId = uaicUniversity.Id,
             CreatedAt = DateTime.UtcNow
-        }, UserPassword, new[] { "User" });
+        }, UserPassword, ["User"]);
         
         if (user != null) users.Add(user);
 
@@ -203,7 +202,7 @@ public static class TestDataSeeder
             NewEmailConfirmed = false, // NOT VERIFIED
             UniversityId = uaicUniversity.Id,
             CreatedAt = DateTime.UtcNow
-        }, UnverifiedUserPassword, new[] { "User" });
+        }, UnverifiedUserPassword, ["User"]);
         
         if (unverifiedUser != null) users.Add(unverifiedUser);
 
@@ -235,7 +234,7 @@ public static class TestDataSeeder
         return null;
     }
 
-    private static async Task SeedTestItems(ApplicationContext context, List<User> users)
+    private static async Task SeedTestItems(ApplicationContext context)
     {
         if (context.Items.Any())
         {
@@ -243,7 +242,6 @@ public static class TestDataSeeder
         }
 
         var verifiedUser = UserId;
-        if (verifiedUser == null) return;
 
         var items = new List<Item>
         {
@@ -360,7 +358,7 @@ public static class TestDataSeeder
                 Comment = "Great book, exactly as described!",
                 CreatedAt = DateTime.UtcNow.AddDays(-6)
             },
-            // Review for a User (owner reviews borrower)
+            // Review for a User (the owner reviews borrower)
             new Review
             {
                 Id = UserReviewId,

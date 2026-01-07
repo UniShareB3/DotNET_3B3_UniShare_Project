@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Backend.Data;
-using Backend.Features.Items;
 using Backend.Features.Items.DTO;
 using Backend.Features.Items.Enums;
 using Backend.Features.Items.GetAllItems;

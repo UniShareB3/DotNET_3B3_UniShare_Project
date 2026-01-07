@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
-namespace Backend.Tests;
+namespace Backend.Tests.Validators;
 
 // Tests for EmailValidator
 public class EmailValidatorTests
@@ -31,8 +31,8 @@ public class EmailValidatorTests
     [Fact]
     public async Task Given_ValidEmailDomain_When_ValidatingEmail_Then_Success()
     {
-        var universityId = _context.Universities.First().Id;
-        var user = new User { Email = "myemail@student.uaic.ro", UniversityId = universityId };
+        var universityId = await  _context.Universities.FirstAsync();
+        var user = new User { Email = "myemail@student.uaic.ro", UniversityId = universityId.Id };
         var userManager = GetMockUserManager();
 
         var validator = new EmailValidator(_context);
@@ -44,12 +44,12 @@ public class EmailValidatorTests
     [Fact]
     public async Task Given_InvalidEmailDomain_When_ValidatingEmail_Then_InvalidEmailDomainError()
     {
-        var universityId = _context.Universities.First().Id;
-        var user = new User { Email = "myemail@email.com", UniversityId = universityId };
+        var universityId = await  _context.Universities.FirstAsync();
+        var user = new User { Email = "myemail@email.com", UniversityId = universityId.Id };
         var userManager = GetMockUserManager();
 
         var validator = new EmailValidator(_context);
-        var result = await validator.ValidateAsync(userManager, user);
+        var result = await  validator.ValidateAsync(userManager, user);
 
         Assert.False(result.Succeeded);
         Assert.Contains(result.Errors, e => e.Code == "InvalidEmailDomain");
@@ -58,15 +58,15 @@ public class EmailValidatorTests
     [Fact]
     public async Task Given_NullEmail_When_ValidatingEmail_Then_InvalidEmailError()
     {
-        var universityId = _context.Universities.First().Id;
-        var user = new User { Email = null, UniversityId = universityId };
+        var universityId = await  _context.Universities.FirstAsync();
+        var user = new User { Email = null, UniversityId = universityId.Id };
         var userManager = GetMockUserManager();
 
         var validator = new EmailValidator(_context);
         var result = await validator.ValidateAsync(userManager, user);
 
         Assert.False(result.Succeeded);
-        Assert.Contains(result.Errors, e => e.Code == "InvalidEmail");
+        Assert.Contains(result.Errors, e => e.Code ==  "InvalidEmail");
     }
 
     private static UserManager<User> GetMockUserManager()

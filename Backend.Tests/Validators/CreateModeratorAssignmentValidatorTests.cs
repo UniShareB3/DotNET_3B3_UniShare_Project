@@ -24,7 +24,7 @@ public class CreateModeratorAssignmentValidatorTests
         return context;
     }
     
-    private Mock<UserManager<User>> GetMockUserManager()
+    private static Mock<UserManager<User>> GetMockUserManager()
     {
         var store = new Mock<IUserStore<User>>();
         var mgr = new Mock<UserManager<User>>(store.Object, null!, null!, null!, null!, null!, null!, null!, null!);
@@ -43,7 +43,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
-            .ReturnsAsync(new User { Id = userId, UserName = "testuser" });
+            .ReturnsAsync(new User { Id = userId, UserName = "testUser" });
         mockUserManager.Setup(um => um.GetRolesAsync(It.IsAny<User>()))
             .ReturnsAsync(new List<string> { "User" });
         
@@ -69,7 +69,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
-            .ReturnsAsync(new User { Id = userId, UserName = "testuser" });
+            .ReturnsAsync(new User { Id = userId, UserName = "testUser" });
         mockUserManager.Setup(um => um.GetRolesAsync(It.IsAny<User>()))
             .ReturnsAsync(new List<string> { "User" });
         
@@ -96,7 +96,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
-            .ReturnsAsync(new User { Id = userId, UserName = "testuser" });
+            .ReturnsAsync(new User { Id = userId, UserName = "testUser" });
         mockUserManager.Setup(um => um.GetRolesAsync(It.IsAny<User>()))
             .ReturnsAsync(new List<string> { "User" });
         
@@ -124,7 +124,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
-            .ReturnsAsync(new User { Id = userId, UserName = "testuser" });
+            .ReturnsAsync(new User { Id = userId, UserName = "testUser" });
         mockUserManager.Setup(um => um.GetRolesAsync(It.IsAny<User>()))
             .ReturnsAsync(new List<string> { "User" });
         
@@ -163,7 +163,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
-            .ReturnsAsync(new User { Id = userId, UserName = "testuser" });
+            .ReturnsAsync(new User { Id = userId, UserName = "testUser" });
         mockUserManager.Setup(um => um.GetRolesAsync(It.IsAny<User>()))
             .ReturnsAsync(new List<string> { "User" });
         
@@ -202,7 +202,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
-            .ReturnsAsync(new User { Id = userId, UserName = "testuser" });
+            .ReturnsAsync(new User { Id = userId, UserName = "testUser" });
         mockUserManager.Setup(um => um.GetRolesAsync(It.IsAny<User>()))
             .ReturnsAsync(new List<string> { "User" });
         
@@ -228,7 +228,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
-            .ReturnsAsync(new User { Id = userId, UserName = "testuser" });
+            .ReturnsAsync(new User { Id = userId, UserName = "testUser" });
         mockUserManager.Setup(um => um.GetRolesAsync(It.IsAny<User>()))
             .ReturnsAsync(new List<string> { "Moderator" });
         
@@ -268,7 +268,7 @@ public class CreateModeratorAssignmentValidatorTests
         
         Mock<UserManager<User>> mockUserManager = GetMockUserManager();
         mockUserManager.Setup(um => um.FindByIdAsync(userId.ToString()))
-            .ReturnsAsync(new User { Id = userId, UserName = "testuser" });
+            .ReturnsAsync(new User { Id = userId, UserName = "testUser" });
         mockUserManager.Setup(um => um.GetRolesAsync(It.IsAny<User>()))
             .ReturnsAsync(new List<string> { "User" });
         

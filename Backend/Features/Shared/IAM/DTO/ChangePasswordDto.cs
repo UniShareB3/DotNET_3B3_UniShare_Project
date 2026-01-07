@@ -1,6 +1,6 @@
 ﻿namespace Backend.Features.Shared.IAM.DTO;
 
-public abstract record ChangePasswordDto(
+public record ChangePasswordDto(
     string NewPassword,
     Guid UserId
 );

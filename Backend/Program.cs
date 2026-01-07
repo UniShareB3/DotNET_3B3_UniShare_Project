@@ -7,9 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using FluentValidation;
-using Backend.TokenGenerators;
 using Backend.Validators;
-using Backend.Services;
 using Backend.Data;
 using Backend.Features.Bookings;
 using Backend.Features.Bookings.CreateBooking;
@@ -28,7 +26,6 @@ using Backend.Features.ModeratorAssignment.CreateModeratorAssignment;
 using Backend.Features.ModeratorAssignment.DTO;
 using Backend.Features.ModeratorAssignment.GetAllModeratorAssignments;
 using Backend.Features.ModeratorAssignment.UpdateModeratorAssignment;
-using Backend.Features.Shared.Pipeline;
 using Backend.Features.Shared.Authorization;
 using Backend.Features.Users.GetAdmins;
 using Backend.Features.Users.GetModerators;
@@ -82,6 +79,9 @@ using Backend.Mappers.Item;
 using Backend.Mappers.Review;
 using Backend.Mappers.University;
 using Backend.Mappers.User;
+using Backend.Services.EmailSender;
+using Backend.Services.Hashing;
+using Backend.Services.Token;
 
 // Configure Serilog before building the application
 Log.Logger = new LoggerConfiguration()
@@ -682,9 +682,6 @@ chatGroup.MapGet("/history/{otherUserId:guid}", async (Guid otherUserId, ClaimsP
 
     return Results.Ok(messages);
 });
-
-
-// Log the URLs where the application is listening
 
 Log.Information("UniShare API started successfully");
 

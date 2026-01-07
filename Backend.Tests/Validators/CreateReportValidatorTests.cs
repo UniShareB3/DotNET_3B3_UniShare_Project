@@ -141,7 +141,7 @@ public class CreateReportValidatorTests
         var request = new CreateReportRequest(dto);
         var dbContext = CreateInMemoryDbContext("14444444-4444-4444-4444-444444444444");
         
-        // Add existing pending report
+        // Add an existing pending report
         var existingReport = new Report
         {
             Id = Guid.NewGuid(),
@@ -179,7 +179,7 @@ public class CreateReportValidatorTests
         var request = new CreateReportRequest(dto);
         var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         
-        // Add 3 declined reports within last 30 days
+        // Add 3 declined reports within the last 30 days
         for (int i = 0; i < 3; i++)
         {
             var report = new Report
@@ -219,7 +219,7 @@ public class CreateReportValidatorTests
         var request = new CreateReportRequest(dto);
         var dbContext = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         
-        // Add 6 declined reports within last 30 days
+        // Add 6 declined reports within the last 30 days
         for (int i = 0; i < 6; i++)
         {
             var report = new Report

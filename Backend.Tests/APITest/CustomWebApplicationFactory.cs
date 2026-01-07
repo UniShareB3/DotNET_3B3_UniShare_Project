@@ -12,10 +12,13 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Backend.Tests.APITest;
 
-// 1. Implement IAsyncLifetime to handle async seeding safely
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private readonly string _dbName = Guid.NewGuid().ToString();
+    
+    public CustomWebApplicationFactory()
+    {
+    }
     
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -48,14 +51,14 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
 
         await context.Database.EnsureCreatedAsync();
         
-        if (!context.Users.Any())
+        if (!await context.Users.AnyAsync())
         {
             await TestDataSeeder.SeedTestDataAsync(context, userManager, roleManager);
         }
     }
 
-    public Task DisposeAsync()
+    public async Task DisposeAsync()
     {
-        return Task.CompletedTask;
+        await base.DisposeAsync();
     }
 }

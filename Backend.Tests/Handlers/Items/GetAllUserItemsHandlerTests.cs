@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Backend.Data;
-using Backend.Features.Items;
 using Backend.Features.Items.DTO;
 using Backend.Features.Items.Enums;
 using Backend.Features.Items.GetAllUserItems;
@@ -33,7 +32,7 @@ public class GetAllUserItemsHandlerTests
             cfg.CreateMap<Item, ItemDto>()
                 .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.ToString()))
                 .ForMember(dest => dest.Condition, opt => opt.MapFrom(src => src.Condition.ToString()))
-                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => (src.Owner.FirstName + " " + src.Owner.LastName).Trim()));
+                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => (src.Owner!.FirstName + " " + src.Owner.LastName).Trim()));
         }, loggerFactory);
 
         return config.CreateMapper();
@@ -48,8 +47,8 @@ public class GetAllUserItemsHandlerTests
         var userId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94db");
         var otherUserId = Guid.Parse("cb397a9b-ec7c-4bb4-b683-363f07dd94da");
 
-        var user = new User { Id = userId, FirstName = "Test", LastName = "User", Email = "test@test.com", UserName = "testuser" };
-        var otherUser = new User { Id = otherUserId, FirstName = "Other", LastName = "User", Email = "other@test.com", UserName = "otheruser" };
+        var user = new User { Id = userId, FirstName = "Test", LastName = "User", Email = "test@test.com", UserName = "testUser" };
+        var otherUser = new User { Id = otherUserId, FirstName = "Other", LastName = "User", Email = "other@test.com", UserName = "otherUser" };
         context.Users.AddRange(user, otherUser);
 
         var userItems = new List<Item>
@@ -128,7 +127,7 @@ public class GetAllUserItemsHandlerTests
     public async Task Given_ExceptionOccurs_When_GettingAllItems_Then_HandlesException()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("cb397a9b-ec7c-4bb4-b683-363f07dd9excp");
+        var context = CreateInMemoryDbContext(Guid.NewGuid().ToString());
         var userId = Guid.Parse("a1b2c3d4-15f6-4789-8abc-def012345678");
         
         // Add an item to trigger the mapper 

@@ -332,16 +332,6 @@ public class ItemsApiTest(CustomWebApplicationFactory factory) : IClassFixture<C
         return token!;
     }
 
-    private async Task<HttpStatusCode> GetRequestStatusCode(string url, string token)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        
-        var response = await _client.SendAsync(request);
-        return response.StatusCode;
-    }
-
     private async Task<HttpResponseMessage> PostRequestStatusCode(string url, string token, object? content)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, url);

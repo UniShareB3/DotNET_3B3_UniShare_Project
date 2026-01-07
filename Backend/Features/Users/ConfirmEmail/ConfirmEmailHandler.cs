@@ -1,6 +1,6 @@
 ﻿using Backend.Data;
 using Backend.Persistence;
-using Backend.Services;
+using Backend.Services.Hashing;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MediatR;

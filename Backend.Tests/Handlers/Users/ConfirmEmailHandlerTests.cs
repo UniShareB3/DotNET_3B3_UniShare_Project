@@ -2,26 +2,19 @@
 using FluentAssertions;
 using Backend.Data;
 using Backend.Features.Users.ConfirmEmail;
-using Backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Backend.Persistence;
+using Backend.Services.Hashing;
 using Microsoft.AspNetCore.Http;
 
 namespace Backend.Tests.Handlers.Users;
 
 public class ConfirmEmailHandlerTests
 {
-    private readonly Mock<UserManager<User>> _userManagerMock;
-    private readonly Mock<IHashingService> _hashingServiceMock;
-    private readonly ApplicationContext context;
-
-    public ConfirmEmailHandlerTests()
-    {
-        _userManagerMock = CreateUserManagerMock();
-        _hashingServiceMock = new Mock<IHashingService>();
-        context = CreateInMemoryDbContext(Guid.NewGuid().ToString());
-    }
+    private readonly Mock<UserManager<User>> _userManagerMock = CreateUserManagerMock();
+    private readonly Mock<IHashingService> _hashingServiceMock = new();
+    private readonly ApplicationContext _context = CreateInMemoryDbContext(Guid.NewGuid().ToString());
 
     [Fact]
     public async Task GivenUserNotFound_WhenConfirmingEmail_ThenReturnsBadRequest()
@@ -30,10 +23,10 @@ public class ConfirmEmailHandlerTests
         var userId = Guid.NewGuid();
         
         _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString()))
-            .ReturnsAsync((User)null);
+            .ReturnsAsync(default(User?));
 
         var request = new ConfirmEmailRequest(userId, "123456");
-        var handler = new ConfirmEmailHandler(_userManagerMock.Object, context, _hashingServiceMock.Object);
+        var handler = new ConfirmEmailHandler(_userManagerMock.Object, _context, _hashingServiceMock.Object);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -43,6 +36,7 @@ public class ConfirmEmailHandlerTests
         badRequest.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
 
         var valueResult = result.Should().BeAssignableTo<IValueHttpResult>().Subject;
+        valueResult.Value.Should().NotBeNull();
         GetProperty(valueResult.Value, "error").Should().Be("User not found");
     }
 
@@ -56,7 +50,7 @@ public class ConfirmEmailHandlerTests
         _userManagerMock.Setup(x => x.FindByIdAsync(userId.ToString())).ReturnsAsync(user);
 
         var request = new ConfirmEmailRequest(userId, "123456");
-        var handler = new ConfirmEmailHandler(_userManagerMock.Object, context, _hashingServiceMock.Object);
+        var handler = new ConfirmEmailHandler(_userManagerMock.Object, _context, _hashingServiceMock.Object);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -66,6 +60,7 @@ public class ConfirmEmailHandlerTests
         badRequest.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
 
         var valueResult = result.Should().BeAssignableTo<IValueHttpResult>().Subject;
+        valueResult.Value.Should().NotBeNull();
         GetProperty(valueResult.Value, "error").Should().Be("Email already confirmed");
     }
 
@@ -93,11 +88,11 @@ public class ConfirmEmailHandlerTests
             ExpiresAt = DateTime.UtcNow.AddMinutes(10),
             CreatedAt = DateTime.UtcNow
         };
-        context.EmailConfirmationTokens.Add(dbToken);
-        await context.SaveChangesAsync();
+        _context.EmailConfirmationTokens.Add(dbToken);
+        await _context.SaveChangesAsync();
 
         var request = new ConfirmEmailRequest(userId, inputCode);
-        var handler = new ConfirmEmailHandler(_userManagerMock.Object, context, _hashingServiceMock.Object);
+        var handler = new ConfirmEmailHandler(_userManagerMock.Object, _context, _hashingServiceMock.Object);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -109,9 +104,9 @@ public class ConfirmEmailHandlerTests
         user.NewEmailConfirmed.Should().BeTrue();
         
         // Verify the token was marked as used
-        var updatedToken = await context.EmailConfirmationTokens.FindAsync(dbToken.Id);
+        var updatedToken = await _context.EmailConfirmationTokens.FindAsync(dbToken.Id);
         updatedToken.Should().NotBeNull();
-        updatedToken!.IsUsed.Should().BeTrue();
+        updatedToken.IsUsed.Should().BeTrue();
     }
 
     [Fact]
@@ -136,11 +131,11 @@ public class ConfirmEmailHandlerTests
             ExpiresAt = DateTime.UtcNow.AddMinutes(10),
             CreatedAt = DateTime.UtcNow
         };
-        context.EmailConfirmationTokens.Add(dbToken);
-        await context.SaveChangesAsync();
+        _context.EmailConfirmationTokens.Add(dbToken);
+        await _context.SaveChangesAsync();
 
         var request = new ConfirmEmailRequest(userId, inputCode);
-        var handler = new ConfirmEmailHandler(_userManagerMock.Object, context, _hashingServiceMock.Object);
+        var handler = new ConfirmEmailHandler(_userManagerMock.Object, _context, _hashingServiceMock.Object);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -150,6 +145,7 @@ public class ConfirmEmailHandlerTests
         badRequest.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
 
         var valueResult = result.Should().BeAssignableTo<IValueHttpResult>().Subject;
+        valueResult.Value.Should().NotBeNull();
         GetProperty(valueResult.Value, "error").Should().Be("Invalid or expired verification code");
     }
 
@@ -175,11 +171,11 @@ public class ConfirmEmailHandlerTests
             ExpiresAt = DateTime.UtcNow.AddMinutes(-10), // Expired 10 minutes ago
             CreatedAt = DateTime.UtcNow.AddMinutes(-15)
         };
-        context.EmailConfirmationTokens.Add(dbToken);
-        await context.SaveChangesAsync();
+        _context.EmailConfirmationTokens.Add(dbToken);
+        await _context.SaveChangesAsync();
 
         var request = new ConfirmEmailRequest(userId, inputCode);
-        var handler = new ConfirmEmailHandler(_userManagerMock.Object, context, _hashingServiceMock.Object);
+        var handler = new ConfirmEmailHandler(_userManagerMock.Object, _context, _hashingServiceMock.Object);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -189,6 +185,7 @@ public class ConfirmEmailHandlerTests
         badRequest.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
 
         var valueResult = result.Should().BeAssignableTo<IValueHttpResult>().Subject;
+        valueResult.Value.Should().NotBeNull();
         GetProperty(valueResult.Value, "error").Should().Be("Invalid or expired verification code");
     }
 
@@ -214,11 +211,11 @@ public class ConfirmEmailHandlerTests
             ExpiresAt = DateTime.UtcNow.AddMinutes(10),
             CreatedAt = DateTime.UtcNow
         };
-        context.EmailConfirmationTokens.Add(dbToken);
-        await context.SaveChangesAsync();
+        _context.EmailConfirmationTokens.Add(dbToken);
+        await _context.SaveChangesAsync();
 
         var request = new ConfirmEmailRequest(userId, inputCode);
-        var handler = new ConfirmEmailHandler(_userManagerMock.Object, context, _hashingServiceMock.Object);
+        var handler = new ConfirmEmailHandler(_userManagerMock.Object, _context, _hashingServiceMock.Object);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -228,6 +225,7 @@ public class ConfirmEmailHandlerTests
         badRequest.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
 
         var valueResult = result.Should().BeAssignableTo<IValueHttpResult>().Subject;
+        valueResult.Value.Should().NotBeNull();
         GetProperty(valueResult.Value, "error").Should().Be("Invalid or expired verification code");
     }
 
@@ -255,7 +253,7 @@ public class ConfirmEmailHandlerTests
             ExpiresAt = DateTime.UtcNow.AddMinutes(10),
             CreatedAt = DateTime.UtcNow.AddMinutes(-5)
         };
-        context.EmailConfirmationTokens.Add(olderToken);
+        _context.EmailConfirmationTokens.Add(olderToken);
 
         // Add newer token
         var newerToken = new EmailConfirmationToken
@@ -267,11 +265,11 @@ public class ConfirmEmailHandlerTests
             ExpiresAt = DateTime.UtcNow.AddMinutes(10),
             CreatedAt = DateTime.UtcNow
         };
-        context.EmailConfirmationTokens.Add(newerToken);
-        await context.SaveChangesAsync();
+        _context.EmailConfirmationTokens.Add(newerToken);
+        await _context.SaveChangesAsync();
 
         var request = new ConfirmEmailRequest(userId, inputCode);
-        var handler = new ConfirmEmailHandler(_userManagerMock.Object, context, _hashingServiceMock.Object);
+        var handler = new ConfirmEmailHandler(_userManagerMock.Object, _context, _hashingServiceMock.Object);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -281,22 +279,22 @@ public class ConfirmEmailHandlerTests
         okResult.StatusCode.Should().Be(StatusCodes.Status200OK);
 
         // Verify the newer token was marked as used
-        var updatedNewerToken = await context.EmailConfirmationTokens.FindAsync(newerToken.Id);
+        var updatedNewerToken = await _context.EmailConfirmationTokens.FindAsync(newerToken.Id);
         updatedNewerToken.Should().NotBeNull();
-        updatedNewerToken!.IsUsed.Should().BeTrue();
+        updatedNewerToken.IsUsed.Should().BeTrue();
 
         // The older token should remain unused
-        var updatedOlderToken = await context.EmailConfirmationTokens.FindAsync(olderToken.Id);
+        var updatedOlderToken = await _context.EmailConfirmationTokens.FindAsync(olderToken.Id);
         updatedOlderToken.Should().NotBeNull();
-        updatedOlderToken!.IsUsed.Should().BeFalse();
+        updatedOlderToken.IsUsed.Should().BeFalse();
     }
 
-    private object GetProperty(object obj, string propertyName)
+    private static object? GetProperty(object obj, string propertyName)
     {
         return obj.GetType().GetProperty(propertyName)?.GetValue(obj, null);
     }
 
-    private ApplicationContext CreateInMemoryDbContext(string dbName)
+    private static ApplicationContext CreateInMemoryDbContext(string dbName)
     {
         var options = new DbContextOptionsBuilder<ApplicationContext>()
             .UseInMemoryDatabase(databaseName: dbName)
@@ -304,9 +302,27 @@ public class ConfirmEmailHandlerTests
         return new ApplicationContext(options);
     }
 
-    private Mock<UserManager<User>> CreateUserManagerMock()
+    private static Mock<UserManager<User>> CreateUserManagerMock()
     {
         var store = new Mock<IUserStore<User>>();
-        return new Mock<UserManager<User>>(store.Object, null, null, null, null, null, null, null, null);
+        var optionsMock = new Mock<Microsoft.Extensions.Options.IOptions<IdentityOptions>>();
+        var passwordHasherMock = new Mock<IPasswordHasher<User>>();
+        var userValidators = new List<IUserValidator<User>>();
+        var passwordValidators = new List<IPasswordValidator<User>>();
+        var keyNormalizer = new Mock<ILookupNormalizer>();
+        var errors = new Mock<IdentityErrorDescriber>();
+        var servicesMock = new Mock<IServiceProvider>();
+        var loggerMock = new Mock<Microsoft.Extensions.Logging.ILogger<UserManager<User>>>();
+
+        return new Mock<UserManager<User>>(
+            store.Object,
+            optionsMock.Object,
+            passwordHasherMock.Object,
+            userValidators,
+            passwordValidators,
+            keyNormalizer.Object,
+            errors.Object,
+            servicesMock.Object,
+            loggerMock.Object);
     }
 }

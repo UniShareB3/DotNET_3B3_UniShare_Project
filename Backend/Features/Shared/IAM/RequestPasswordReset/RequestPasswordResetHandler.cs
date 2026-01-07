@@ -1,7 +1,7 @@
 ﻿using Backend.Data;
 using Backend.Features.Shared.IAM.Constants;
 using Backend.Persistence;
-using Backend.Services;
+using Backend.Services.EmailSender;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

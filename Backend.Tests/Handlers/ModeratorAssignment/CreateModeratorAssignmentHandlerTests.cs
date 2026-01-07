@@ -5,7 +5,6 @@ using Backend.Features.ModeratorAssignment.DTO;
 using Backend.Features.ModeratorAssignment.Enums;
 using Backend.Persistence;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -53,7 +52,7 @@ public class CreateModeratorAssignmentHandlerTests
         var user = new User
         {
             Id = userId,
-            UserName = "testuser",
+            UserName = "TestUser",
             Email = "test@example.com"
         };
         dbContext.Users.Add(user);
@@ -74,9 +73,9 @@ public class CreateModeratorAssignmentHandlerTests
         createdResult.Value.Should().NotBeNull();
         createdResult.Value.UserId.Should().Be(userId);
         createdResult.Value.Reason.Should().Be("I want to help moderate the community");
-        createdResult.Value.Status.ToString().Should().Be(ModeratorAssignmentStatus.Pending.ToString());
+        createdResult.Value.Status.Should().Be(nameof(ModeratorAssignmentStatus.Pending));
 
-        // Verify it was saved to database
+        // Verify it was saved to a database
         var savedAssignment = await dbContext.ModeratorAssignments.FirstOrDefaultAsync(ma => ma.UserId == userId);
         savedAssignment.Should().NotBeNull();
         savedAssignment.Status.Should().Be(ModeratorAssignmentStatus.Pending);
@@ -100,7 +99,6 @@ public class CreateModeratorAssignmentHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Equals(Results.NotFound(new { message = "User not found" }));
     }
 
     [Fact]
@@ -114,7 +112,7 @@ public class CreateModeratorAssignmentHandlerTests
         var user = new User
         {
             Id = userId,
-            UserName = "testuser",
+            UserName = "TestUser",
             Email = "test@example.com"
         };
         dbContext.Users.Add(user);
@@ -141,7 +139,6 @@ public class CreateModeratorAssignmentHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Equals(Results.Conflict(new { message = "User already has a pending moderator assignment" }));
     }
 
     [Fact]
@@ -155,7 +152,7 @@ public class CreateModeratorAssignmentHandlerTests
         var user = new User
         {
             Id = userId,
-            UserName = "testuser",
+            UserName = "TestUser",
             Email = "test@example.com"
         };
         dbContext.Users.Add(user);
@@ -197,7 +194,7 @@ public class CreateModeratorAssignmentHandlerTests
         var user = new User
         {
             Id = userId,
-            UserName = "testuser",
+            UserName = "TestUser",
             Email = "test@example.com"
         };
         dbContext.Users.Add(user);
@@ -239,7 +236,7 @@ public class CreateModeratorAssignmentHandlerTests
         var user = new User
         {
             Id = userId,
-            UserName = "testuser",
+            UserName = "TestUser",
             Email = "test@example.com"
         };
         dbContext.Users.Add(user);
@@ -274,7 +271,7 @@ public class CreateModeratorAssignmentHandlerTests
         var user = new User
         {
             Id = userId,
-            UserName = "testuser",
+            UserName = "TestUser",
             Email = "test@example.com"
         };
         dbContext.Users.Add(user);

@@ -1,4 +1,4 @@
 ﻿namespace Backend.Features.Shared.IAM.DTO;
 
-public abstract record SendEmailVerificationDto(Guid UserId);
+public record SendEmailVerificationDto(Guid UserId);
 

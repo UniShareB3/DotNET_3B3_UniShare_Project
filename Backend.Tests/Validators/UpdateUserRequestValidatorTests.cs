@@ -14,31 +14,22 @@ using Backend.Features.Users.UpdateUser;
 namespace Backend.Tests.Validators;
 
 // Helper classes for async enumerable support in tests
-public class TestAsyncEnumerator<T> : IAsyncEnumerator<T>
+public class TestAsyncEnumerator<T>(IEnumerator<T> inner) : IAsyncEnumerator<T>
 {
-    private readonly IEnumerator<T> _inner;
-
-    public TestAsyncEnumerator(IEnumerator<T> inner) => _inner = inner;
-
     public ValueTask DisposeAsync() 
     { 
-        _inner.Dispose(); 
+        inner.Dispose(); 
         return ValueTask.CompletedTask; 
     }
 
-    public ValueTask<bool> MoveNextAsync() => new ValueTask<bool>(_inner.MoveNext());
+    public ValueTask<bool> MoveNextAsync() => new ValueTask<bool>(inner.MoveNext());
 
-    public T Current => _inner.Current;
+    public T Current => inner.Current;
 }
 
-public class TestAsyncEnumerable<T> : IAsyncEnumerable<T>, IQueryable<T>
+public class TestAsyncEnumerable<T>(IEnumerable<T> enumerable) : IAsyncEnumerable<T>, IQueryable<T>
 {
-    private readonly IQueryable<T> _queryable;
-
-    public TestAsyncEnumerable(IEnumerable<T> enumerable)
-    {
-        _queryable = enumerable.AsQueryable();
-    }
+    private readonly IQueryable<T> _queryable = enumerable.AsQueryable();
 
     public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         => new TestAsyncEnumerator<T>(_queryable.GetEnumerator());
@@ -51,16 +42,12 @@ public class TestAsyncEnumerable<T> : IAsyncEnumerable<T>, IQueryable<T>
     System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
-public class TestAsyncQueryProvider<T> : IQueryProvider
+public class TestAsyncQueryProvider<T>(IQueryProvider inner) : IQueryProvider
 {
-    private readonly IQueryProvider _inner;
-
-    public TestAsyncQueryProvider(IQueryProvider inner) => _inner = inner;
-
-    public IQueryable CreateQuery(Expression expression) => new TestAsyncEnumerable<T>((IEnumerable<T>)_inner.CreateQuery<T>(expression));
-    public IQueryable<TElement> CreateQuery<TElement>(Expression expression) => new TestAsyncEnumerable<TElement>((IEnumerable<TElement>)_inner.CreateQuery<TElement>(expression));
-    public object? Execute(Expression expression) => _inner.Execute(expression);
-    public TResult Execute<TResult>(Expression expression) => _inner.Execute<TResult>(expression);
+    public IQueryable CreateQuery(Expression expression) => new TestAsyncEnumerable<T>(inner.CreateQuery<T>(expression));
+    public IQueryable<TElement> CreateQuery<TElement>(Expression expression) => new TestAsyncEnumerable<TElement>(inner.CreateQuery<TElement>(expression));
+    public object? Execute(Expression expression) => inner.Execute(expression);
+    public TResult Execute<TResult>(Expression expression) => inner.Execute<TResult>(expression);
 }
 
 public class UpdateUserRequestValidatorTests
@@ -79,8 +66,6 @@ public class UpdateUserRequestValidatorTests
         var options = new Mock<IOptions<IdentityOptions>>();
         options.Setup(o => o.Value).Returns(new IdentityOptions());
 
-        List<IUserValidator<User>> userValidators;
-        userValidators = [];
         var passwordValidators = new List<IPasswordValidator<User>>
         {
             new PasswordValidator<User>()
@@ -94,7 +79,7 @@ public class UpdateUserRequestValidatorTests
             store,
             options.Object,
             passwordHasher,
-            userValidators,
+            new List<IUserValidator<User>>(),
             passwordValidators,
             upperInvariantLookupNormalizer,
             errors,

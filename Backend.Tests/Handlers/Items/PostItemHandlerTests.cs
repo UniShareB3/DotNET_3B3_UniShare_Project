@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Backend.Data;
-using Backend.Features.Items;
 using Backend.Features.Items.DTO;
 using Backend.Features.Items.Enums;
 using Backend.Features.Items.PostItem;
@@ -67,7 +66,7 @@ public class PostItemHandlerTests
             "This is a test item.",
             "Electronics",
             "0",
-            "http://example.com/image.jpg"
+            "https://example.com/image.jpg"
         );
 
         // Act
@@ -83,7 +82,7 @@ public class PostItemHandlerTests
         Assert.Equal("This is a test item.", createItem.Description);
         Assert.Equal(ItemCategory.Electronics, createItem.Category);
         Assert.Equal(ItemCondition.New, createItem.Condition);
-        Assert.Equal("http://example.com/image.jpg", createItem.ImageUrl);
+        Assert.Equal("https://example.com/image.jpg", createItem.ImageUrl);
     }
 
     
@@ -100,7 +99,7 @@ public class PostItemHandlerTests
             "This is a test item.",
             "Electronics",
             "0",
-            "http://example.com/image.jpg"
+            "https://example.com/image.jpg"
         );
 
         // Act
@@ -126,7 +125,7 @@ public class PostItemHandlerTests
             "This is a test item.",
             "Electronics",
             "0",
-            "http://example.com/image.jpg"
+            "https://example.com/image.jpg"
         );
 
         await context.DisposeAsync();

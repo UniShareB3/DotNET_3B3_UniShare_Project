@@ -1,5 +1,5 @@
 ﻿namespace Backend.Features.Shared.IAM.DTO;
 
-public abstract record RequestPasswordResetDto(
+public record RequestPasswordResetDto(
     string Email
 );

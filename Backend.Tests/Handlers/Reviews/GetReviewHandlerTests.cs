@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Backend.Data;
-using Backend.Features.Review;
 using Backend.Features.Review.DTO;
 using Backend.Features.Review.GetReview;
 using Backend.Persistence;

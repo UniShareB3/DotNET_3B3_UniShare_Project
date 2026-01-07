@@ -1,12 +1,11 @@
-﻿// TokenService.cs
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Backend.Data;
 using Microsoft.IdentityModel.Tokens;
 
-namespace Backend.TokenGenerators;
+namespace Backend.Services.Token;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
@@ -32,7 +31,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddSeconds(configuration.GetValue<int>("JwtSettings:ExpiryTime", 900)),
+            Expires = DateTime.UtcNow.AddSeconds(configuration.GetValue("JwtSettings:ExpiryTime", 900)),
             Issuer = configuration["JwtSettings:Issuer"],
             Audience = configuration["JwtSettings:Audience"],
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -77,12 +76,12 @@ public class TokenService(IConfiguration configuration) : ITokenService
     
     public int GetAccessTokenExpirationInSeconds()
     {
-        return configuration.GetValue<int>("JwtSettings:ExpiryTime", 900);
+        return configuration.GetValue("JwtSettings:ExpiryTime", 900);
     }
     
     public DateTime GetRefreshTokenExpirationDate()
     {
-        var expirationDays = configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7);
+        var expirationDays = configuration.GetValue("JwtSettings:RefreshTokenExpirationDays", 7);
         return DateTime.UtcNow.AddDays(expirationDays);
     }
 }

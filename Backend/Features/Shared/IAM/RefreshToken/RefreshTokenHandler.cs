@@ -1,7 +1,7 @@
 ﻿using Backend.Data;
 using Backend.Features.Users.DTO;
 using Backend.Persistence;
-using Backend.TokenGenerators;
+using Backend.Services.Token;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
