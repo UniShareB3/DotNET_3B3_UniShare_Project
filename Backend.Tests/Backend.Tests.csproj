@@ -56,11 +56,4 @@
       </None>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Validators\Bookings\" />
-      <Folder Include="Validators\Items\" />
-      <Folder Include="Validators\Reports\" />
-      <Folder Include="Validators\Reviews\" />
-    </ItemGroup>
-
 </Project>

@@ -108,7 +108,7 @@ public class ChatHubTests
             x => x.SendCoreAsync(
                 "ReceiveMessage",
                 It.Is<object[]>(o => o.Length == 1),
-                 default),
+                 CancellationToken.None),
             Times.Once);
     }
 
@@ -142,7 +142,7 @@ public class ChatHubTests
             x => x.SendCoreAsync(
                 "ReceiveMessage",
                 It.Is<object[]>(o => o.Length == 1),
-                default),
+                CancellationToken.None),
             Times.Once);
     }
 
@@ -329,7 +329,7 @@ public class ChatHubTests
             x => x.SendCoreAsync(
                 "ReceiveMessage",
                 It.Is<object[]>(o => o.Length == 1),
-                default),
+                CancellationToken.None),
             Times.Once);
     }
 
@@ -364,7 +364,7 @@ public class ChatHubTests
             x => x.SendCoreAsync(
                 "ReceiveMessage",
                 It.Is<object[]>(o => o.Length == 1),
-                default),
+                CancellationToken.None),
             Times.Once);
     }
 
