@@ -9,7 +9,7 @@ namespace Backend.Data;
 
 public static class DatabaseSeeder
 {
-    private static readonly Serilog.ILogger _logger = Log.ForContext(typeof(DatabaseSeeder));
+    private static readonly Serilog.ILogger Logger = Log.ForContext(typeof(DatabaseSeeder));
 
     public static async Task SeedAsync(
         ApplicationContext context,
@@ -18,7 +18,7 @@ public static class DatabaseSeeder
     {
         try
         {
-            _logger.Information("Starting database seeding...");
+            Logger.Information("Starting database seeding...");
 
             // 1. Seed Roles
             await SeedRoles(roleManager);
@@ -35,18 +35,18 @@ public static class DatabaseSeeder
             // 5. Seed Items (100 items)
             await SeedItems(context, users);
 
-            _logger.Information("Database seeding completed successfully");
+            Logger.Information("Database seeding completed successfully");
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "An error occurred while seeding the database");
+            Logger.Error(ex, "An error occurred while seeding the database");
             throw;
         }
     }
 
     private static async Task SeedRoles(RoleManager<IdentityRole<Guid>> roleManager)
     {
-        _logger.Information("Seeding roles...");
+        Logger.Information("Seeding roles...");
 
         var roles = new[] { "Admin", "Moderator", "User", "Seller" };
 
@@ -56,22 +56,22 @@ public static class DatabaseSeeder
             {
                 var role = new IdentityRole<Guid>(roleName);
                 await roleManager.CreateAsync(role);
-                _logger.Information("Created role: {RoleName}", roleName);
+                Logger.Information("Created role: {RoleName}", roleName);
             }
             else
             {
-                _logger.Information("Role already exists: {RoleName}", roleName);
+                Logger.Information("Role already exists: {RoleName}", roleName);
             }
         }
     }
 
     private static async Task<List<University>> SeedUniversities(ApplicationContext context)
     {
-        _logger.Information("Seeding universities...");
+        Logger.Information("Seeding universities...");
 
         if (await context.Universities.AnyAsync())
         {
-            _logger.Information("Universities already exist, skipping seeding");
+            Logger.Information("Universities already exist, skipping seeding");
             return await context.Universities.ToListAsync();
         }
 
@@ -146,7 +146,7 @@ public static class DatabaseSeeder
         context.Universities.AddRange(universities);
         await context.SaveChangesAsync();
 
-        _logger.Information("Seeded {Count} universities", universities.Count);
+        Logger.Information("Seeded {Count} universities", universities.Count);
         return universities;
     }
 
@@ -155,7 +155,7 @@ public static class DatabaseSeeder
         UserManager<User> userManager,
         List<University> universities)
     {
-        _logger.Information("Seeding admin account...");
+        Logger.Information("Seeding admin account...");
 
         const string adminEmail = "admin@uaic.ro";
         const string adminPassword = "Admin@1234";
@@ -166,7 +166,7 @@ public static class DatabaseSeeder
         var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
         if (existingAdmin != null)
         {
-            _logger.Information("Admin account already exists: {Email}", adminEmail);
+            Logger.Information("Admin account already exists: {Email}", adminEmail);
             return;
         }
 
@@ -199,12 +199,12 @@ public static class DatabaseSeeder
             await userManager.AddToRoleAsync(adminUser, "User");
             await userManager.AddToRoleAsync(adminUser, "Admin");
 
-            _logger.Information("✅ Created admin account: {Email} with password: {Password}", 
+            Logger.Information("✅ Created admin account: {Email} with password: {Password}", 
                 adminEmail, adminPassword);
         }
         else
         {
-            _logger.Error("Failed to create admin account: {Errors}", 
+            Logger.Error("Failed to create admin account: {Errors}", 
                 string.Join(", ", result.Errors.Select(e => e.Description)));
         }
     }
@@ -214,7 +214,7 @@ public static class DatabaseSeeder
         UserManager<User> userManager,
         List<University> universities)
     {
-        _logger.Information("Seeding users (Moderators and regular Users)...");
+        Logger.Information("Seeding users (Moderators and regular Users)...");
 
         const int targetUserCount = 10; // 1 Moderator + 9 regular Users
         
@@ -235,13 +235,13 @@ public static class DatabaseSeeder
 
         if (existingUserCount >= targetUserCount)
         {
-            _logger.Information("Non-admin user count ({ExistingCount}) meets or exceeds target ({TargetCount}), skipping user seeding", 
+            Logger.Information("Non-admin user count ({ExistingCount}) meets or exceeds target ({TargetCount}), skipping user seeding", 
                 existingUserCount, targetUserCount);
             return await context.Users.ToListAsync();
         }
 
         var usersToCreate = targetUserCount - existingUserCount;
-        _logger.Information("Found {ExistingCount} non-admin users, creating {ToCreate} more to reach target of {TargetCount}", 
+        Logger.Information("Found {ExistingCount} non-admin users, creating {ToCreate} more to reach target of {TargetCount}", 
             existingUserCount, usersToCreate, targetUserCount);
 
         var users = new List<User>();
@@ -303,12 +303,12 @@ public static class DatabaseSeeder
                 {
                     await userManager.AddToRoleAsync(user, "Moderator");
                     hasModerator = true;
-                    _logger.Information("Created moderator user: {Email} (Verified: {Verified})", 
+                    Logger.Information("Created moderator user: {Email} (Verified: {Verified})", 
                         user.Email, user.NewEmailConfirmed);
                 }
                 else
                 {
-                    _logger.Information("Created regular user: {Email} (Verified: {Verified})", 
+                    Logger.Information("Created regular user: {Email} (Verified: {Verified})", 
                         user.Email, user.NewEmailConfirmed);
                 }
 
@@ -316,12 +316,12 @@ public static class DatabaseSeeder
             }
             else
             {
-                _logger.Error("Failed to create user: {Errors}", 
+                Logger.Error("Failed to create user: {Errors}", 
                     string.Join(", ", result.Errors.Select(e => e.Description)));
             }
         }
 
-        _logger.Information("Seeded {Count} new users (Total non-admin: {Total})", users.Count, existingUserCount + users.Count);
+        Logger.Information("Seeded {Count} new users (Total non-admin: {Total})", users.Count, existingUserCount + users.Count);
         
         // Return all users (existing + new)
         return await context.Users.ToListAsync();
@@ -329,20 +329,20 @@ public static class DatabaseSeeder
 
     private static async Task SeedItems(ApplicationContext context, List<User> users)
     {
-        _logger.Information("Seeding items...");
+        Logger.Information("Seeding items...");
 
         const int targetItemCount = 100;
         var existingItemCount = await context.Items.CountAsync();
 
         if (existingItemCount >= targetItemCount)
         {
-            _logger.Information("Item count ({ExistingCount}) meets or exceeds target ({TargetCount}), skipping item seeding", 
+            Logger.Information("Item count ({ExistingCount}) meets or exceeds target ({TargetCount}), skipping item seeding", 
                 existingItemCount, targetItemCount);
             return;
         }
 
         var itemsToCreate = targetItemCount - existingItemCount;
-        _logger.Information("Found {ExistingCount} items, creating {ToCreate} more to reach target of {TargetCount}", 
+        Logger.Information("Found {ExistingCount} items, creating {ToCreate} more to reach target of {TargetCount}", 
             existingItemCount, itemsToCreate, targetItemCount);
 
         var random = new Random(12345 + existingItemCount); // Different seed based on existing count
@@ -417,12 +417,12 @@ public static class DatabaseSeeder
         context.Items.AddRange(items);
         await context.SaveChangesAsync();
 
-        _logger.Information("Seeded {Count} new items (Total: {Total})", items.Count, existingItemCount + items.Count);
+        Logger.Information("Seeded {Count} new items (Total: {Total})", items.Count, existingItemCount + items.Count);
 
         // Log statistics
         var categoryCounts = items.GroupBy(i => i.Category)
             .Select(g => $"{g.Key}: {g.Count()}")
             .ToList();
-        _logger.Information("Items by category: {Stats}", string.Join(", ", categoryCounts));
+        Logger.Information("Items by category: {Stats}", string.Join(", ", categoryCounts));
     }
 }

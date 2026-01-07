@@ -45,7 +45,7 @@ public class CreateModeratorAssignmentDtoValidator : AbstractValidator<CreateMod
     {
         var lastRejectedModeratorAssignment =
             _appContext.ModeratorAssignments
-                .Where(r => r.UserId == dto.UserId && r.Status == ModeratorAssignmentStatus.REJECTED)
+                .Where(r => r.UserId == dto.UserId && r.Status == ModeratorAssignmentStatus.Rejected)
                 .OrderByDescending(r => r.CreatedDate)
                 .FirstOrDefault();
         
@@ -72,7 +72,7 @@ public class CreateModeratorAssignmentDtoValidator : AbstractValidator<CreateMod
     {
         var existingAssignment = await _appContext.ModeratorAssignments
             .FirstOrDefaultAsync(mr => mr.UserId == dto.UserId 
-                && mr.Status == ModeratorAssignmentStatus.PENDING);
+                && mr.Status == ModeratorAssignmentStatus.Pending);
         return existingAssignment == null;
     }
 }

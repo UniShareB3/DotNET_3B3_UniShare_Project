@@ -5,7 +5,7 @@ using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Features.Universities;
+namespace Backend.Features.Universities.GetAllUniversities;
 
 public class GetAllUniversitiesHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<GetAllUniversitiesRequest, IResult>
 {

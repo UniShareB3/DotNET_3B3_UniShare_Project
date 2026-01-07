@@ -4,7 +4,7 @@ using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
 using Backend.Features.Bookings.Enums;
 using Backend.Features.Bookings.UpdateBooking;
-using Backend.Mapping;
+using Backend.Mappers.Booking;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;

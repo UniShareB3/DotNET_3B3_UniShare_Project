@@ -1,6 +1,4 @@
 using Backend.Data;
-using Backend.Features.Users;
-using Backend.Features.Users.Dtos;
 using Backend.Persistence;
 using Backend.Validators;
 using FluentValidation.TestHelper;
@@ -10,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using System.Linq.Expressions;
+using Backend.Features.Users.DTO;
+using Backend.Features.Users.UpdateUser;
 
 namespace Backend.Tests.Validators;
 

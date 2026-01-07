@@ -1,6 +1,7 @@
 ﻿using Backend.Data;
 using Backend.Features.Bookings.Enums;
 using Backend.Features.Review;
+using Backend.Features.Review.CreateReview;
 using Backend.Features.Review.DTO;
 using Backend.Persistence;
 using Backend.Validators;
@@ -58,7 +59,7 @@ public class CreateReviewRequestValidatorTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: bookingId,
             ReviewerId: borrowerId,
             TargetUserId: null,
@@ -84,7 +85,7 @@ public class CreateReviewRequestValidatorTests
         var context = CreateInMemoryDbContext("b1b1b1b1-b1b1-b1b1-b1b1-b1b1b1b1b1b1");
         var validator = new CreateReviewRequestValidator(context);
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
             ReviewerId: Guid.Parse("66666666-6666-6666-6666-666666666666"),
             TargetUserId: null,
@@ -110,7 +111,7 @@ public class CreateReviewRequestValidatorTests
         var context = CreateInMemoryDbContext("d1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1");
         var validator = new CreateReviewRequestValidator(context);
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
             ReviewerId: Guid.Empty, 
             TargetUserId: null,
@@ -136,7 +137,7 @@ public class CreateReviewRequestValidatorTests
         var context = CreateInMemoryDbContext("e1e1e1e1-e1e1-e1e1-e1e1-e1e1e1e1e1e1");
         var validator = new CreateReviewRequestValidator(context);
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: Guid.Empty, // Invalid empty GUID
             ReviewerId: Guid.Parse("66666666-6666-6666-6666-666666666666"),
             TargetUserId: null,
@@ -163,7 +164,7 @@ public class CreateReviewRequestValidatorTests
         var validator = new CreateReviewRequestValidator(context);
 
 
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
             ReviewerId: Guid.Parse("66666666-6666-6666-6666-666666666666"),
             TargetUserId: Guid.Parse("88888888-8888-8888-8888-888888888888"), 
@@ -188,7 +189,7 @@ public class CreateReviewRequestValidatorTests
         var context = CreateInMemoryDbContext("g1g1g1g1-g1g1-g1g1-g1g1-g1g1g1g1g1g1");
         var validator = new CreateReviewRequestValidator(context);
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: Guid.Parse("55555555-5555-5555-5555-555555555555"),
             ReviewerId: Guid.Parse("66666666-6666-6666-6666-666666666666"),
             TargetUserId: null, 
@@ -214,7 +215,7 @@ public class CreateReviewRequestValidatorTests
         var context = CreateInMemoryDbContext("h1h1h1h1-h1h1-h1h1-h1h1-h1h1h1h1h1h1");
         var validator = new CreateReviewRequestValidator(context);
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: Guid.Parse("99999999-9999-9999-9999-999999999999"), // Non-existent
             ReviewerId: Guid.Parse("66666666-6666-6666-6666-666666666666"),
             TargetUserId: null,
@@ -270,7 +271,7 @@ public class CreateReviewRequestValidatorTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: bookingId,
             ReviewerId: borrowerId,
             TargetUserId: null,
@@ -327,7 +328,7 @@ public class CreateReviewRequestValidatorTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: bookingId,
             ReviewerId: unrelatedUserId,
             TargetUserId: null,
@@ -395,7 +396,7 @@ public class CreateReviewRequestValidatorTests
         context.Reviews.Add(existingReview);
         await context.SaveChangesAsync();
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: bookingId,
             ReviewerId: borrowerId, // Same reviewer
             TargetUserId: null,
@@ -451,7 +452,7 @@ public class CreateReviewRequestValidatorTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: bookingId,
             ReviewerId: ownerId, 
             TargetUserId: null,
@@ -508,7 +509,7 @@ public class CreateReviewRequestValidatorTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: bookingId,
             ReviewerId: borrowerId,
             TargetUserId: null,
@@ -565,7 +566,7 @@ public class CreateReviewRequestValidatorTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: bookingId,
             ReviewerId: borrowerId,
             TargetUserId: unrelatedUserId, 
@@ -621,7 +622,7 @@ public class CreateReviewRequestValidatorTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: bookingId,
             ReviewerId: ownerId, 
             TargetUserId: borrowerId, 
@@ -677,7 +678,7 @@ public class CreateReviewRequestValidatorTests
         context.Bookings.Add(booking);
         await context.SaveChangesAsync();
         
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: bookingId,
             ReviewerId: borrowerId, 
             TargetUserId: ownerId, 

@@ -1,10 +1,10 @@
 ﻿using Backend.Data;
-using Backend.Features.Users;
-using Backend.Features.Users.Dtos;
 using Backend.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using AutoMapper;
+using Backend.Features.Users.DTO;
+using Backend.Features.Users.RegisterUser;
 using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Http;

@@ -3,7 +3,7 @@ using Backend.Features.Review.DTO;
 using Backend.Persistence;
 using MediatR;
 
-namespace Backend.Features.Review;
+namespace Backend.Features.Review.GetReview;
 
 public class GetReviewHandler(ApplicationContext dbContext, IMapper mapper, ILogger<GetReviewHandler> logger) : IRequestHandler<GetReviewRequest, IResult>
 {

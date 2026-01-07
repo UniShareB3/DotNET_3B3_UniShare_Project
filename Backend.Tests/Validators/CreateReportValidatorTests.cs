@@ -149,7 +149,7 @@ public class CreateReportValidatorTests
             UserId = userId,
             OwnerId = ownerId,
             Description = "Previous report",
-            Status = ReportStatus.PENDING,
+            Status = ReportStatus.Pending,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         
@@ -189,7 +189,7 @@ public class CreateReportValidatorTests
                 UserId = userId,
                 OwnerId = ownerId,
                 Description = $"Declined report {i}",
-                Status = ReportStatus.DECLINED,
+                Status = ReportStatus.Declined,
                 CreatedDate = DateTime.UtcNow.AddDays(-i * 5)
             };
             dbContext.Reports.Add(report);
@@ -229,7 +229,7 @@ public class CreateReportValidatorTests
                 UserId = userId,
                 OwnerId = ownerId,
                 Description = $"Declined report {i}",
-                Status = ReportStatus.DECLINED,
+                Status = ReportStatus.Declined,
                 CreatedDate = DateTime.UtcNow.AddDays(-i * 3)
             };
             dbContext.Reports.Add(report);
@@ -270,7 +270,7 @@ public class CreateReportValidatorTests
                 UserId = userId,
                 OwnerId = ownerId,
                 Description = $"Old declined report {i}",
-                Status = ReportStatus.DECLINED,
+                Status = ReportStatus.Declined,
                 CreatedDate = DateTime.UtcNow.AddDays(-31 - i)
             };
             dbContext.Reports.Add(report);
@@ -310,7 +310,7 @@ public class CreateReportValidatorTests
                 UserId = userId,
                 OwnerId = ownerId,
                 Description = $"Accepted report {i}",
-                Status = ReportStatus.ACCEPTED,
+                Status = ReportStatus.Accepted,
                 CreatedDate = DateTime.UtcNow.AddDays(-i * 5)
             };
             dbContext.Reports.Add(report);

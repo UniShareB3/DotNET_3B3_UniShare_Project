@@ -1,5 +1,5 @@
 ﻿using Backend.Data;
-using Backend.Features.Users.Dtos;
+using Backend.Features.Users.DTO;
 using Backend.Persistence;
 using Backend.TokenGenerators;
 using MediatR;
@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Shared.Auth;
+namespace Backend.Features.Shared.IAM.RefreshToken;
 
 public class RefreshTokenHandler(
     UserManager<User> userManager, 
@@ -64,7 +64,7 @@ public class RefreshTokenHandler(
         var newAccessToken = tokenService.GenerateToken(user, roles);
         var newRefreshTokenString = tokenService.GenerateRefreshToken();
         
-        var newRefreshToken = new RefreshToken
+        var newRefreshToken = new Data.RefreshToken
         {
             Token = newRefreshTokenString,
             UserId = user.Id,

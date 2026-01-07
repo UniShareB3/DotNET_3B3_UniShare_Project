@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Backend.Data;
-using Backend.Features.Users;
+using Backend.Features.Users.LoginUser;
 using Backend.Persistence;
 using Backend.Tests.Seeder;
 using Microsoft.AspNetCore.Identity;
@@ -183,7 +183,7 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         var bookingId = TestDataSeeder.PendingBookingId;
         var updateStatusDto = new
         {
-            UserId = TestDataSeeder.UserId, // Owner of the item
+            TestDataSeeder.UserId, // Owner of the item
             BookingStatus = 1 // Approved
         };
         
@@ -202,7 +202,7 @@ public class BookingsApiTest(CustomWebApplicationFactory factory) : IClassFixtur
         var bookingId = TestDataSeeder.PendingBookingId;
         var updateStatusDto = new
         {
-            UserId = TestDataSeeder.UserId, // Owner of the item
+            TestDataSeeder.UserId, // Owner of the item
             BookingStatus = 5 // unknown status
         };
         

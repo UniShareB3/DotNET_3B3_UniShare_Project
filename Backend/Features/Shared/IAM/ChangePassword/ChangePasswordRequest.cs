@@ -1,8 +1,7 @@
 ﻿using Backend.Features.Shared.IAM.DTO;
-using Backend.Features.Users.Dtos;
 using MediatR;
 
-namespace Backend.Features.Shared.Auth;
+namespace Backend.Features.Shared.IAM.ChangePassword;
 
 public record ChangePasswordRequest(ChangePasswordDto ChangePasswordDto) : IRequest<IResult>;
 

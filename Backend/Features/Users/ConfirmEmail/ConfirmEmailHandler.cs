@@ -7,7 +7,7 @@ using MediatR;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Users.ConfirmEmail;
 
 public class ConfirmEmailHandler(
     UserManager<User> userManager,

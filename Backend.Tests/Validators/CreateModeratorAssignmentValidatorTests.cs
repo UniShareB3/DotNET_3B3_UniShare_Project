@@ -154,7 +154,7 @@ public class CreateModeratorAssignmentValidatorTests
             Id = Guid.NewGuid(),
             UserId = userId,
             Reason = "Previous violation",
-            Status = Features.ModeratorAssignment.Enums.ModeratorAssignmentStatus.REJECTED,
+            Status = Features.ModeratorAssignment.Enums.ModeratorAssignmentStatus.Rejected,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         
@@ -193,7 +193,7 @@ public class CreateModeratorAssignmentValidatorTests
             Id = Guid.NewGuid(),
             UserId = userId,
             Reason = "Previous violation",
-            Status = Features.ModeratorAssignment.Enums.ModeratorAssignmentStatus.REJECTED,
+            Status = Features.ModeratorAssignment.Enums.ModeratorAssignmentStatus.Rejected,
             CreatedDate = DateTime.UtcNow.AddDays(-31)
         };
         
@@ -259,7 +259,7 @@ public class CreateModeratorAssignmentValidatorTests
             Id = Guid.NewGuid(),
             UserId = userId,
             Reason = "Previous application",
-            Status = Features.ModeratorAssignment.Enums.ModeratorAssignmentStatus.PENDING,
+            Status = Features.ModeratorAssignment.Enums.ModeratorAssignmentStatus.Pending,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         

@@ -31,7 +31,7 @@ public class CreateModeratorAssignmentHandler(ApplicationContext context, IMappe
         // Check if user already has a pending assignment
         var existingAssignment = await context.ModeratorAssignments
             .FirstOrDefaultAsync(mr => mr.UserId == request.Dto.UserId 
-                && mr.Status == ModeratorAssignmentStatus.PENDING, cancellationToken);
+                && mr.Status == ModeratorAssignmentStatus.Pending, cancellationToken);
 
         if (existingAssignment != null)
         {
@@ -41,7 +41,7 @@ public class CreateModeratorAssignmentHandler(ApplicationContext context, IMappe
 
         var moderatorAssignment = mapper.Map<Data.ModeratorAssignment>(request.Dto);
         moderatorAssignment.CreatedDate = DateTime.UtcNow;
-        moderatorAssignment.Status = ModeratorAssignmentStatus.PENDING;
+        moderatorAssignment.Status = ModeratorAssignmentStatus.Pending;
 
         context.ModeratorAssignments.Add(moderatorAssignment);
         await context.SaveChangesAsync(cancellationToken);

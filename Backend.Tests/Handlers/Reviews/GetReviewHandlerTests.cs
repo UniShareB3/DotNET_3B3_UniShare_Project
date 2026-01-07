@@ -2,6 +2,7 @@
 using Backend.Data;
 using Backend.Features.Review;
 using Backend.Features.Review.DTO;
+using Backend.Features.Review.GetReview;
 using Backend.Persistence;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -27,8 +28,8 @@ public class GetReviewHandlerTests
     {
         var mapperMock = new Mock<IMapper>();
         mapperMock
-            .Setup(m => m.Map<Review>(It.IsAny<CreateReviewDTO>()))
-            .Returns((Func<CreateReviewDTO, Review>)(src => new Review
+            .Setup(m => m.Map<Review>(It.IsAny<CreateReviewDto>()))
+            .Returns((Func<CreateReviewDto, Review>)(src => new Review
             {
                 Id = Guid.Parse("02476839-a33e-4bba-b001-0165bf09e115"),
                 BookingId = src.BookingId,

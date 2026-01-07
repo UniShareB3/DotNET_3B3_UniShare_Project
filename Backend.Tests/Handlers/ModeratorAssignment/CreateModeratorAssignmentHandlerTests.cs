@@ -74,12 +74,12 @@ public class CreateModeratorAssignmentHandlerTests
         createdResult.Value.Should().NotBeNull();
         createdResult.Value.UserId.Should().Be(userId);
         createdResult.Value.Reason.Should().Be("I want to help moderate the community");
-        createdResult.Value.Status.ToString().Should().Be(ModeratorAssignmentStatus.PENDING.ToString());
+        createdResult.Value.Status.ToString().Should().Be(ModeratorAssignmentStatus.Pending.ToString());
 
         // Verify it was saved to database
         var savedAssignment = await dbContext.ModeratorAssignments.FirstOrDefaultAsync(ma => ma.UserId == userId);
         savedAssignment.Should().NotBeNull();
-        savedAssignment.Status.Should().Be(ModeratorAssignmentStatus.PENDING);
+        savedAssignment.Status.Should().Be(ModeratorAssignmentStatus.Pending);
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class CreateModeratorAssignmentHandlerTests
             Id = Guid.NewGuid(),
             UserId = userId,
             Reason = "Previous application",
-            Status = ModeratorAssignmentStatus.PENDING,
+            Status = ModeratorAssignmentStatus.Pending,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         dbContext.ModeratorAssignments.Add(existingAssignment);
@@ -166,7 +166,7 @@ public class CreateModeratorAssignmentHandlerTests
             Id = Guid.NewGuid(),
             UserId = userId,
             Reason = "Previous application",
-            Status = ModeratorAssignmentStatus.REJECTED,
+            Status = ModeratorAssignmentStatus.Rejected,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         dbContext.ModeratorAssignments.Add(existingAssignment);
@@ -208,7 +208,7 @@ public class CreateModeratorAssignmentHandlerTests
             Id = Guid.NewGuid(),
             UserId = userId,
             Reason = "Previous application",
-            Status = ModeratorAssignmentStatus.ACCEPTED,
+            Status = ModeratorAssignmentStatus.Accepted,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         dbContext.ModeratorAssignments.Add(existingAssignment);
@@ -257,7 +257,7 @@ public class CreateModeratorAssignmentHandlerTests
         // Assert
         var savedAssignment = await dbContext.ModeratorAssignments.FirstOrDefaultAsync(ma => ma.UserId == userId);
         savedAssignment.Should().NotBeNull();
-        savedAssignment.Status.Should().Be(ModeratorAssignmentStatus.PENDING);
+        savedAssignment.Status.Should().Be(ModeratorAssignmentStatus.Pending);
         savedAssignment.CreatedDate.Should().BeCloseTo(beforeCreation, TimeSpan.FromSeconds(5));
         savedAssignment.ReviewedByAdminId.Should().BeNull();
         savedAssignment.ReviewedDate.Should().BeNull();

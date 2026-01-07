@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using Backend.Data;
-using Backend.Features.Users;
+using Backend.Features.Users.LoginUser;
 using Backend.Persistence;
 using Backend.Tests.Seeder;
 using Microsoft.AspNetCore.Identity;
@@ -129,7 +129,7 @@ public class ReviewsApiTest(CustomWebApplicationFactory factory) : IClassFixture
         var response = await PostRequestStatusCode("/reviews", moderatorToken, newReview);
         
         // Assert
-        // Expecting BadRequest because Moderator already has a review for this booking in seed data
+        // Expecting BadRequest because the Moderator already has a review for this booking in seed data
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -359,16 +359,6 @@ public class ReviewsApiTest(CustomWebApplicationFactory factory) : IClassFixture
         var jsonResponse = await response.Content.ReadFromJsonAsync<JsonDocument>();
         var token = jsonResponse!.RootElement.GetProperty("accessToken").GetString();
         return token!;
-    }
-
-    private async Task<HttpStatusCode> GetRequestStatusCode(string url, string token)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        
-        request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        
-        var response = await _client.SendAsync(request);
-        return response.StatusCode;
     }
 
     private async Task<HttpResponseMessage> PostRequestStatusCode(string url, string token, object? content)

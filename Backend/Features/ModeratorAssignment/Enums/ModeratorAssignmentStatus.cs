@@ -2,7 +2,7 @@
 
 public enum ModeratorAssignmentStatus
 {
-    PENDING,
-    ACCEPTED,
-    REJECTED
+    Pending,
+    Accepted,
+    Rejected
 }

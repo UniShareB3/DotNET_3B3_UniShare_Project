@@ -2,8 +2,8 @@
 
 public class UniversityDto
 {
-    public string Name { get; set; }
-    public string ShortCode { get; set; }
-    public string EmailDomain { get; set; }
+    public required string Name { get; set; }
+    public required string ShortCode { get; set; }
+    public required string EmailDomain { get; set; }
     public Guid Id { get; set; }
 }

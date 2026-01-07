@@ -66,13 +66,13 @@ public class UpdateModeratorAssignmentStatusHandlerTests
             Id = assignmentId,
             UserId = userId,
             Reason = "I want to help moderate",
-            Status = ModeratorAssignmentStatus.PENDING,
+            Status = ModeratorAssignmentStatus.Pending,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         dbContext.ModeratorAssignments.Add(assignment);
         await dbContext.SaveChangesAsync();
 
-        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.REJECTED, adminId);
+        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.Rejected, adminId);
         var request = new UpdateModeratorAssignmentStatusRequest(assignmentId, dto);
 
         var handler = new UpdateModeratorAssignmentStatusHandler(dbContext, mapper, mockUserManager.Object);
@@ -90,7 +90,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
         // Verify database was updated
         var updatedAssignment = await dbContext.ModeratorAssignments.FindAsync(assignmentId);
         updatedAssignment.Should().NotBeNull();
-        updatedAssignment!.Status.Should().Be(ModeratorAssignmentStatus.REJECTED);
+        updatedAssignment!.Status.Should().Be(ModeratorAssignmentStatus.Rejected);
         updatedAssignment.ReviewedByAdminId.Should().Be(adminId);
         updatedAssignment.ReviewedDate.Should().NotBeNull();
     }
@@ -106,7 +106,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
         var mapper = CreateMapper();
         var mockUserManager = GetMockUserManager();
 
-        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.ACCEPTED, adminId);
+        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.Accepted, adminId);
         var request = new UpdateModeratorAssignmentStatusRequest(assignmentId, dto);
 
         var handler = new UpdateModeratorAssignmentStatusHandler(dbContext, mapper, mockUserManager.Object);
@@ -142,7 +142,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
             Id = assignmentId,
             UserId = userId,
             Reason = "I want to help moderate",
-            Status = ModeratorAssignmentStatus.PENDING,
+            Status = ModeratorAssignmentStatus.Pending,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         dbContext.ModeratorAssignments.Add(assignment);
@@ -153,7 +153,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
         mockUserManager.Setup(um => um.AddToRoleAsync(user, "Moderator"))
             .ReturnsAsync(IdentityResult.Success);
 
-        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.ACCEPTED, adminId);
+        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.Accepted, adminId);
         var request = new UpdateModeratorAssignmentStatusRequest(assignmentId, dto);
 
         var handler = new UpdateModeratorAssignmentStatusHandler(dbContext, mapper, mockUserManager.Object);
@@ -192,7 +192,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
             Id = assignmentId,
             UserId = userId,
             Reason = "I want to help moderate",
-            Status = ModeratorAssignmentStatus.PENDING,
+            Status = ModeratorAssignmentStatus.Pending,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         dbContext.ModeratorAssignments.Add(assignment);
@@ -201,7 +201,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
         mockUserManager.Setup(um => um.IsInRoleAsync(user, "Moderator"))
             .ReturnsAsync(true);
 
-        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.ACCEPTED, adminId);
+        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.Accepted, adminId);
         var request = new UpdateModeratorAssignmentStatusRequest(assignmentId, dto);
 
         var handler = new UpdateModeratorAssignmentStatusHandler(dbContext, mapper, mockUserManager.Object);
@@ -246,7 +246,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
             Id = assignmentId,
             UserId = userId,
             Reason = "I want to help moderate",
-            Status = ModeratorAssignmentStatus.PENDING,
+            Status = ModeratorAssignmentStatus.Pending,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         dbContext.ModeratorAssignments.Add(assignment);
@@ -261,7 +261,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
                 UserId = Guid.NewGuid(),
                 OwnerId = Guid.NewGuid(),
                 Description = $"Report {i}",
-                Status = ReportStatus.PENDING,
+                Status = ReportStatus.Pending,
                 ModeratorId = adminId,
                 CreatedDate = DateTime.UtcNow.AddDays(-i)
             };
@@ -275,7 +275,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
         mockUserManager.Setup(um => um.AddToRoleAsync(user, "Moderator"))
             .ReturnsAsync(IdentityResult.Success);
 
-        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.ACCEPTED, adminId);
+        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.Accepted, adminId);
         var request = new UpdateModeratorAssignmentStatusRequest(assignmentId, dto);
 
         var handler = new UpdateModeratorAssignmentStatusHandler(dbContext, mapper, mockUserManager.Object);
@@ -316,13 +316,13 @@ public class UpdateModeratorAssignmentStatusHandlerTests
             Id = assignmentId,
             UserId = userId,
             Reason = "I want to help moderate",
-            Status = ModeratorAssignmentStatus.PENDING,
+            Status = ModeratorAssignmentStatus.Pending,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         dbContext.ModeratorAssignments.Add(assignment);
         await dbContext.SaveChangesAsync();
 
-        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.REJECTED, adminId);
+        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.Rejected, adminId);
         var request = new UpdateModeratorAssignmentStatusRequest(assignmentId, dto);
 
         var handler = new UpdateModeratorAssignmentStatusHandler(dbContext, mapper, mockUserManager.Object);
@@ -358,7 +358,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
             Id = assignmentId,
             UserId = userId,
             Reason = "I want to help moderate",
-            Status = ModeratorAssignmentStatus.PENDING,
+            Status = ModeratorAssignmentStatus.Pending,
             CreatedDate = DateTime.UtcNow.AddDays(-1)
         };
         dbContext.ModeratorAssignments.Add(assignment);
@@ -369,7 +369,7 @@ public class UpdateModeratorAssignmentStatusHandlerTests
         mockUserManager.Setup(um => um.AddToRoleAsync(user, "Moderator"))
             .ReturnsAsync(IdentityResult.Success);
 
-        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.ACCEPTED, adminId);
+        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.Accepted, adminId);
         var request = new UpdateModeratorAssignmentStatusRequest(assignmentId, dto);
 
         var handler = new UpdateModeratorAssignmentStatusHandler(dbContext, mapper, mockUserManager.Object);

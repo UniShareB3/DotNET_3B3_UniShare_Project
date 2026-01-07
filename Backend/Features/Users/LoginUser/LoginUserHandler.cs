@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Backend.Persistence;
 using Backend.Data;
+using Backend.Features.Users.DTO;
 using Backend.TokenGenerators;
-using Backend.Features.Users.Dtos;
 using Microsoft.EntityFrameworkCore;
 using MediatR;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Users.LoginUser;
 
 public class LoginUserHandler(
     UserManager<User> userManager, 

@@ -8,14 +8,14 @@ namespace Backend.Validators;
 
 public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatusRequest>
 {
-    private readonly ApplicationContext dbContext;
-    private readonly ILogger<UpdateBookingStatusValidator> logger;
+    private readonly ApplicationContext _dbContext;
+    private readonly ILogger<UpdateBookingStatusValidator> _logger;
     
     public UpdateBookingStatusValidator(ApplicationContext dbContext, ILogger<UpdateBookingStatusValidator> logger)
     {
 
-        this.dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        this._dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        this._logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         RuleFor(r => r.BookingStatusDto).NotNull().WithMessage("Request body is required.");
 
@@ -33,23 +33,23 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
     {
         var dto = request.BookingStatusDto!;
 
-        var booking = dbContext.Bookings
+        var booking = _dbContext.Bookings
             .Include(b => b.Item)
             .FirstOrDefault(b => b.Id == request.BookingId);
 
         if (booking == null)
         {
-            logger.LogError("Booking not found.");
+            _logger.LogError("Booking not found.");
             return false;
         }
 
         var item = booking.Item;
         if (item == null)
         {
-            item = dbContext.Items.Find(booking.ItemId);
+            item = _dbContext.Items.Find(booking.ItemId);
             if (item == null)
             {
-                logger.LogError("Item for booking not found.");
+                _logger.LogError("Item for booking not found.");
                 return false;
             }
         }
@@ -62,7 +62,7 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
                 return true;
             }
 
-            logger.LogError("Only the borrower or owner can mark a booking as Completed.");
+            _logger.LogError("Only the borrower or owner can mark a booking as Completed.");
             return false;
         }
 
@@ -79,18 +79,18 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
                 {
                     return true;
                 }
-                logger.LogError("Borrower can only cancel a booking when it is still Pending.");
+                _logger.LogError("Borrower can only cancel a booking when it is still Pending.");
                 return false;
             }
 
-            logger.LogError("Only the owner or borrower can cancel a booking (borrower only when Pending).");
+            _logger.LogError("Only the owner or borrower can cancel a booking (borrower only when Pending).");
             return false;
         }
 
         // For all other status updates, only the owner may act
         if (item.OwnerId != dto.UserId)
         {
-            logger.LogError("Only the owner of the item can change booking status.");
+            _logger.LogError("Only the owner of the item can change booking status.");
             return false;
         }
 

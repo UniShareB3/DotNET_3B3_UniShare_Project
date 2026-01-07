@@ -1,15 +1,14 @@
 ﻿        using AutoMapper;
-        using Backend.Data;
         using Backend.Features.Items.DTO;
         using Backend.Features.Items.Enums;
 
-        namespace Backend.Mapping;
+        namespace Backend.Mappers.Item;
 
         public class ItemMapper:Profile
         {
             public ItemMapper()
             {
-                CreateMap<PostItemDto, Item>()
+                CreateMap<PostItemDto, Data.Item>()
                     .ForMember(
                         dest => dest.Category,
                         opt => opt.MapFrom(src => Enum.Parse<ItemCategory>(src.Category, true))
@@ -28,7 +27,7 @@
                     .ForMember(dest => dest.Owner, opt => opt.Ignore())
                     .ForMember(dest => dest.Bookings, opt => opt.Ignore());
 
-                CreateMap<Item, ItemDto>()
+                CreateMap<Data.Item, ItemDto>()
                     .ForMember(
                         dest => dest.Category,
                         opt => opt.MapFrom(src => src.Category.ToString())
@@ -39,7 +38,7 @@
                     )
                     .ForMember(
                         dest => dest.OwnerName,
-                        opt => opt.MapFrom(src => (src.Owner.FirstName + " " + src.Owner.LastName).Trim())
+                        opt => opt.MapFrom(src => (src.Owner!.FirstName + " " + src.Owner.LastName).Trim())
                     )
                     .MaxDepth(1);
             }

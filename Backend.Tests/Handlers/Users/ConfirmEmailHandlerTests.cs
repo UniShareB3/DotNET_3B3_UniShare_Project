@@ -1,7 +1,7 @@
 ﻿using Moq;
 using FluentAssertions;
-using Backend.Features.Users;
 using Backend.Data;
+using Backend.Features.Users.ConfirmEmail;
 using Backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

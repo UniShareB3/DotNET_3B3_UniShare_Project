@@ -1,5 +1,5 @@
 ﻿using MediatR;
 
-namespace Backend.Features.Bookings;
+namespace Backend.Features.Users.GetUserBookings;
 
 public record GetUserBookingsRequest(Guid UserId): IRequest<IResult>;

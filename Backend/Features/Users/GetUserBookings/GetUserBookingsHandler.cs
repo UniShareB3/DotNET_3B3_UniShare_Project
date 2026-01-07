@@ -1,5 +1,6 @@
-﻿﻿using AutoMapper;
+﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Backend.Features.Bookings;
 using Backend.Features.Bookings.DTO;
 using Backend.Persistence;
 using MediatR;
@@ -7,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Bookings;
+namespace Backend.Features.Users.GetUserBookings;
 
 public class GetUserBookingsHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<GetUserBookingsRequest, IResult>
 {

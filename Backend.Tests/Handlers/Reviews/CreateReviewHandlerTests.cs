@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Backend.Data;
 using Backend.Features.Review;
+using Backend.Features.Review.CreateReview;
 using Backend.Features.Review.DTO;
 using Backend.Persistence;
 using FluentAssertions;
@@ -26,8 +27,8 @@ public class CreateReviewHandlerTests
     {
         var mapperMock = new Mock<IMapper>();
         mapperMock
-            .Setup(m => m.Map<Review>(It.IsAny<CreateReviewDTO>()))
-            .Returns((Func<CreateReviewDTO, Review>)(src => new Review
+            .Setup(m => m.Map<Review>(It.IsAny<CreateReviewDto>()))
+            .Returns((Func<CreateReviewDto, Review>)(src => new Review
             {
                 Id = Guid.Parse("02476839-a33e-4bba-b001-0165bf09e115"),
                 BookingId = src.BookingId,
@@ -75,7 +76,7 @@ public class CreateReviewHandlerTests
         context.Items.Add(item);
         await context.SaveChangesAsync();
 
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: bookingId,
             ReviewerId: userId,
             TargetUserId: null,
@@ -104,7 +105,7 @@ public class CreateReviewHandlerTests
         var context = CreateInMemoryDbContext("create-review-exception-test-" + Guid.NewGuid());
         var handler = new CreateReviewHandler(context, mapper);
 
-        var reviewDto = new CreateReviewDTO(
+        var reviewDto = new CreateReviewDto(
             BookingId: Guid.NewGuid(),
             ReviewerId: Guid.NewGuid(),
             TargetUserId: null,

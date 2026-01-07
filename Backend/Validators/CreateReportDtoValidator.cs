@@ -1,5 +1,4 @@
-﻿using Backend.Features.Reports.CreateReport;
-using Backend.Features.Reports.DTO;
+﻿using Backend.Features.Reports.DTO;
 using Backend.Features.Reports.Enums;
 using Backend.Persistence;
 using FluentValidation;
@@ -36,19 +35,19 @@ public class CreateReportDtoValidator : AbstractValidator<CreateReportDto>
             .WithMessage("You already have a moderator assignment");
     }
     
-    public async Task<bool> IsItemAlreadyReported(CreateReportDto request)
+    private async Task<bool> IsItemAlreadyReported(CreateReportDto request)
     {
         var existingReport = await _applicationContext.Reports
             .FirstOrDefaultAsync(
                 r => r.ItemId == request.ItemId && r.UserId == request.UserId &&
-                     r.Status == ReportStatus.PENDING);
+                     r.Status == ReportStatus.Pending);
         return existingReport == null;
     }
     
-    public async Task<bool> IsItemReportedAggresively(CreateReportDto request)
+    private async Task<bool> IsItemReportedAggresively(CreateReportDto request)
     {
         var count = await _applicationContext.Reports
-            .Where(r => r.UserId == request.UserId && r.Status == ReportStatus.DECLINED &&
+            .Where(r => r.UserId == request.UserId && r.Status == ReportStatus.Declined &&
                         r.ItemId == request.ItemId &&
                         r.CreatedDate >= DateTime.UtcNow.AddDays(-30))
             .CountAsync();

@@ -1,5 +1,6 @@
 ﻿using Backend.Features.Bookings.Enums;
 using Backend.Features.Review;
+using Backend.Features.Review.CreateReview;
 using Backend.Features.Review.DTO;
 using Backend.Persistence;
 using FluentValidation;
@@ -34,7 +35,7 @@ public class CreateReviewRequestValidator : AbstractValidator<CreateReviewReques
             .CustomAsync(ValidateReviewContextAsync);
     }
 
-    private async Task ValidateReviewContextAsync(CreateReviewDTO dto, ValidationContext<CreateReviewRequest> context, CancellationToken cancellationToken)
+    private async Task ValidateReviewContextAsync(CreateReviewDto dto, ValidationContext<CreateReviewRequest> context, CancellationToken cancellationToken)
     {
         var booking = await _dbContext.Bookings
             .Include(b => b.Item)

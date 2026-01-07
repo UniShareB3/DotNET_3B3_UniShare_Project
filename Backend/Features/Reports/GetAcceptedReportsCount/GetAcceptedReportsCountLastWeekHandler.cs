@@ -1,5 +1,4 @@
-﻿using Backend.Data;
-using Backend.Persistence;
+﻿using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -8,15 +7,10 @@ using Backend.Features.Reports.Enums;
 
 namespace Backend.Features.Reports.GetAcceptedReportsCount;
 
-public class GetAcceptedReportsCountLastWeekHandler : IRequestHandler<GetAcceptedReportsCountLastWeekRequest, IResult>
+public class GetAcceptedReportsCountLastWeekHandler(ApplicationContext context)
+    : IRequestHandler<GetAcceptedReportsCountLastWeekRequest, IResult>
 {
-    private readonly ApplicationContext _context;
     private readonly ILogger _logger = Log.ForContext<GetAcceptedReportsCountLastWeekHandler>();
-
-    public GetAcceptedReportsCountLastWeekHandler(ApplicationContext context)
-    {
-        _context = context;
-    }
 
     public async Task<IResult> Handle(GetAcceptedReportsCountLastWeekRequest request, CancellationToken cancellationToken)
     {
@@ -24,9 +18,9 @@ public class GetAcceptedReportsCountLastWeekHandler : IRequestHandler<GetAccepte
         
         var period = DateTime.UtcNow.AddDays(-request.NumberOfDays);
 
-        var count = await _context.Reports
+        var count = await context.Reports
             .Where(r => r.ItemId == request.ItemId 
-                        && r.Status == ReportStatus.ACCEPTED 
+                        && r.Status == ReportStatus.Accepted
                         && r.CreatedDate >= period)
             .CountAsync(cancellationToken);
 

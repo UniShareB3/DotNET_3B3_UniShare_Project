@@ -1,5 +1,5 @@
 using Backend.Data;
-using Backend.Features.Shared.Auth;
+using Backend.Features.Shared.IAM.SendEmailVerification;
 using Backend.Persistence;
 using Backend.Services;
 using FluentAssertions;

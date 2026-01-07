@@ -7,15 +7,8 @@ using System.Security.Claims;
 namespace Backend.Hubs;
 
 [Authorize]
-public class ChatHub : Hub
+public class ChatHub(ApplicationContext context) : Hub
 {
-    private readonly ApplicationContext _context;
-
-    public ChatHub(ApplicationContext context)
-    {
-        _context = context;
-    }
-
     // Frontend calls this method to send a message
     public async Task SendMessage(string receiverId, string message)
     {
@@ -35,8 +28,8 @@ public class ChatHub : Hub
             Timestamp = DateTime.UtcNow
         };
 
-        _context.ChatMessages.Add(chatMessage);
-        await _context.SaveChangesAsync();
+        context.ChatMessages.Add(chatMessage);
+        await context.SaveChangesAsync();
 
         // 2. Send to Receiver (Live)
         // SignalR automatically maps "UserIdentifier" to the JWT "sub" or "NameIdentifier" claim

@@ -1,3 +1,3 @@
 ﻿namespace Backend.Features.Shared.IAM.DTO;
 
-public record ConfirmEmailDto(Guid UserId, string Code);
+public abstract record ConfirmEmailDto(Guid UserId, string Code);

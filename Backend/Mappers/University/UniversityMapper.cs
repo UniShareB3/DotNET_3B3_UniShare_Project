@@ -2,19 +2,19 @@
 using Backend.Data;
 using Backend.Features.Universities.DTO;
 
-namespace Backend.Mapping;
+namespace Backend.Mappers.University;
 
 public class UniversityMapper : Profile
 {
     public UniversityMapper()
     {
-        CreateMap<University, UniversityDto>();
+        CreateMap<Data.University, UniversityDto>();
         
-        CreateMap<UniversityDto, University>()
+        CreateMap<UniversityDto, Data.University>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
 
-        CreateMap<PostUniversityDto, University>()
+        CreateMap<PostUniversityDto, Data.University>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore());
     }

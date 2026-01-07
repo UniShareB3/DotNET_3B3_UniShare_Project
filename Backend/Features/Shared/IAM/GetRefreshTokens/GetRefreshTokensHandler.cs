@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Shared.Auth;
+namespace Backend.Features.Shared.IAM.GetRefreshTokens;
 
 public class GetRefreshTokensHandler(
     UserManager<User> userManager,
