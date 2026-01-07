@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Backend.Data;
 using Backend.Features.Reports.DTO;
 using Backend.Persistence;
 using MediatR;
