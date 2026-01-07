@@ -1,7 +1,7 @@
-namespace Backend.Features.Shared.Authorization;
+namespace Backend.Features.Shared.Authorization.ModeratorAuthorization;
 
 /// <summary>
-/// Authorization filter that requires the user to have Admin or Moderator role
+/// Authorization filter that requires the user to have the Admin or Moderator role
 /// </summary>
 public static class ModeratorAuthorizationFilter
 {

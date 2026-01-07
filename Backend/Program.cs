@@ -48,6 +48,7 @@ using Backend.Features.Review.DeleteReview;
 using Backend.Features.Review.GetAllReviews;
 using Backend.Features.Review.GetReview;
 using Backend.Features.Review.UpdateReview;
+using Backend.Features.Shared.Authorization.ModeratorAuthorization;
 using Backend.Features.Shared.IAM.AssignAdminRole;
 using Backend.Features.Shared.IAM.ChangePassword;
 using Backend.Features.Shared.IAM.GetRefreshTokens;
