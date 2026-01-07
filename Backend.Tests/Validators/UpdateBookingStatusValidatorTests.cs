@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 
-namespace Backend.Tests.Validators;
+namespace Backend.Tests.Validators.Bookings;
 
 public class UpdateBookingStatusValidatorTests
 {
