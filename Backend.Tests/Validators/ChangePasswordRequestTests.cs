@@ -72,10 +72,10 @@ public class ChangePasswordRequestTests
     }
     
     [Fact]
-    private async Task Given_ChangePasswordRequest_When_Valid_Then_PassesValidation()
+    public async Task Given_ValidRequest_When_Validating_Then_PassesValidation()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("change-password-request-" + Guid.NewGuid());
+        var context = CreateInMemoryDbContext("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
         UserManager<User> mockUserManager = CreateFilledUserManager(context);
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("StrongP@ssw0rd", userId));
@@ -89,10 +89,10 @@ public class ChangePasswordRequestTests
     }
     
     [Fact]
-    public async Task Given_ChangePasswordRequest_When_NullDto_Then_FailsValidation()
+    public async Task Given_NullDto_When_Validating_Then_ThrowsNullReferenceException()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("test-null-dto");
+        var context = CreateInMemoryDbContext("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
         var mockUserManager = CreateFilledUserManager(context);
         var request = new ChangePasswordRequest(null!);
         var validator = new ChangePasswordRequestValidator(mockUserManager);
@@ -102,10 +102,10 @@ public class ChangePasswordRequestTests
     }
     
     [Fact]
-    public async Task Given_ChangePasswordRequest_When_EmptyUserId_Then_FailsValidation()
+    public async Task Given_EmptyUserId_When_Validating_Then_FailsValidation()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("test-empty-userid");
+        var context = CreateInMemoryDbContext("cccccccc-cccc-cccc-cccc-cccccccccccc");
         UserManager<User> mockUserManager = CreateFilledUserManager(context);
         ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("StrongP@ssw0rd", Guid.Empty));
         ChangePasswordRequestValidator validator = new ChangePasswordRequestValidator(mockUserManager);
@@ -119,10 +119,10 @@ public class ChangePasswordRequestTests
     }
     
     [Fact]
-    public async Task Given_ChangePasswordRequest_When_EmptyPassword_Then_FailsValidation()
+    public async Task Given_EmptyPassword_When_Validating_Then_FailsValidation()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("test-empty-password");
+        var context = CreateInMemoryDbContext("dddddddd-dddd-dddd-dddd-dddddddddddd");
         UserManager<User> mockUserManager = CreateFilledUserManager(context);
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("", userId));
@@ -137,10 +137,10 @@ public class ChangePasswordRequestTests
     }
     
     [Fact]
-    public async Task Given_ChangePasswordRequest_When_PasswordTooShort_Then_FailsValidation()
+    public async Task Given_PasswordTooShort_When_Validating_Then_FailsValidation()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("test-short-password");
+        var context = CreateInMemoryDbContext("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
         UserManager<User> mockUserManager = CreateFilledUserManager(context);
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("Ab1!", userId));
@@ -155,10 +155,10 @@ public class ChangePasswordRequestTests
     }
     
     [Fact]
-    public async Task Given_ChangePasswordRequest_When_PasswordMissingDigit_Then_FailsValidation()
+    public async Task Given_PasswordMissingDigit_When_Validating_Then_FailsValidation()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("test-no-digit");
+        var context = CreateInMemoryDbContext("ffffffff-ffff-ffff-ffff-ffffffffffff");
         UserManager<User> mockUserManager = CreateFilledUserManager(context);
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("StrongP@ssword", userId));
@@ -173,10 +173,10 @@ public class ChangePasswordRequestTests
     }
     
     [Fact]
-    public async Task Given_ChangePasswordRequest_When_PasswordMissingUppercase_Then_FailsValidation()
+    public async Task Given_PasswordMissingUppercase_When_Validating_Then_FailsValidation()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("test-no-uppercase");
+        var context = CreateInMemoryDbContext("11111111-2222-3333-4444-555555555555");
         UserManager<User> mockUserManager = CreateFilledUserManager(context);
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("strongp@ssw0rd", userId));
@@ -191,10 +191,10 @@ public class ChangePasswordRequestTests
     }
     
     [Fact]
-    public async Task Given_ChangePasswordRequest_When_PasswordMissingLowercase_Then_FailsValidation()
+    public async Task Given_PasswordMissingLowercase_When_Validating_Then_FailsValidation()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("test-no-lowercase");
+        var context = CreateInMemoryDbContext("22222222-3333-4444-5555-666666666666");
         UserManager<User> mockUserManager = CreateFilledUserManager(context);
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("STRONGP@SSW0RD", userId));
@@ -209,10 +209,10 @@ public class ChangePasswordRequestTests
     }
     
     [Fact]
-    public async Task Given_ChangePasswordRequest_When_PasswordMissingSpecialChar_Then_FailsValidation()
+    public async Task Given_PasswordMissingSpecialChar_When_Validating_Then_FailsValidation()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("test-no-special");
+        var context = CreateInMemoryDbContext("33333333-4444-5555-6666-777777777777");
         UserManager<User> mockUserManager = CreateFilledUserManager(context);
         Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("StrongPassw0rd", userId));
@@ -227,10 +227,10 @@ public class ChangePasswordRequestTests
     }
     
     [Fact]
-    public async Task Given_ChangePasswordRequest_When_UserNotFound_Then_FailsValidation()
+    public async Task Given_NonExistentUser_When_Validating_Then_FailsValidation()
     {
         // Arrange
-        var context = CreateInMemoryDbContext("test-user-not-found");
+        var context = CreateInMemoryDbContext("44444444-5555-6666-7777-888888888888");
         UserManager<User> mockUserManager = CreateFilledUserManager(context);
         Guid nonExistentUserId = Guid.Parse("99999999-9999-9999-9999-999999999999");
         ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("StrongP@ssw0rd", nonExistentUserId));
@@ -242,5 +242,25 @@ public class ChangePasswordRequestTests
         // Assert
         Assert.False(resultValidator.IsValid);
         Assert.Contains(resultValidator.Errors, e => e.ErrorMessage == "User not found.");
+    }
+    
+    [Fact]
+    public async Task Given_PasswordAlreadyInDatabase_When_Validating_Then_FailsValidation()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("55555555-6666-7777-8888-999999999999");
+        UserManager<User> mockUserManager = CreateFilledUserManager(context);
+        Guid userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        
+        // Try to use the existing password "ExistingP@ssw0rd" which was set in CreateFilledUserManager
+        ChangePasswordRequest request = new ChangePasswordRequest(new ChangePasswordDto("ExistingP@ssw0rd", userId));
+        ChangePasswordRequestValidator validator = new ChangePasswordRequestValidator(mockUserManager);
+        
+        // Act
+        var resultValidator = await validator.ValidateAsync(request);
+        
+        // Assert
+        Assert.False(resultValidator.IsValid);
+        Assert.Contains(resultValidator.Errors, e => e.ErrorMessage == "Please choose a different password.");
     }
 }
