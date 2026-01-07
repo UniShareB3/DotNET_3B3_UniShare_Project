@@ -1,4 +1,3 @@
-using System.Data.Common;
 using Backend.Data;
 using Backend.Persistence;
 using Backend.Tests.Seeder;
