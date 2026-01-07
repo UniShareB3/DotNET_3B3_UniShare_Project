@@ -2,13 +2,15 @@
 using Backend.Features.Shared.IAM.Constants;
 using Backend.Persistence;
 using Backend.Services;
+using Backend.Services.EmailSender;
+using Backend.Services.Hashing;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Shared.Auth;
+namespace Backend.Features.Shared.IAM.SendEmailVerification;
 
 public class SendEmailVerificationHandler(
     UserManager<User> userManager,
@@ -30,7 +32,7 @@ public class SendEmailVerificationHandler(
             return Results.BadRequest(new { error = "User not found" });
         }
         
-        if (user.EmailConfirmed)
+        if (user.NewEmailConfirmed)
         {
             _logger.Warning("Email already confirmed for user {UserId}", request.UserId);
             return Results.BadRequest(new { error = "Email already confirmed" });
@@ -53,7 +55,7 @@ public class SendEmailVerificationHandler(
         {
             UserId = user.Id,
             Code = hashedCode,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(IAMConstants.ResetPasswordTokenExpiryMinutes),
+            ExpiresAt = DateTime.UtcNow.AddMinutes(IamConstants.ResetPasswordTokenExpiryMinutes),
             IsUsed = false
         };
 

@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace Backend.Services;
+namespace Backend.Services.Hashing;
 
 public class HashingService : IHashingService
 {

@@ -2,10 +2,9 @@
 using Backend.Persistence;
 using Backend.Validators;
 using FluentAssertions;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Tests;
+namespace Backend.Tests.Validators;
 
 public class UniversityValidatorTests
 {

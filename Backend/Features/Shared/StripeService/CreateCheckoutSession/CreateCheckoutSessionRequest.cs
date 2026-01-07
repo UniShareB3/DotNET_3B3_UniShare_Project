@@ -1,7 +1,7 @@
-﻿using Backend.Features.Shared.Stripe.DTO;
+﻿using Backend.Features.Shared.StripeService.DTO;
 using MediatR;
 
-namespace Backend.Features.Shared.Stripe;
+namespace Backend.Features.Shared.StripeService.CreateCheckoutSession;
 
 /// <summary>
 /// Request to create a Stripe checkout session for a booking payment

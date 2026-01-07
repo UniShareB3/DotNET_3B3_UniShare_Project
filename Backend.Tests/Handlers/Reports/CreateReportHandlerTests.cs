@@ -97,7 +97,7 @@ public class CreateReportHandlerTests
         Assert.Equal(userId, savedReport.UserId);
         Assert.Equal(ownerId, savedReport.OwnerId);
         Assert.Equal("This is a test report", savedReport.Description);
-        Assert.Equal(ReportStatus.PENDING, savedReport.Status);
+        Assert.Equal(ReportStatus.Pending, savedReport.Status);
     }
     
     [Fact]
@@ -221,7 +221,7 @@ public class CreateReportHandlerTests
             OwnerId = ownerId,
             ModeratorId = moderator1Id,
             Description = "Existing report",
-            Status = ReportStatus.PENDING,
+            Status = ReportStatus.Pending,
             CreatedDate = DateTime.UtcNow
         };
         await context.Reports.AddAsync(existingReport);

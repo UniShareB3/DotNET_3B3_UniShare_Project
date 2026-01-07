@@ -5,7 +5,7 @@ using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Features.Review;
+namespace Backend.Features.Review.GetAllReviews;
 
 public class GetAllReviewsHandler(ApplicationContext dbContext, IMapper mapper, ILogger<GetAllReviewsHandler> logger) : IRequestHandler<GetAllReviewsRequest, IResult>
 {

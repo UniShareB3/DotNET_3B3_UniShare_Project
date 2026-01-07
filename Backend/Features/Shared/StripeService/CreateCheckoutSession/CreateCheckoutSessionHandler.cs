@@ -1,5 +1,4 @@
-﻿using Backend.Features.Shared.Stripe;
-using Backend.Features.Shared.Stripe.DTO;
+﻿using Backend.Features.Shared.StripeService.DTO;
 using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,19 +12,12 @@ namespace Backend.Features.Shared.StripeService.CreateCheckoutSession;
 /// <summary>
 /// Handler for creating Stripe checkout sessions for booking payments
 /// </summary>
-public class CreateCheckoutSessionHandler : IRequestHandler<CreateCheckoutSessionRequest, IResult>
+public class CreateCheckoutSessionHandler(
+    ApplicationContext dbContext,
+    IConfiguration configuration)
+    : IRequestHandler<CreateCheckoutSessionRequest, IResult>
 {
-    private readonly ApplicationContext _dbContext;
-    private readonly IConfiguration _configuration;
     private readonly ILogger _logger = Log.ForContext<CreateCheckoutSessionHandler>();
-
-    public CreateCheckoutSessionHandler(
-        ApplicationContext dbContext,
-        IConfiguration configuration)
-    {
-        _dbContext = dbContext;
-        _configuration = configuration;
-    }
 
     public async Task<IResult> Handle(CreateCheckoutSessionRequest request, CancellationToken cancellationToken)
     {
@@ -34,10 +26,10 @@ public class CreateCheckoutSessionHandler : IRequestHandler<CreateCheckoutSessio
             _logger.Information("Creating checkout session for booking {BookingId}", request.Dto.BookingId);
 
             // Get the environment to determine which API key to use
-            var environment = _configuration["Environment"] ?? "Development";
+            var environment = configuration["Environment"] ?? "Development";
             var stripeSecretKey = environment == "Production"
-                ? _configuration["Stripe:Live_Secret_Key"]
-                : _configuration["Stripe:Test_Secret_Key"];
+                ? configuration["Stripe:Live_Secret_Key"]
+                : configuration["Stripe:Test_Secret_Key"];
 
             if (string.IsNullOrEmpty(stripeSecretKey))
             {
@@ -51,7 +43,7 @@ public class CreateCheckoutSessionHandler : IRequestHandler<CreateCheckoutSessio
             StripeConfiguration.ApiKey = stripeSecretKey;
 
             // Find the booking with related item and owner
-            var booking = await _dbContext.Bookings
+            var booking = await dbContext.Bookings
                 .Include(b => b.Item)
                 .ThenInclude(i => i!.Owner)
                 .FirstOrDefaultAsync(b => b.Id == request.Dto.BookingId, cancellationToken);
@@ -94,9 +86,9 @@ public class CreateCheckoutSessionHandler : IRequestHandler<CreateCheckoutSessio
             var sessionService = new SessionService();
             var sessionOptions = new SessionCreateOptions
             {
-                PaymentMethodTypes = new List<string> { "card" },
-                LineItems = new List<SessionLineItemOptions>
-                {
+                PaymentMethodTypes = ["card"],
+                LineItems =
+                [
                     new SessionLineItemOptions
                     {
                         PriceData = new SessionLineItemPriceDataOptions
@@ -105,13 +97,15 @@ public class CreateCheckoutSessionHandler : IRequestHandler<CreateCheckoutSessio
                             ProductData = new SessionLineItemPriceDataProductDataOptions
                             {
                                 Name = booking.Item.Name,
-                                Description = $"Rental from {booking.StartDate:yyyy-MM-dd} to {booking.EndDate:yyyy-MM-dd}",
+                                Description =
+                                    $"Rental from {booking.StartDate:yyyy-MM-dd} to {booking.EndDate:yyyy-MM-dd}",
                             },
                             UnitAmount = amount,
                         },
                         Quantity = 1,
-                    },
-                },
+                    }
+
+                ],
                 Mode = "payment",
                 SuccessUrl = request.Dto.SuccessUrl,
                 CancelUrl = request.Dto.CancelUrl,

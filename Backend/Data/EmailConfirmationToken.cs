@@ -19,10 +19,10 @@ public class EmailConfirmationToken
     [Required]
     public DateTime ExpiresAt { get; set; }
     
-    public bool IsUsed { get; set; } = false;
+    public bool IsUsed { get; set; }
     
     [Required]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } 
     
     // Navigation property
     public User? User { get; set; }

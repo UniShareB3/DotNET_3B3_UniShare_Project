@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace Backend.Hubs;
 
 [Authorize]
-public class ChatHub : Hub
+public class ChatHub(ApplicationContext context) : Hub
 {
     private readonly ApplicationContext _context;
 
@@ -48,8 +48,8 @@ public class ChatHub : Hub
             Timestamp = DateTime.UtcNow
         };
 
-        _context.ChatMessages.Add(chatMessage);
-        await _context.SaveChangesAsync();
+        context.ChatMessages.Add(chatMessage);
+        await context.SaveChangesAsync();
 
         var messageData = new
         {

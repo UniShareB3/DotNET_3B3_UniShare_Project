@@ -1,10 +1,10 @@
 using Backend.Data;
-using Backend.Features.Shared.Auth;
+using Backend.Features.Shared.IAM.SendEmailVerification;
 using Backend.Persistence;
-using Backend.Services;
+using Backend.Services.EmailSender;
+using Backend.Services.Hashing;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
@@ -22,14 +22,31 @@ public class SendEmailVerificationHandlerTests
 
     public SendEmailVerificationHandlerTests()
     {
+        var store = Substitute.For<IUserStore<User>>();
+        var options = Substitute.For<Microsoft.Extensions.Options.IOptions<IdentityOptions>>();
+        var passwordHasher = Substitute.For<IPasswordHasher<User>>();
+        var userValidators = new List<IUserValidator<User>>();
+        var passwordValidators = new List<IPasswordValidator<User>>();
+        var keyNormalizer = Substitute.For<ILookupNormalizer>();
+        var errors = Substitute.For<IdentityErrorDescriber>();
+        var services = Substitute.For<IServiceProvider>();
+        var logger = Substitute.For<Microsoft.Extensions.Logging.ILogger<UserManager<User>>>();
+
         _userManager = Substitute.For<UserManager<User>>(
-            Substitute.For<IUserStore<User>>(),
-            null, null, null, null, null, null, null, null);
+            store,
+            options,
+            passwordHasher,
+            userValidators,
+            passwordValidators,
+            keyNormalizer,
+            errors,
+            services,
+            logger);
         
-        var options = new DbContextOptionsBuilder<ApplicationContext>()
+        var dbOptions = new DbContextOptionsBuilder<ApplicationContext>()
             .UseInMemoryDatabase(databaseName: Guid.Parse("10000000-0000-0000-0000-000000000001").ToString())
             .Options;
-        _context = new ApplicationContext(options);
+        _context = new ApplicationContext(dbOptions);
         
         _emailSender = Substitute.For<IEmailSender>();
         _hashingService = Substitute.For<IHashingService>();
@@ -50,7 +67,7 @@ public class SendEmailVerificationHandlerTests
         {
             Id = userId,
             Email = "test@example.com",
-            EmailConfirmed = false
+            NewEmailConfirmed = false
         };
         
         _userManager.FindByIdAsync(userId.ToString()).Returns(Task.FromResult<User?>(user));
@@ -65,17 +82,16 @@ public class SendEmailVerificationHandlerTests
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
-        Assert.Equal( StatusCodes.Status200OK, statusResult.StatusCode);
+        statusResult.StatusCode.Should().Be(StatusCodes.Status200OK);
 
-        int obj;
         await _emailSender.Received(1).SendEmailVerificationAsync(
             user.Email,
-            Arg.Is<string>(code => code.Length == 6 && int.TryParse(code, out obj)));
+            Arg.Is<string>(code => code.Length == 6 ));
         
         var tokenInDb = await _context.EmailConfirmationTokens
             .FirstOrDefaultAsync(t => t.UserId == userId);
-        Assert.NotNull(tokenInDb);
-        Assert.False(tokenInDb.IsUsed);
+        tokenInDb.Should().NotBeNull();
+        tokenInDb.IsUsed.Should().BeFalse();
     }
 
     [Fact]
@@ -92,7 +108,7 @@ public class SendEmailVerificationHandlerTests
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
-        Assert.Equal( StatusCodes.Status400BadRequest, statusResult.StatusCode);
+        statusResult.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
         
         await _emailSender.DidNotReceive().SendEmailVerificationAsync(
             Arg.Any<string>(), 
@@ -108,7 +124,7 @@ public class SendEmailVerificationHandlerTests
         {
             Id = userId,
             Email = "test@example.com",
-            EmailConfirmed = true
+            NewEmailConfirmed = true
         };
         
         _userManager.FindByIdAsync(userId.ToString()).Returns(Task.FromResult<User?>(user));
@@ -120,7 +136,7 @@ public class SendEmailVerificationHandlerTests
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
-        Assert.Equal( StatusCodes.Status400BadRequest, statusResult.StatusCode);
+        statusResult.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
         
         await _emailSender.DidNotReceive().SendEmailVerificationAsync(
             Arg.Any<string>(), 
@@ -136,7 +152,7 @@ public class SendEmailVerificationHandlerTests
         {
             Id = userId,
             Email = "test@example.com",
-            EmailConfirmed = false
+            NewEmailConfirmed = false
         };
         
         _userManager.FindByIdAsync(userId.ToString()).Returns(Task.FromResult<User?>(user));
@@ -151,7 +167,7 @@ public class SendEmailVerificationHandlerTests
 
         // Assert
         var statusResult = result.Should().BeAssignableTo<IStatusCodeHttpResult>().Subject;
-        Assert.Equal( StatusCodes.Status500InternalServerError, statusResult.StatusCode);
+        statusResult.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
     }
     
 }

@@ -1,4 +1,4 @@
-namespace Backend.Features.Users;
+namespace Backend.Features.Users.GetEmailVerifiedStatus;
 
 using MediatR;
 

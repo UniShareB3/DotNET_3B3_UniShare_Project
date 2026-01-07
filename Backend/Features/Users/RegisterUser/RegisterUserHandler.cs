@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Backend.Data;
-using Backend.Features.Shared.Auth;
-using Backend.Features.Users.Dtos;
+using Backend.Features.Shared.IAM.SendEmailVerification;
+using Backend.Features.Users.DTO;
 using Backend.Persistence;
 using Microsoft.AspNetCore.Identity;
 using MediatR;
@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Users.RegisterUser;
 
 public class RegisterUserHandler(
     UserManager<User> userManager,

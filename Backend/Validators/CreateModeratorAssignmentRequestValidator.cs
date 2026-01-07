@@ -1,6 +1,5 @@
 using Backend.Features.ModeratorAssignment.CreateModeratorAssignment;
 using FluentValidation;
-using FluentValidation.AspNetCore;
 
 namespace Backend.Validators;
 

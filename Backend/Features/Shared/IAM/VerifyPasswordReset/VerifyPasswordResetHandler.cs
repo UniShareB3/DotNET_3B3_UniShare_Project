@@ -11,7 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Shared.Auth;
+namespace Backend.Features.Shared.IAM.VerifyPasswordReset;
 
 public class VerifyPasswordResetHandler(
     UserManager<User> userManager,
@@ -76,7 +76,7 @@ public class VerifyPasswordResetHandler(
         return Results.Ok(new { 
             message = "Password reset token verified successfully",
             temporaryToken = tempToken,
-            expiresInMinutes = IAMConstants.ResetPasswordRightExpiryMinutes
+            expiresInMinutes = IamConstants.ResetPasswordRightExpiryMinutes
         });
     }
 
@@ -94,7 +94,7 @@ public class VerifyPasswordResetHandler(
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
-            Expires = DateTime.UtcNow.AddMinutes(IAMConstants.ResetPasswordRightExpiryMinutes),
+            Expires = DateTime.UtcNow.AddMinutes(IamConstants.ResetPasswordRightExpiryMinutes),
             Issuer = configuration["JwtSettings:Issuer"],
             Audience = configuration["JwtSettings:Audience"],
             SigningCredentials = new SigningCredentials(

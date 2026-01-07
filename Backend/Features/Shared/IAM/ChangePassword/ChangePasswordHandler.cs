@@ -1,13 +1,13 @@
-﻿﻿using Backend.Data;
- using Backend.Features.Shared.IAM.Constants;
- using Backend.Persistence;
+﻿using Backend.Data;
+using Backend.Features.Shared.IAM.Constants;
+using Backend.Persistence;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Shared.Auth;
+namespace Backend.Features.Shared.IAM.ChangePassword;
 
 public class ChangePasswordHandler(
     UserManager<User> userManager,
@@ -33,7 +33,7 @@ public class ChangePasswordHandler(
             .OrderByDescending(t => t.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
         
-        if (recentToken == null || recentToken.CreatedAt < DateTime.UtcNow.AddMinutes(-IAMConstants.ResetPasswordTokenExpiryMinutes))
+        if (recentToken == null || recentToken.CreatedAt < DateTime.UtcNow.AddMinutes(-IamConstants.ResetPasswordTokenExpiryMinutes))
         {
             _logger.Warning("No valid password reset token found for user {UserId}", dto.UserId);
             return Results.BadRequest(new { error = "Password reset token expired or not found. Please request a new password reset." });

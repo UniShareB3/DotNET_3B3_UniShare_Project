@@ -19,8 +19,7 @@ public class PasswordResetToken
   [Required]
   public DateTime ExpiresAt { get; set; }
 
-  public bool IsUsed { get; set; } = false;
-
+  public bool IsUsed { get; set; }
   [Required]
   public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

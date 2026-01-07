@@ -3,15 +3,15 @@ using Backend.Features.ModeratorAssignment.Enums;
 
 namespace Backend.Mappers.ModeratorAssignment;
 
-public class ModeratorAssignmentStatusResolver : IValueResolver<Data.ModeratorAssignment, object, string>
+public abstract class ModeratorAssignmentStatusResolver : IValueResolver<Data.ModeratorAssignment, object, string>
 {
     public string Resolve(Data.ModeratorAssignment source, object destination, string destMember, ResolutionContext context)
     {
         return source.Status switch
         {
-            ModeratorAssignmentStatus.PENDING => "PENDING",
-            ModeratorAssignmentStatus.ACCEPTED => "ACCEPTED",
-            ModeratorAssignmentStatus.REJECTED => "REJECTED",
+            ModeratorAssignmentStatus.Pending => "PENDING",
+            ModeratorAssignmentStatus.Accepted => "ACCEPTED",
+            ModeratorAssignmentStatus.Rejected => "REJECTED",
             _ => "UNKNOWN"
         };
     }

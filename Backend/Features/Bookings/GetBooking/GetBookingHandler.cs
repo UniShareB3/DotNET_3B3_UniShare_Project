@@ -1,11 +1,11 @@
-﻿﻿using AutoMapper;
+﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Backend.Features.Bookings.DTO;
 using Backend.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Features.Bookings;
+namespace Backend.Features.Bookings.GetBooking;
 
 public class GetBookingHandler(ApplicationContext dbContext, IMapper mapper, ILogger<GetBookingHandler> logger) : IRequestHandler<GetBookingRequest, IResult>
 {

@@ -1,5 +1,5 @@
 ﻿using Backend.Data;
-using Backend.Features.Users;
+using Backend.Features.Users.UpdateUser;
 using Backend.Persistence;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;

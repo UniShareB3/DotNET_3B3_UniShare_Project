@@ -1,15 +1,13 @@
 ﻿using AutoMapper;
-using Backend.Features.Items.DTO;
 using Backend.Persistence;
 using Backend.Data;
-using Backend.Features.Bookings.DTO;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 using ItemDto = Backend.Features.Items.DTO.ItemDto;
 
-namespace Backend.Features.Items;
+namespace Backend.Features.Items.PostItem;
 
 
 public class PostItemHandler(ApplicationContext dbContext,IMapper mapper) : IRequestHandler<PostItemRequest, IResult>

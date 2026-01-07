@@ -28,7 +28,7 @@ public class PostItemDtoValidator:AbstractValidator<PostItemDto>
             .Must(BeAValidEnum<ItemCondition>).WithMessage(GetValidEnumMessage<ItemCondition>("Condition"));
     }
     
-    private bool BeAValidEnum<TEnum>(string value) where TEnum : struct, Enum
+    private static bool BeAValidEnum<TEnum>(string value) where TEnum : struct, Enum
     {
         return Enum.TryParse(typeof(TEnum), value, true, out _);
     }

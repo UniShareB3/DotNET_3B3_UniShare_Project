@@ -12,7 +12,7 @@ public class UpdateModeratorAssignmentStatusValidatorTests
     {
         // Arrange
         Guid adminId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.PENDING, adminId);
+        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.Pending, adminId);
         var validator = new UpdateModeratorAssignmentStatusDtoValidator();
         
         // Act
@@ -27,7 +27,7 @@ public class UpdateModeratorAssignmentStatusValidatorTests
     {
         // Arrange
         Guid adminId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.ACCEPTED, adminId);
+        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.Accepted, adminId);
         var validator = new UpdateModeratorAssignmentStatusDtoValidator();
         
         // Act
@@ -42,7 +42,7 @@ public class UpdateModeratorAssignmentStatusValidatorTests
     {
         // Arrange
         Guid adminId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.REJECTED, adminId);
+        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.Rejected, adminId);
         var validator = new UpdateModeratorAssignmentStatusDtoValidator();
         
         // Act
@@ -56,7 +56,7 @@ public class UpdateModeratorAssignmentStatusValidatorTests
     public async Task Given_Request_When_ReviewedByAdminIdIsEmpty_Then_ReturnsValidationError()
     {
         // Arrange
-        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.ACCEPTED, Guid.Empty);
+        var dto = new UpdateModeratorAssignmentStatusDto(ModeratorAssignmentStatus.Accepted, Guid.Empty);
         var validator = new UpdateModeratorAssignmentStatusDtoValidator();
         
         // Act
@@ -102,9 +102,9 @@ public class UpdateModeratorAssignmentStatusValidatorTests
     }
 
     [Theory]
-    [InlineData(ModeratorAssignmentStatus.PENDING)]
-    [InlineData(ModeratorAssignmentStatus.ACCEPTED)]
-    [InlineData(ModeratorAssignmentStatus.REJECTED)]
+    [InlineData(ModeratorAssignmentStatus.Pending)]
+    [InlineData(ModeratorAssignmentStatus.Accepted)]
+    [InlineData(ModeratorAssignmentStatus.Rejected)]
     public async Task Given_ValidRequest_When_AllValidStatusValues_Then_ReturnsValid(ModeratorAssignmentStatus status)
     {
         // Arrange

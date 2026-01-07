@@ -24,7 +24,7 @@ namespace Backend.Data
                     UserName = "testuser",
                     FirstName = "Test",
                     LastName = "User",
-                    EmailConfirmed = true,
+                    NewEmailConfirmed = true,
                 };
                 context.Users.Add(owner);
                 context.SaveChanges();

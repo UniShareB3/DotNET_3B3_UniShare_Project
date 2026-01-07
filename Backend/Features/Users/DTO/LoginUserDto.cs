@@ -1,4 +1,4 @@
-﻿namespace Backend.Features.Users.Dtos;
+﻿namespace Backend.Features.Users.DTO;
 
 public record LoginUserDto(string Email, string Password);
 

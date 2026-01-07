@@ -63,10 +63,10 @@ public static class TestDataSeeder
         var universities = await SeedUniversities(context);
         
         // 3. Seed Test Users (static users only)
-        var users = await SeedTestUsers(userManager, universities);
+        var users = await SeedTestUsers(context, userManager, universities);
         
         // 4. Seed Test Items
-        await SeedTestItems(context);
+        await SeedTestItems(context, users);
         
         // 5. Seed Test Bookings
         await SeedTestBookings(context, users);
@@ -132,6 +132,7 @@ public static class TestDataSeeder
     }
 
     private static async Task<List<User>> SeedTestUsers(
+        ApplicationContext context,
         UserManager<User> userManager,
         List<University> universities)
     {
@@ -234,7 +235,7 @@ public static class TestDataSeeder
         return null;
     }
 
-    private static async Task SeedTestItems(ApplicationContext context)
+    private static async Task SeedTestItems(ApplicationContext context, List<User> users)
     {
         if (context.Items.Any())
         {

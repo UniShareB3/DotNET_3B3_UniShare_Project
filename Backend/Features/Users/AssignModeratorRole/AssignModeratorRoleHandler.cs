@@ -6,25 +6,18 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Users.AssignModeratorRole;
 
-public class AssignModeratorRoleHandler : IRequestHandler<AssignModeratorRoleRequest, IResult>
+public class AssignModeratorRoleHandler(ApplicationContext context, UserManager<User> userManager)
+    : IRequestHandler<AssignModeratorRoleRequest, IResult>
 {
-    private readonly ApplicationContext _context;
-    private readonly UserManager<User> _userManager;
     private readonly ILogger _logger = Log.ForContext<AssignModeratorRoleHandler>();
-
-    public AssignModeratorRoleHandler(ApplicationContext context, UserManager<User> userManager)
-    {
-        _context = context;
-        _userManager = userManager;
-    }
 
     public async Task<IResult> Handle(AssignModeratorRoleRequest request, CancellationToken cancellationToken)
     {
         _logger.Information("Assigning Moderator role to user {UserId}", request.UserId);
 
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
+        var user = await context.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
         
         if (user == null)
         {
@@ -32,7 +25,7 @@ public class AssignModeratorRoleHandler : IRequestHandler<AssignModeratorRoleReq
             return Results.NotFound(new { message = "User not found" });
         }
 
-        var hasModeratorRole = await _userManager.IsInRoleAsync(user, "Moderator");
+        var hasModeratorRole = await userManager.IsInRoleAsync(user, "Moderator");
         
         if (hasModeratorRole)
         {
@@ -40,7 +33,7 @@ public class AssignModeratorRoleHandler : IRequestHandler<AssignModeratorRoleReq
             return Results.Conflict(new { message = "User already has the Moderator role" });
         }
 
-        var result = await _userManager.AddToRoleAsync(user, "Moderator");
+        var result = await userManager.AddToRoleAsync(user, "Moderator");
         
         if (!result.Succeeded)
         {

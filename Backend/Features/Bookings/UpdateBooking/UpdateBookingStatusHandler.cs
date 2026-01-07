@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Backend.Features.Bookings.DTO;
 using Backend.Features.Bookings.Enums;
 
-namespace Backend.Features.Bookings;
+namespace Backend.Features.Bookings.UpdateBooking;
 
 
 public class UpdateBookingStatusHandler(ApplicationContext dbContext, ILogger<UpdateBookingStatusHandler> logger, IMapper mapper) : IRequestHandler<UpdateBookingStatusRequest, IResult>
@@ -34,13 +34,10 @@ public class UpdateBookingStatusHandler(ApplicationContext dbContext, ILogger<Up
 
         booking.BookingStatus = dto.BookingStatus;
 
-        // If the new status is Completed, set CompletedOn (and optionally record who completed it if provided)
+        // If the new status is Completed, set CompletedOn (and optional record who completed it if provided)
         if (dto.BookingStatus == BookingStatus.Completed)
         {
-            if (booking.CompletedOn == null)
-            {
-                booking.CompletedOn = DateTime.UtcNow;
-            }
+            booking.CompletedOn ??= DateTime.UtcNow;
             // If DTO contains UserId, optionally set an audit field if Booking has one (CompletedBy)
             try {
                 var completedByProp = booking.GetType().GetProperty("CompletedBy");

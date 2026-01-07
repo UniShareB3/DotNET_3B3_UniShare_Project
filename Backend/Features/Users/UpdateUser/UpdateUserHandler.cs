@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Backend.Data;
+using Backend.Features.Users.DTO;
 using Backend.Persistence;
 using Microsoft.AspNetCore.Identity;
 using MediatR;
@@ -7,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Users.UpdateUser;
 
 public class UpdateUserHandler(
     UserManager<User> userManager,
@@ -51,7 +52,7 @@ public class UpdateUserHandler(
             user.NormalizedEmail = dto.Email.ToUpper();
             user.UserName = dto.Email;
             user.NormalizedUserName = dto.Email.ToUpper();
-            user.EmailConfirmed = false; // Reset email confirmation
+            user.NewEmailConfirmed = false; // Reset email confirmation
             _logger.Information("Updated Email for user {UserId}, email confirmation reset", request.UserId);
         }
 
@@ -101,7 +102,7 @@ public class UpdateUserHandler(
             _logger.Information("Updated Password for user {UserId}", request.UserId);
         }
 
-        var userDto = mapper.Map<Dtos.UserDto>(user);
+        var userDto = mapper.Map<UserDto>(user);
         
         _logger.Information("User {UserId} updated successfully", request.UserId);
         

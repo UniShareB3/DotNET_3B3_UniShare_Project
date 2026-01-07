@@ -1,12 +1,12 @@
 ﻿using AutoMapper;
-using Backend.Features.Bookings;
+using Backend.Features.Bookings.CreateBooking;
 using Backend.Features.Review.DTO;
 using Backend.Persistence;
 using MediatR;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Review;
+namespace Backend.Features.Review.CreateReview;
 
 public class CreateReviewHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<CreateReviewRequest, IResult>
 {

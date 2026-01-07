@@ -1,7 +1,8 @@
-﻿using Backend.Features.Shared.Stripe.DTO;
+﻿
+using Backend.Features.Shared.StripeService.DTO;
 using MediatR;
 
-namespace Backend.Features.Shared.Stripe;
+namespace Backend.Features.Shared.StripeService.CreateStripeAccountLink;
 
 /// <summary>
 /// Request to create a Stripe Connect account link for user onboarding

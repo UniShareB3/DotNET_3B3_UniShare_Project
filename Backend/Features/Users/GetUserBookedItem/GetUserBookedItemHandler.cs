@@ -1,4 +1,4 @@
-﻿﻿using AutoMapper;
+﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Backend.Features.Bookings.DTO;
 using Backend.Persistence;
@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Users;
+namespace Backend.Features.Users.GetUserBookedItem;
 
 /// <summary>
 /// Handles retrieval of a booked item for a specific.

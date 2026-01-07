@@ -1,7 +1,7 @@
 ﻿namespace Backend.Features.Shared.IAM.Constants;
 
-public class IAMConstants
+public static class IamConstants
 {
-    public static readonly int ResetPasswordTokenExpiryMinutes = 10;
-    public static readonly int ResetPasswordRightExpiryMinutes = 5;
+    public const int ResetPasswordTokenExpiryMinutes = 10;
+    public const int ResetPasswordRightExpiryMinutes = 5;
 }

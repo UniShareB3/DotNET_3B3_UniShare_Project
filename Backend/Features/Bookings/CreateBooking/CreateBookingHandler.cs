@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
-namespace Backend.Features.Bookings;
+namespace Backend.Features.Bookings.CreateBooking;
 
 public class CreateBookingHandler(ApplicationContext dbContext, IMapper mapper) : IRequestHandler<CreateBookingRequest, IResult>
 {
@@ -14,7 +14,7 @@ public class CreateBookingHandler(ApplicationContext dbContext, IMapper mapper) 
 
     public async Task<IResult> Handle(CreateBookingRequest? request, CancellationToken cancellationToken)
     {
-        _logger.Information("Creating booking for item {ItemId}", request.Booking.ItemId);
+        _logger.Information("Creating booking for item {ItemId}", request!.Booking.ItemId);
         
         var booking = mapper.Map<Data.Booking>(request.Booking);
 

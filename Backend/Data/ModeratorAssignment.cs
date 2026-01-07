@@ -20,7 +20,7 @@ public class ModeratorAssignment
     public string Reason { get; set; } = string.Empty;
 
     [Required]
-    public ModeratorAssignmentStatus Status { get; set; } = ModeratorAssignmentStatus.PENDING;
+    public ModeratorAssignmentStatus Status { get; set; } = ModeratorAssignmentStatus.Pending;
 
     [Required]
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;

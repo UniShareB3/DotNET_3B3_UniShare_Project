@@ -2,6 +2,6 @@
 
 using MediatR;
 
-namespace Backend.Features.Items;
+namespace Backend.Features.Items.PostItem;
 
 public record PostItemRequest(PostItemDto Item) : IRequest<IResult>;

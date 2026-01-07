@@ -22,6 +22,7 @@ public class ChatMessage
     public User? Receiver { get; set; }
 
     [Required]
+    [MaxLength(255)]
     public string Content { get; set; } = string.Empty;
 
     /// <summary>
