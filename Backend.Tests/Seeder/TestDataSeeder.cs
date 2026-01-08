@@ -1,4 +1,4 @@
-﻿using Backend.Data;
+﻿﻿using Backend.Data;
 using Backend.Features.Bookings.Enums;
 using Backend.Features.Items.Enums;
 using Backend.Persistence;
@@ -150,6 +150,7 @@ public static class TestDataSeeder
             NormalizedEmail = AdminEmail.ToUpper(),
             NormalizedUserName = AdminEmail.ToUpper(),
             EmailConfirmed = true,
+            NewEmailConfirmed = true,
             UniversityId = uaicUniversity.Id,
             CreatedAt = DateTime.UtcNow
         }, AdminPassword, new[] { "Admin", "User" });
@@ -167,6 +168,7 @@ public static class TestDataSeeder
             NormalizedEmail = ModeratorEmail.ToUpper(),
             NormalizedUserName = ModeratorEmail.ToUpper(),
             EmailConfirmed = true,
+            NewEmailConfirmed = true,
             UniversityId = uaicUniversity.Id,
             CreatedAt = DateTime.UtcNow
         }, ModeratorPassword, new[] { "Moderator", "User" });
@@ -184,6 +186,7 @@ public static class TestDataSeeder
             NormalizedEmail = UserEmail.ToUpper(),
             NormalizedUserName = UserEmail.ToUpper(),
             EmailConfirmed = true,
+            NewEmailConfirmed = true,
             UniversityId = uaicUniversity.Id,
             CreatedAt = DateTime.UtcNow
         }, UserPassword, new[] { "User" });
@@ -201,6 +204,7 @@ public static class TestDataSeeder
             NormalizedEmail = UnverifiedUserEmail.ToUpper(),
             NormalizedUserName = UnverifiedUserEmail.ToUpper(),
             EmailConfirmed = false, // NOT VERIFIED
+            NewEmailConfirmed = false, // NOT VERIFIED
             UniversityId = uaicUniversity.Id,
             CreatedAt = DateTime.UtcNow
         }, UnverifiedUserPassword, new[] { "User" });
