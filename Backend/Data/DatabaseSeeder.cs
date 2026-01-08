@@ -157,7 +157,7 @@ public static class DatabaseSeeder
     {
         Logger.Information("Seeding admin account...");
 
-        const string adminEmail = "admin@uaic.ro";
+        const string adminEmail = "admin@student.uaic.ro";
         const string adminPassword = "Admin@1234";
         const string adminFirstName = "Admin";
         const string adminLastName = "UniShare";

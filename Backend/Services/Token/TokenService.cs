@@ -19,7 +19,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email!),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("email_verified", user.EmailConfirmed.ToString().ToLower())
+            new Claim("email_verified", user.NewEmailConfirmed.ToString().ToLower())
         };
         
         // Add role claims
