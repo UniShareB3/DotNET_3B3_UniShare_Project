@@ -140,7 +140,7 @@ public class RegisterUserHandlerTests
         var mapperMock = CreateMapperMock();
 
         userManagerMock.Setup(x => x.FindByEmailAsync(email))
-            .ReturnsAsync((User)null);
+            .ReturnsAsync((User)null!);
 
         var userEntity = new User { Email = email };
         mapperMock.Setup(m => m.Map<User>(userDto)).Returns(userEntity);

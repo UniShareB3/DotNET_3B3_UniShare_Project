@@ -536,5 +536,333 @@ public class UpdateUserRequestValidatorTests
         // Assert
         result.ShouldNotHaveAnyValidationErrors();
     }
+ 
+    [Fact]
+    public async Task Given_WeakPasswordWithoutDigit_When_ValidatingPasswordStrength_Then_ReturnsValidationError()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e3");
+        var userId = Guid.Parse("e3e3e3e3-e3e3-e3e3-e3e3-e3e3e3e3e3e4");
+        
+        var user = new User
+        {
+            Id = userId,
+            FirstName = "Test",
+            LastName = "User",
+            Email = "testuser@student.uaic.ro",
+            UserName = "testuser@student.uaic.ro"
+        };
+        
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+        
+        var users = new List<User> { user };
+        var asyncEnumerable = new TestAsyncEnumerable<User>(users);
+        
+        var userStoreMock = new Mock<IUserStore<User>>();
+        
+        var queryableStoreMock = userStoreMock.As<IQueryableUserStore<User>>();
+        queryableStoreMock.Setup(x => x.Users).Returns(asyncEnumerable);
+        
+        // Setup IUserEmailStore
+        userStoreMock.As<IUserEmailStore<User>>()
+            .Setup(x => x.FindByIdAsync(userId.ToString(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        
+        // Setup IUserPasswordStore
+        userStoreMock.As<IUserPasswordStore<User>>()
+            .Setup(x => x.GetPasswordHashAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User u, CancellationToken _) => u.PasswordHash);
+
+        var passwordValidators = new List<IPasswordValidator<User>>
+        {
+            new PasswordValidator<User>()
+        };
+
+        var options = new Mock<IOptions<IdentityOptions>>();
+        options.Setup(o => o.Value).Returns(new IdentityOptions
+        {
+            Password = new PasswordOptions
+            {
+                RequireDigit = true,
+                RequiredLength = 6,
+                RequireLowercase = true,
+                RequireUppercase = true,
+                RequireNonAlphanumeric = true
+            }
+        });
+
+        var passwordHasher = new PasswordHasher<User>();
+        var logger = new Mock<ILogger<UserManager<User>>>();
+        
+        var userManager = new UserManager<User>(
+            userStoreMock.Object,
+            options.Object,
+            passwordHasher,
+            new List<IUserValidator<User>>(),
+            passwordValidators,
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            null!,
+            logger.Object);
+
+        var validator = new UpdateUserRequestValidator(context, userManager);
+        
+        // Password without a digit: "Password!"
+        var dto = new UpdateUserDto(null, null, null, "Password!", null);
+        var request = new UpdateUserRequest(userId, dto);
+
+        // Act
+        var result = await validator.TestValidateAsync(request);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor("Password");
+    }
+
+    [Fact]
+    public async Task Given_WeakPasswordTooShort_When_ValidatingPasswordStrength_Then_ReturnsValidationError()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("f3f3f3f3-f3f3-f3f3-f3f3-f3f3f3f3f3f3");
+        var userId = Guid.Parse("f3f3f3f3-f3f3-f3f3-f3f3-f3f3f3f3f3f4");
+        
+        var user = new User
+        {
+            Id = userId,
+            FirstName = "Test",
+            LastName = "User",
+            Email = "testuser2@student.uaic.ro",
+            UserName = "testuser2@student.uaic.ro"
+        };
+        
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+        
+        var users = new List<User> { user };
+        var asyncEnumerable = new TestAsyncEnumerable<User>(users);
+        
+        var userStoreMock = new Mock<IUserStore<User>>();
+        
+        var queryableStoreMock = userStoreMock.As<IQueryableUserStore<User>>();
+        queryableStoreMock.Setup(x => x.Users).Returns(asyncEnumerable);
+        
+        userStoreMock.As<IUserEmailStore<User>>()
+            .Setup(x => x.FindByIdAsync(userId.ToString(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        
+        userStoreMock.As<IUserPasswordStore<User>>()
+            .Setup(x => x.GetPasswordHashAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User u, CancellationToken _) => u.PasswordHash);
+
+        var passwordValidators = new List<IPasswordValidator<User>>
+        {
+            new PasswordValidator<User>()
+        };
+
+        var options = new Mock<IOptions<IdentityOptions>>();
+        options.Setup(o => o.Value).Returns(new IdentityOptions
+        {
+            Password = new PasswordOptions
+            {
+                RequireDigit = true,
+                RequiredLength = 6,
+                RequireLowercase = true,
+                RequireUppercase = true,
+                RequireNonAlphanumeric = true
+            }
+        });
+
+        var passwordHasher = new PasswordHasher<User>();
+        var logger = new Mock<ILogger<UserManager<User>>>();
+        
+        var userManager = new UserManager<User>(
+            userStoreMock.Object,
+            options.Object,
+            passwordHasher,
+            new List<IUserValidator<User>>(),
+            passwordValidators,
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            null!,
+            logger.Object);
+
+        var validator = new UpdateUserRequestValidator(context, userManager);
+        
+        //the Password is too short: "Pa1!"
+        var dto = new UpdateUserDto(null, null, null, "Pa1!", null);
+        var request = new UpdateUserRequest(userId, dto);
+
+        // Act
+        var result = await validator.TestValidateAsync(request);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor("Password");
+    }
+
+    [Fact]
+    public async Task Given_PasswordAlreadyInDatabase_When_ValidatingPasswordNotInDatabase_Then_ReturnsValidationError()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("a4a4a4a4-a4a4-a4a4-a4a4-a4a4a4a4a4a4");
+        var currentUserId = Guid.Parse("a4a4a4a4-a4a4-a4a4-a4a4-a4a4a4a4a4a5");
+        var existingUserId = Guid.Parse("a4a4a4a4-a4a4-a4a4-a4a4-a4a4a4a4a4a6");
+        
+        var existingPassword = "ExistingP@ssw0rd";
+        var passwordHasher = new PasswordHasher<User>();
+        
+        var existingUser = new User
+        {
+            Id = existingUserId,
+            FirstName = "Existing",
+            LastName = "User",
+            Email = "existing@student.uaic.ro",
+            UserName = "existing@student.uaic.ro",
+            PasswordHash = passwordHasher.HashPassword(null!, existingPassword)
+        };
+        
+        var currentUser = new User
+        {
+            Id = currentUserId,
+            FirstName = "Current",
+            LastName = "User",
+            Email = "current@student.uaic.ro",
+            UserName = "current@student.uaic.ro"
+        };
+        
+        context.Users.Add(existingUser);
+        context.Users.Add(currentUser);
+        await context.SaveChangesAsync();
+
+        // Create a combined mock for IUserStore, IQueryableUserStore, and IUserPasswordStore
+        var users = new List<User> { existingUser, currentUser };
+        var asyncEnumerable = new TestAsyncEnumerable<User>(users);
+        
+        var userStoreMock = new Mock<IUserStore<User>>();
+        
+        // Setup IQueryableUserStore
+        var queryableStoreMock = userStoreMock.As<IQueryableUserStore<User>>();
+        queryableStoreMock.Setup(x => x.Users).Returns(asyncEnumerable);
+        
+        // Setup IUserEmailStore
+        userStoreMock.As<IUserEmailStore<User>>()
+            .Setup(x => x.FindByIdAsync(currentUserId.ToString(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(currentUser);
+        
+        // Setup IUserPasswordStore
+        userStoreMock.As<IUserPasswordStore<User>>()
+            .Setup(x => x.GetPasswordHashAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User u, CancellationToken _) => u.PasswordHash);
+
+        var options = new Mock<IOptions<IdentityOptions>>();
+        options.Setup(o => o.Value).Returns(new IdentityOptions());
+
+        var logger = new Mock<ILogger<UserManager<User>>>();
+        
+        var userManager = new UserManager<User>(
+            userStoreMock.Object,
+            options.Object,
+            passwordHasher,
+            new List<IUserValidator<User>>(),
+            new List<IPasswordValidator<User>>(),
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            null!,
+            logger.Object);
+
+
+        var validator = new UpdateUserRequestValidator(context, userManager);
+        
+        // Try to use the same password as existing user
+        var dto = new UpdateUserDto(null, null, null, existingPassword, null);
+        var request = new UpdateUserRequest(currentUserId, dto);
+
+        // Act
+        var result = await validator.TestValidateAsync(request);
+
+        // Assert
+        result.ShouldHaveValidationErrorFor("Password")
+            .WithErrorMessage("This password is already in use. Please choose a different password.");
+    }
+
+    [Fact]
+    public async Task Given_UniqueStrongPassword_When_ValidatingPassword_Then_NoValidationError()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("b4b4b4b4-b4b4-b4b4-b4b4-b4b4b4b4b4b4");
+        var userId = Guid.Parse("b4b4b4b4-b4b4-b4b4-b4b4-b4b4b4b4b4b5");
+        
+        var passwordHasher = new PasswordHasher<User>();
+        
+        var user = new User
+        {
+            Id = userId,
+            FirstName = "Test",
+            LastName = "User",
+            Email = "testunique@student.uaic.ro",
+            UserName = "testunique@student.uaic.ro"
+        };
+        
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+        
+        var users = new List<User> { user };
+        var asyncEnumerable = new TestAsyncEnumerable<User>(users);
+        
+        var userStoreMock = new Mock<IUserStore<User>>();
+        
+        var queryableStoreMock = userStoreMock.As<IQueryableUserStore<User>>();
+        queryableStoreMock.Setup(x => x.Users).Returns(asyncEnumerable);
+        
+        userStoreMock.As<IUserEmailStore<User>>()
+            .Setup(x => x.FindByIdAsync(userId.ToString(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        
+        userStoreMock.As<IUserPasswordStore<User>>()
+            .Setup(x => x.GetPasswordHashAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User u, CancellationToken _) => u.PasswordHash);
+
+        var passwordValidators = new List<IPasswordValidator<User>>
+        {
+            new PasswordValidator<User>()
+        };
+
+        var options = new Mock<IOptions<IdentityOptions>>();
+        options.Setup(o => o.Value).Returns(new IdentityOptions
+        {
+            Password = new PasswordOptions
+            {
+                RequireDigit = true,
+                RequiredLength = 6,
+                RequireLowercase = true,
+                RequireUppercase = true,
+                RequireNonAlphanumeric = true
+            }
+        });
+
+        var logger = new Mock<ILogger<UserManager<User>>>();
+        
+        var userManager = new UserManager<User>(
+            userStoreMock.Object,
+            options.Object,
+            passwordHasher,
+            new List<IUserValidator<User>>(),
+            passwordValidators,
+            new UpperInvariantLookupNormalizer(),
+            new IdentityErrorDescriber(),
+            null!,
+            logger.Object);
+
+
+        var validator = new UpdateUserRequestValidator(context, userManager);
+        
+        var dto = new UpdateUserDto(null, null, null, "UniqueP@ssw0rd123", null);
+        var request = new UpdateUserRequest(userId, dto);
+
+        // Act
+        var result = await validator.TestValidateAsync(request);
+
+        // Assert
+        result.ShouldNotHaveValidationErrorFor("Password");
+    }
     
 }

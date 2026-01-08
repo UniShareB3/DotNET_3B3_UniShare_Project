@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+﻿﻿using AutoMapper;
 using Backend.Data;
 using Backend.Features.Items.DTO;
 using Backend.Features.Items.Enums;
@@ -36,6 +36,10 @@ public class ItemMapper:Profile
             .ForMember(
                 dest => dest.Condition,
                 opt => opt.MapFrom(src => src.Condition.ToString())
+            )
+            .ForMember(
+                dest => dest.OwnerId,
+                opt => opt.MapFrom(src => src.OwnerId)
             )
             .ForMember(
                 dest => dest.OwnerName,

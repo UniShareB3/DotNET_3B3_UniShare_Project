@@ -77,7 +77,14 @@ namespace Backend.Migrations
 
                     b.Property<string>("Content")
                         .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("ImageUrl")
                         .HasColumnType("text");
+
+                    b.Property<int>("MessageType")
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("ReceiverId")
                         .HasColumnType("uuid");
@@ -111,6 +118,7 @@ namespace Backend.Migrations
 
                     b.Property<string>("Message")
                         .IsRequired()
+                        .HasMaxLength(255)
                         .HasColumnType("text");
 
                     b.Property<Guid>("ReviewId")
@@ -179,6 +187,7 @@ namespace Backend.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
+                        .HasMaxLength(255)
                         .HasColumnType("text");
 
                     b.Property<string>("ImageUrl")
@@ -290,7 +299,8 @@ namespace Backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("ReasonRevoked")
-                        .HasColumnType("text");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<Guid?>("ReplacedByTokenId")
                         .HasColumnType("uuid");
@@ -300,7 +310,8 @@ namespace Backend.Migrations
 
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<Guid>("TokenFamily")
                         .HasColumnType("uuid");
@@ -367,6 +378,7 @@ namespace Backend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Comment")
+                        .HasMaxLength(255)
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
@@ -472,6 +484,9 @@ namespace Backend.Migrations
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("NewEmailConfirmed")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)

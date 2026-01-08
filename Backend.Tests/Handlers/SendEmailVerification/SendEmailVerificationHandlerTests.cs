@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
-namespace Backend.Tests.UnitTests;
+namespace Backend.Tests.Handlers.SendEmailVerification;
 
 public class SendEmailVerificationHandlerTests
 {
@@ -59,7 +59,7 @@ public class SendEmailVerificationHandlerTests
     }
 
     [Fact]
-    public async Task GivenValidUser_WhenSendEmailVerification_ThenSendsEmailAndReturnsOk()
+    public async Task Given_ValidUser_When_SendEmailVerification_Then_SendsEmailAndReturnsOk()
     {
         // Arrange
         var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
@@ -95,7 +95,7 @@ public class SendEmailVerificationHandlerTests
     }
 
     [Fact]
-    public async Task GivenUserNotFound_WhenSendEmailVerification_ThenReturnsBadRequest()
+    public async Task Given_UserNotFound_When_SendEmailVerification_Then_ReturnsBadRequest()
     {
         // Arrange
         var userId = Guid.Parse("22222222-2222-2222-2222-222222222222");
@@ -116,7 +116,7 @@ public class SendEmailVerificationHandlerTests
     }
 
     [Fact]
-    public async Task GivenEmailAlreadyConfirmed_WhenSendEmailVerification_ThenReturnsBadRequest()
+    public async Task Given_EmailAlreadyConfirmed_When_SendEmailVerification_Then_ReturnsBadRequest()
     {
         // Arrange
         var userId = Guid.Parse("33333333-3333-3333-3333-333333333333");
@@ -144,7 +144,7 @@ public class SendEmailVerificationHandlerTests
     }
 
     [Fact]
-    public async Task GivenValidUser_WhenEmailSendingFails_ThenReturnsProblem()
+    public async Task Given_ValidUser_When_EmailSendingFails_Then_ReturnsProblem()
     {
         // Arrange
         var userId = Guid.Parse("44444444-4444-4444-4444-444444444444");

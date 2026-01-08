@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 
-namespace Backend.Tests.Validators;
+namespace Backend.Tests.Validators.Bookings;
 
 public class UpdateBookingStatusValidatorTests
 {
@@ -984,6 +984,255 @@ public class UpdateBookingStatusValidatorTests
         
         // Assert
         result.ShouldHaveValidationErrorFor(x => x);
+    }
+    
+    #endregion
+    
+    #region Custom Validation Tests
+    
+    [Fact]
+    public async Task Given_NonExistentBooking_When_ValidatingOwnership_Then_ReturnsBookingNotFoundError()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("aaaaaaaa-1111-2222-3333-444444444444");
+        var logger = new Mock<ILogger<UpdateBookingStatusValidator>>().Object;
+        var validator = new UpdateBookingStatusValidator(context, logger);
+        
+        var nonExistentBookingId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+        var userId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var dto = new UpdateBookingStatusDto(userId, BookingStatus.Approved);
+        var request = new UpdateBookingStatusRequest(nonExistentBookingId, dto);
+        
+        // Act
+        var result = await validator.TestValidateAsync(request);
+        
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x)
+            .WithErrorMessage("Booking does not exist");
+    }
+    
+    [Fact]
+    public async Task Given_BookingWithNonExistentItem_When_ValidatingOwnership_Then_ReturnsItemNotFoundError()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("bbbbbbbb-2222-3333-4444-555555555555");
+        var logger = new Mock<ILogger<UpdateBookingStatusValidator>>().Object;
+        
+        var bookingId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var nonExistentItemId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+        var borrowerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        
+        var booking = new Booking
+        {
+            Id = bookingId,
+            ItemId = nonExistentItemId,
+            BorrowerId = borrowerId,
+            BookingStatus = BookingStatus.Pending,
+            StartDate = DateTime.UtcNow.AddDays(1),
+            EndDate = DateTime.UtcNow.AddDays(7)
+        };
+        
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        
+        var validator = new UpdateBookingStatusValidator(context, logger);
+        var dto = new UpdateBookingStatusDto(borrowerId, BookingStatus.Approved);
+        var request = new UpdateBookingStatusRequest(bookingId, dto);
+        
+        // Act
+        var result = await validator.TestValidateAsync(request);
+        
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x);
+    }
+    
+    [Fact]
+    public async Task Given_UserNotOwnerOrBorrower_When_ValidatingOwnership_Then_ReturnsUnauthorizedError()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("cccccccc-3333-4444-5555-666666666666");
+        var logger = new Mock<ILogger<UpdateBookingStatusValidator>>().Object;
+        
+        var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var borrowerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var unauthorizedUserId = Guid.Parse("99999999-9999-9999-9999-999999999999");
+        var itemId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var bookingId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        
+        var item = new Item
+        {
+            Id = itemId,
+            OwnerId = ownerId,
+            Name = "Test Item",
+            Description = "A test item",
+            Category = Features.Items.Enums.ItemCategory.Electronics,
+            Condition = Features.Items.Enums.ItemCondition.New
+        };
+        
+        var booking = new Booking
+        {
+            Id = bookingId,
+            ItemId = itemId,
+            Item = item,
+            BorrowerId = borrowerId,
+            BookingStatus = BookingStatus.Pending,
+            StartDate = DateTime.UtcNow.AddDays(1),
+            EndDate = DateTime.UtcNow.AddDays(7)
+        };
+        
+        context.Items.Add(item);
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        
+        var validator = new UpdateBookingStatusValidator(context, logger);
+        var dto = new UpdateBookingStatusDto(unauthorizedUserId, BookingStatus.Approved);
+        var request = new UpdateBookingStatusRequest(bookingId, dto);
+        
+        // Act
+        var result = await validator.TestValidateAsync(request);
+        
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x)
+            .WithErrorMessage("User must be either the borrower or the owner of the item to update booking status");
+    }
+    
+    [Fact]
+    public async Task Given_BorrowerCancellingApprovedBooking_When_ValidatingOwnership_Then_ReturnsBorrowerCanOnlyCancelPendingError()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("dddddddd-4444-5555-6666-777777777777");
+        var logger = new Mock<ILogger<UpdateBookingStatusValidator>>().Object;
+        
+        var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var borrowerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var itemId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var bookingId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        
+        var item = new Item
+        {
+            Id = itemId,
+            OwnerId = ownerId,
+            Name = "Test Item",
+            Description = "A test item",
+            Category = Features.Items.Enums.ItemCategory.Electronics,
+            Condition = Features.Items.Enums.ItemCondition.New
+        };
+        
+        var booking = new Booking
+        {
+            Id = bookingId,
+            ItemId = itemId,
+            Item = item,
+            BorrowerId = borrowerId,
+            BookingStatus = BookingStatus.Approved, // Already approved, not pending
+            StartDate = DateTime.UtcNow.AddDays(1),
+            EndDate = DateTime.UtcNow.AddDays(7)
+        };
+        
+        context.Items.Add(item);
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        
+        var validator = new UpdateBookingStatusValidator(context, logger);
+        var dto = new UpdateBookingStatusDto(borrowerId, BookingStatus.Canceled);
+        var request = new UpdateBookingStatusRequest(bookingId, dto);
+        
+        // Act
+        var result = await validator.TestValidateAsync(request);
+        
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x)
+            .WithErrorMessage("Borrower can only cancel a booking when it is still Pending.");
+    }
+    
+    [Fact]
+    public async Task Given_UserDifferentFromOwnerAndBorrower_When_ValidatingCancelStatus_Then_ReturnsOnlyOwnerOrBorrowerError()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("eeeeeeee-5555-6666-7777-888888888888");
+        var logger = new Mock<ILogger<UpdateBookingStatusValidator>>().Object;
+        
+        var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var borrowerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var differentUserId = Guid.Parse("88888888-8888-8888-8888-888888888888");
+        var itemId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var bookingId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        
+        var item = new Item
+        {
+            Id = itemId,
+            OwnerId = ownerId,
+            Name = "Test Item",
+            Description = "A test item",
+            Category = Features.Items.Enums.ItemCategory.Electronics,
+            Condition = Features.Items.Enums.ItemCondition.New
+        };
+        
+        var booking = new Booking
+        {
+            Id = bookingId,
+            ItemId = itemId,
+            Item = item,
+            BorrowerId = borrowerId,
+            BookingStatus = BookingStatus.Pending,
+            StartDate = DateTime.UtcNow.AddDays(1),
+            EndDate = DateTime.UtcNow.AddDays(7)
+        };
+        
+        context.Items.Add(item);
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        
+        var validator = new UpdateBookingStatusValidator(context, logger);
+        // User ID is neither owner nor borrower
+        var dto = new UpdateBookingStatusDto(differentUserId, BookingStatus.Canceled);
+        var request = new UpdateBookingStatusRequest(bookingId, dto);
+        
+        // Act
+        var result = await validator.TestValidateAsync(request);
+        
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x)
+            .WithErrorMessage("User must be either the borrower or the owner of the item to update booking status");
+    }
+    
+    [Fact]
+    public async Task Given_BookingWithDeletedItem_When_ValidatingItemExists_Then_ReturnsItemNotFoundError()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext("ffffffff-6666-7777-8888-999999999999");
+        var logger = new Mock<ILogger<UpdateBookingStatusValidator>>().Object;
+        
+        var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var borrowerId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var deletedItemId = Guid.Parse("77777777-7777-7777-7777-777777777777");
+        var bookingId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        
+        // Create a booking without adding the corresponding item to the database
+        // This simulates a scenario where the item was deleted but booking still references it
+        var booking = new Booking
+        {
+            Id = bookingId,
+            ItemId = deletedItemId,
+            BorrowerId = borrowerId,
+            BookingStatus = BookingStatus.Pending,
+            StartDate = DateTime.UtcNow.AddDays(1),
+            EndDate = DateTime.UtcNow.AddDays(7)
+        };
+        
+        context.Bookings.Add(booking);
+        await context.SaveChangesAsync();
+        
+        var validator = new UpdateBookingStatusValidator(context, logger);
+        var dto = new UpdateBookingStatusDto(ownerId, BookingStatus.Approved);
+        var request = new UpdateBookingStatusRequest(bookingId, dto);
+        
+        // Act
+        var result = await validator.TestValidateAsync(request);
+        
+        // Assert
+        result.ShouldHaveValidationErrorFor(x => x)
+            .WithErrorMessage("Booking does not exist");
     }
     
     #endregion
