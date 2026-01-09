@@ -83,7 +83,7 @@ using Backend.Mapping;
 using Backend.Services.EmailSender;
 using Backend.Services.Hashing;
 using Backend.Services.Token;
-
+//comment for testing sonarqube
 // Configure Serilog before building the application
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
