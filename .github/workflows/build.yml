@@ -55,8 +55,8 @@ jobs:
           ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"UniShareB3_DotNET_3B3_UniShare_Project" /o:"unishareb3" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
           dotnet build Backend/Backend.csproj --no-incremental
           dotnet build Backend.Tests/Backend.Tests.csproj --no-incremental
-          dotnet-coverage collect "dotnet test Backend. Tests/Backend.Tests.csproj" -f xml -o "coverage. xml"
-          ${{ runner. temp }}\scanner\dotnet-sonarscanner end /d: sonar.token="${{ secrets. SONAR_TOKEN }}"
+          dotnet-coverage collect "dotnet test Backend.Tests/Backend.Tests.csproj" -f xml -o "coverage. xml"
+          ${{ runner. temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets. SONAR_TOKEN }}"
 
       - name: Upload coverage report as artifact
         uses: actions/upload-artifact@v4
