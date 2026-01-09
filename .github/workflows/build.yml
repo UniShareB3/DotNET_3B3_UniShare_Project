@@ -29,15 +29,25 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          # 1. Start the scanner using your verified key 'unishareb3'
-          dotnet-sonarscanner begin /k:"DotNET_3B3_UniShare_Project" `
+          # 1. Start the scanner
+          dotnet sonarscanner begin /k:"DotNET_3B3_UniShare_Project" `
             /o:"unishareb3" `
             /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
             /d:sonar.host.url="https://sonarcloud.io" `
-            /d:sonar.sources="Backend"
+            /d:sonar.sources="Backend" `
+            /d:sonar.exclusions="**/Migrations/**,**/obj/**,**/bin/**,**/wwwroot/**" `
+            /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" `
+            /d:sonar.coverage.exclusions="**/Migrations/**,**/Program.cs,**/Data/DbInitializer.cs,**/Data/DatabaseSeeder.cs"
 
-          # 2. Build the project. This searches specifically inside your Backend folder.
-          dotnet build "Backend/*.sln"
+          # 2. Build the project
+          dotnet build Backend/Backend.csproj --configuration Release
 
-          # 3. End the scanner to push the analysis to the dashboard
-          dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          # 3. Run tests with coverage
+          dotnet test Backend.Tests/Backend.Tests.csproj `
+            --configuration Release `
+            --logger "trx;LogFileName=test-results.trx" `
+            --collect:"XPlat Code Coverage" `
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+
+          # 4. End the scanner to push the analysis
+          dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
