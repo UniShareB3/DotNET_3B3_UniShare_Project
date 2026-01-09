@@ -2,7 +2,7 @@ name: SonarQube Analysis
 on:
   push:
     branches:
-      - master
+      - master  # Ensure this matches your repo's default branch name
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -12,15 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Required for better relevancy of analysis
+          fetch-depth: 0 
           
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v4 # Use a versioned tag instead of @master
+        uses: sonarsource/sonarqube-scan-action@v6 # Upgraded to latest v6
         with:
           args: >
             -Dsonar.organization=UniShareB3
             -Dsonar.projectKey=DotNET_3B3_UniShare_Project
             -Dsonar.sources=.
+            -Dsonar.branch.name=master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io # Hardcoded for SonarCloud
+          SONAR_HOST_URL: https://sonarcloud.io
