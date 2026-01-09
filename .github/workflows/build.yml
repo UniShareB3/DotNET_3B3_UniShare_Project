@@ -1,5 +1,4 @@
 name: SonarQube Analysis
-
 on:
   push:
     branches:
@@ -13,9 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0  # Required for better relevancy of analysis
+          
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@master
+        uses: SonarSource/sonarqube-scan-action@v4 # Use a versioned tag instead of @master
+        with:
+          args: >
+            -Dsonar.organization=UniShareB3
+            -Dsonar.projectKey=DotNET_3B3_UniShare_Project
+            -Dsonar.sources=.
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST_URL: https://sonarcloud.io # Hardcoded for SonarCloud
