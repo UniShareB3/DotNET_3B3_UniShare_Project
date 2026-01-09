@@ -1,38 +1,43 @@
 name: SonarQube Analysis
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
   build:
     name: Build and analyze
-    runs-on: windows-latest # Windows is recommended for .NET scans
+    runs-on: windows-latest
     steps:
-      - name: Set up JDK 17
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: 17
-          distribution: 'zulu' # SonarQube requires Java
+          distribution: 'zulu'
 
       - name: Install SonarCloud scanner
-        shell: powershell
-        run: |
-          dotnet tool install --global dotnet-sonarscanner
+        run: dotnet tool install --global dotnet-sonarscanner
 
       - name: Build and analyze
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: powershell
         run: |
-          dotnet-sonarscanner begin /k:"DotNET_3B3_UniShare_Project" /o:"UniShareB3" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
-          dotnet build
+          # 1. Start the scanner using your verified key 'unishareb3'
+          dotnet-sonarscanner begin /k:"DotNET_3B3_UniShare_Project" `
+            /o:"unishareb3" `
+            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" `
+            /d:sonar.host.url="https://sonarcloud.io" `
+            /d:sonar.sources="Backend"
+
+          # 2. Build the project. This searches specifically inside your Backend folder.
+          dotnet build "Backend/*.sln"
+
+          # 3. End the scanner to push the analysis to the dashboard
           dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
