@@ -80,7 +80,7 @@ namespace Backend.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
-                    b.Property<string>("ImageUrl")
+                    b.Property<string>("DocumentUrl")
                         .HasColumnType("text");
 
                     b.Property<int>("MessageType")

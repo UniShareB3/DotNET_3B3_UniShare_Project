@@ -71,8 +71,6 @@ public class RegisterUserHandler(
         
         _logger.Information("Sending email verification request for user {UserId}", user.Id);
         
-        await mediator.Send(new SendEmailVerificationRequest(user.Id), cancellationToken);
-        
         var userDto = mapper.Map<UserDto>(user);
         
         _logger.Information("User registration completed successfully for {UserId}", user.Id);

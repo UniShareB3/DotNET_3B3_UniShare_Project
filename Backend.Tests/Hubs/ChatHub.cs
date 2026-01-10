@@ -74,7 +74,7 @@ public class ChatHubTests
         savedMessage.ReceiverId.Should().Be(Guid.Parse(receiverId));
         savedMessage.Content.Should().Be(messageContent);
         savedMessage.MessageType.Should().Be(MessageType.Text);
-        savedMessage.ImageUrl.Should().BeNull();
+        savedMessage.DocumentUrl.Should().BeNull();
         savedMessage.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
@@ -261,7 +261,7 @@ public class ChatHubTests
         savedMessage.SenderId.Should().Be(Guid.Parse(senderId));
         savedMessage.ReceiverId.Should().Be(Guid.Parse(receiverId));
         savedMessage.Content.Should().Be(caption);
-        savedMessage.ImageUrl.Should().Be(imageUrl);
+        savedMessage.DocumentUrl.Should().Be(imageUrl);
         savedMessage.MessageType.Should().Be(MessageType.Image);
         savedMessage.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
@@ -294,7 +294,7 @@ public class ChatHubTests
         var savedMessage = await context.ChatMessages.FirstOrDefaultAsync();
         savedMessage.Should().NotBeNull();
         savedMessage.Content.Should().Be(string.Empty);
-        savedMessage.ImageUrl.Should().Be(imageUrl);
+        savedMessage.DocumentUrl.Should().Be(imageUrl);
         savedMessage.MessageType.Should().Be(MessageType.Image);
     }
 

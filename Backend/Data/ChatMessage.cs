@@ -28,7 +28,7 @@ public class ChatMessage
     /// <summary>
     /// URL of the image if MessageType is Image
     /// </summary>
-    public string? ImageUrl { get; set; }
+    public string? DocumentUrl { get; set; }
 
     /// <summary>
     /// Type of message: Text or Image

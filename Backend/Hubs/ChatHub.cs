@@ -38,7 +38,7 @@ public class ChatHub(ApplicationContext context) : Hub
             SenderId = senderGuid,
             ReceiverId = receiverGuid,
             Content = content,
-            ImageUrl = imageUrl,
+            DocumentUrl = imageUrl,
             MessageType = messageType,
             Timestamp = DateTime.UtcNow
         };
