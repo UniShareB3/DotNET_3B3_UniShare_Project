@@ -30,7 +30,7 @@ public class DeleteUserHandler(
             .Where(rt => rt.UserId == user.Id)
             .ToListAsync(cancellationToken);
         
-        if (refreshTokens.Any()) 
+        if (refreshTokens.Count != 0) 
         {
             _logger.Information("Removing {TokenCount} refresh tokens for user {UserId}", refreshTokens.Count, user.Id);
             context.RefreshTokens.RemoveRange(refreshTokens);
@@ -40,7 +40,7 @@ public class DeleteUserHandler(
             .Where(et => et.UserId == user.Id)
             .ToListAsync(cancellationToken);
         
-        if (emailTokens.Any()) {
+        if (emailTokens.Count != 0) {
             _logger.Information("Removing {TokenCount} email confirmation tokens for user {UserId}", emailTokens.Count, user.Id);
             context.EmailConfirmationTokens.RemoveRange(emailTokens);
         }

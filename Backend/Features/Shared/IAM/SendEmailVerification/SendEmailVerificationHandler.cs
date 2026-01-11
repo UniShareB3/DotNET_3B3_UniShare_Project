@@ -42,7 +42,7 @@ public class SendEmailVerificationHandler(
             .Where(t => t.UserId == user.Id && !t.IsUsed)
             .ToListAsync(cancellationToken);
         
-        if (existingTokens.Any())
+        if (existingTokens.Count != 0)
         {
             _logger.Information("Removing {TokenCount} existing unused email confirmation tokens for user {UserId}", 
                 existingTokens.Count, user.Id);
