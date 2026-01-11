@@ -13,7 +13,8 @@ public class AzureStorageService : IAzureStorageService
 
     public AzureStorageService(string connectionString, string containerName)
     {
-        _blobServiceClient = new BlobServiceClient(connectionString);
+        if(!String.IsNullOrEmpty(connectionString))
+            _blobServiceClient = new BlobServiceClient(connectionString);
         _containerName = containerName;
     }
 
