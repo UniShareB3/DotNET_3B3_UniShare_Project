@@ -18,70 +18,31 @@ public static class OwnerAuthorizationFilter
             var httpContext = context.HttpContext;
             var logger = httpContext.RequestServices.GetService<ILogger<Microsoft.AspNetCore.Http.HttpContext>>();
 
-            // Check if admin bypass is enabled
+            // 1. Admin Bypass Check
             if (httpContext.IsAdminBypassEnabled())
             {
                 logger?.LogInformation("[RequireOwner] Admin bypass enabled, allowing access");
                 return await next(context);
             }
-            
-            // Get User ID from Token
-            var userIdClaim = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier) 
-                             ?? httpContext.User.FindFirstValue("sub");
-            
-            if (string.IsNullOrEmpty(userIdClaim))
+
+            // 2. Identify the Authenticated User
+            var authUserId = GetAuthenticatedUserId(httpContext.User);
+            if (string.IsNullOrEmpty(authUserId))
             {
                 logger?.LogWarning("[RequireOwner] No user ID claim found in token");
                 return Results.Unauthorized();
             }
 
-            logger?.LogInformation("[RequireOwner] User ID from token: {UserId}", userIdClaim);
+            // 3. Identify the Resource Owner (Target User)
+            // We moved the complex reflection/route logic into this helper
+            var targetUserId = GetTargetResourceId(context, logger);
 
-            // Get userId from route parameters first
-            var routeUserId = httpContext.Request.RouteValues["userId"]?.ToString();
-            
-            // If not in route, try to get UserId from request body/arguments
-            if (string.IsNullOrEmpty(routeUserId))
+            // 4. Compare and Authorize
+            if (string.IsNullOrEmpty(targetUserId) || authUserId != targetUserId)
             {
-                logger?.LogInformation("[RequireOwner] No userId in route, checking request body");
-                
-                // Check endpoint arguments for UserId property
-                foreach (var arg in context.Arguments)
-                {
-                    if (arg != null)
-                    {
-                        var userIdProperty = arg.GetType().GetProperty("UserId");
-                        if (userIdProperty != null)
-                        {
-                            var userIdValue = userIdProperty.GetValue(arg);
-                            if (userIdValue != null)
-                            {
-                                routeUserId = userIdValue.ToString();
-                                logger?.LogInformation("[RequireOwner] Found UserId in request body: {UserId}", routeUserId);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                logger?.LogInformation("[RequireOwner] Found userId in route: {UserId}", routeUserId);
-            }
-            
-            if (string.IsNullOrEmpty(routeUserId))
-            {
-                logger?.LogWarning("[RequireOwner] No userId found in route or request body");
-                return Results.Problem(
-                    statusCode: StatusCodes.Status403Forbidden,
-                    title: "Forbidden",
-                    detail: "You can only access your own resources");
-            }
-            
-            if (userIdClaim != routeUserId)
-            {
-                logger?.LogWarning("[RequireOwner] User ID mismatch - Token: {TokenUserId}, Resource: {ResourceUserId}", 
-                    userIdClaim, routeUserId);
+                logger?.LogWarning("[RequireOwner] Access denied. Auth User: {AuthId}, Target Resource: {TargetId}",
+                    authUserId, targetUserId ?? "Not Found");
+
                 return Results.Problem(
                     statusCode: StatusCodes.Status403Forbidden,
                     title: "Forbidden",
@@ -103,69 +64,32 @@ public static class OwnerAuthorizationFilter
             var httpContext = context.HttpContext;
             var logger = httpContext.RequestServices.GetService<ILogger<Microsoft.AspNetCore.Http.HttpContext>>();
 
-            // Check if admin bypass is enabled
+            // 1. Admin Bypass
             if (httpContext.IsAdminBypassEnabled())
             {
                 logger?.LogInformation("[RequireOwner] Admin bypass enabled, allowing access");
                 return await next(context);
             }
-            
-            var userIdClaim = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier) 
-                             ?? httpContext.User.FindFirstValue("sub");
-            
-            if (string.IsNullOrEmpty(userIdClaim))
+
+            // 2. Identify Authenticated User
+            var authUserId = GetAuthenticatedUserId(httpContext.User);
+            if (string.IsNullOrEmpty(authUserId))
             {
                 logger?.LogWarning("[RequireOwner] No user ID claim found in token");
                 return Results.Unauthorized();
             }
 
-            logger?.LogInformation("[RequireOwner] User ID from token: {UserId}", userIdClaim);
+            logger?.LogInformation("[RequireOwner] User ID from token: {UserId}", authUserId);
 
-            // Get userId from route parameters first
-            var routeUserId = httpContext.Request.RouteValues["userId"]?.ToString();
-            
-            // If not in route, try to get UserId from request body/arguments
-            if (string.IsNullOrEmpty(routeUserId))
+            // 3. Identify Target Resource Owner (Hidden complexity here)
+            var targetUserId = GetTargetResourceId(context, logger);
+
+            // 4. Validate and Authorize
+            if (string.IsNullOrEmpty(targetUserId) || authUserId != targetUserId)
             {
-                logger?.LogInformation("[RequireOwner] No userId in route, checking request body");
-                
-                // Check endpoint arguments for UserId property
-                foreach (var arg in context.Arguments)
-                {
-                    if (arg != null)
-                    {
-                        var userIdProperty = arg.GetType().GetProperty("UserId");
-                        if (userIdProperty != null)
-                        {
-                            var userIdValue = userIdProperty.GetValue(arg);
-                            if (userIdValue != null)
-                            {
-                                routeUserId = userIdValue.ToString();
-                                logger?.LogInformation("[RequireOwner] Found UserId in request body: {UserId}", routeUserId);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                logger?.LogInformation("[RequireOwner] Found userId in route: {UserId}", routeUserId);
-            }
-            
-            if (string.IsNullOrEmpty(routeUserId))
-            {
-                logger?.LogWarning("[RequireOwner] No userId found in route or request body");
-                return Results.Problem(
-                    statusCode: StatusCodes.Status403Forbidden,
-                    title: "Forbidden",
-                    detail: "You can only access your own resources");
-            }
-            
-            if (userIdClaim != routeUserId)
-            {
-                logger?.LogWarning("[RequireOwner] User ID mismatch - Token: {TokenUserId}, Resource: {ResourceUserId}", 
-                    userIdClaim, routeUserId);
+                logger?.LogWarning("[RequireOwner] Access denied. Auth User: {AuthId}, Target: {TargetId}",
+                    authUserId, targetUserId ?? "Not Found");
+
                 return Results.Problem(
                     statusCode: StatusCodes.Status403Forbidden,
                     title: "Forbidden",
@@ -175,5 +99,45 @@ public static class OwnerAuthorizationFilter
             logger?.LogInformation("[RequireOwner] Authorization successful");
             return await next(context);
         });
+    }
+    
+    // --- Helper Methods ---
+
+    private static string? GetAuthenticatedUserId(ClaimsPrincipal user)
+    {
+        return user.FindFirstValue(ClaimTypes.NameIdentifier)
+               ?? user.FindFirstValue("sub");
+    }
+
+    private static string? GetTargetResourceId(EndpointFilterInvocationContext context, ILogger? logger)
+    {
+        // Priority 1: Check Route Parameters
+        if (context.HttpContext.Request.RouteValues.TryGetValue("userId", out var routeVal) && routeVal != null)
+        {
+            var val = routeVal.ToString();
+            logger?.LogInformation("[RequireOwner] Found userId in route: {UserId}", val);
+            return val;
+        }
+
+        logger?.LogInformation("[RequireOwner] No userId in route, checking request body");
+
+        // Priority 2: Check Body/Arguments via Reflection
+        foreach (var arg in context.Arguments)
+        {
+            if (arg == null) continue;
+
+            var prop = arg.GetType().GetProperty("UserId");
+            if (prop != null)
+            {
+                var val = prop.GetValue(arg)?.ToString();
+                if (!string.IsNullOrEmpty(val))
+                {
+                    logger?.LogInformation("[RequireOwner] Found UserId in request body: {UserId}", val);
+                    return val;
+                }
+            }
+        }
+
+        return null;
     }
 }

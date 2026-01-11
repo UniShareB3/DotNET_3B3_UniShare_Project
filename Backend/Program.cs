@@ -358,7 +358,6 @@ app.UseCors("AllowAll");
 // Serve static files (for uploaded chat images)
 app.UseStaticFiles();
 
-//app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
