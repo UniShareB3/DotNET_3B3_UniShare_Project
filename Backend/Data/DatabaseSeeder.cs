@@ -171,8 +171,8 @@ public static class DatabaseSeeder
         }
 
         // Get UAIC university for admin (or first university as fallback)
-        var adminUniversity = universities.FirstOrDefault(u => u.ShortCode == "UAIC") 
-                             ?? universities.First();
+        var adminUniversity = universities.FirstOrDefault(u => u.ShortCode == "UAIC")
+                              ?? universities.First();
 
         var adminUser = new User
         {
@@ -199,12 +199,12 @@ public static class DatabaseSeeder
             await userManager.AddToRoleAsync(adminUser, "User");
             await userManager.AddToRoleAsync(adminUser, "Admin");
 
-            Logger.Information("✅ Created admin account: {Email} with password: {Password}", 
+            Logger.Information("✅ Created admin account: {Email} with password: {Password}",
                 adminEmail, adminPassword);
         }
         else
         {
-            Logger.Error("Failed to create admin account: {Errors}", 
+            Logger.Error("Failed to create admin account: {Errors}",
                 string.Join(", ", result.Errors.Select(e => e.Description)));
         }
     }
@@ -215,13 +215,71 @@ public static class DatabaseSeeder
         List<University> universities)
     {
         Logger.Information("Seeding users (Moderators and regular Users)...");
+        const int targetUserCount = 10;
 
-        const int targetUserCount = 10; // 1 Moderator + 9 regular Users
-        
-        // Count existing non-admin users (users without Admin role)
+        // 1. Extract Filtering Logic
+        var nonAdminUsers = await GetExistingNonAdminUsers(context, userManager);
+        var existingUserCount = nonAdminUsers.Count;
+
+        if (existingUserCount >= targetUserCount)
+        {
+            Logger.Information("Non-admin user count ({ExistingCount}) meets target ({TargetCount}).",
+                existingUserCount, targetUserCount);
+            return await context.Users.ToListAsync();
+        }
+
+        var usersToCreate = targetUserCount - existingUserCount;
+        var newUsers = new List<User>();
+        var random = new Random(12345 + existingUserCount);
+
+        // 2. Setup Faker once
+        var userFaker = CreateUserFaker();
+
+        // 3. Check Moderator status
+        // Note: Use await here properly instead of .Result to avoid deadlocks
+        var hasModerator = false;
+        foreach (var u in nonAdminUsers)
+        {
+            var roles = await userManager.GetRolesAsync(u);
+            if (roles.Contains("Moderator"))
+            {
+                hasModerator = true;
+                break;
+            }
+        }
+
+        // 4. Simplified Main Loop
+        for (int i = 0; i < usersToCreate; i++)
+        {
+            var shouldBeModerator = !hasModerator && i == 0;
+
+            var newUser = await CreateSingleUserAsync(
+                userManager,
+                universities,
+                userFaker,
+                random,
+                shouldBeModerator
+            );
+
+            if (newUser != null)
+            {
+                newUsers.Add(newUser);
+                if (shouldBeModerator) hasModerator = true;
+            }
+        }
+
+        Logger.Information("Seeded {Count} new users.", newUsers.Count);
+        return await context.Users.ToListAsync();
+    }
+
+// Helper 1: User Filtering
+    private static async Task<List<User>> GetExistingNonAdminUsers(
+        ApplicationContext context,
+        UserManager<User> userManager)
+    {
         var allUsers = await context.Users.ToListAsync();
         var nonAdminUsers = new List<User>();
-        
+
         foreach (var user in allUsers)
         {
             var roles = await userManager.GetRolesAsync(user);
@@ -230,101 +288,81 @@ public static class DatabaseSeeder
                 nonAdminUsers.Add(user);
             }
         }
-        
-        var existingUserCount = nonAdminUsers.Count;
 
-        if (existingUserCount >= targetUserCount)
-        {
-            Logger.Information("Non-admin user count ({ExistingCount}) meets or exceeds target ({TargetCount}), skipping user seeding", 
-                existingUserCount, targetUserCount);
-            return await context.Users.ToListAsync();
-        }
+        return nonAdminUsers;
+    }
 
-        var usersToCreate = targetUserCount - existingUserCount;
-        Logger.Information("Found {ExistingCount} non-admin users, creating {ToCreate} more to reach target of {TargetCount}", 
-            existingUserCount, usersToCreate, targetUserCount);
-
-        var users = new List<User>();
-        var random = new Random();
-
-        // Create faker for generating realistic data
-        Randomizer.Seed = new Random(12345 + existingUserCount); // Different seed based on existing count
-
-        var userFaker = new Faker<User>()
+// Helper 2: Encapsulate Faker Configuration
+    private static Faker<User> CreateUserFaker()
+    {
+        return new Faker<User>()
             .RuleFor(u => u.Id, f => Guid.NewGuid())
             .RuleFor(u => u.FirstName, f => f.Name.FirstName())
             .RuleFor(u => u.LastName, f => f.Name.LastName())
             .RuleFor(u => u.CreatedAt, f => f.Date.Past(1, DateTime.UtcNow))
-            .RuleFor(u => u.NewEmailConfirmed, f => f.Random.Bool(0.7f)) // 70% will have email verified
+            .RuleFor(u => u.NewEmailConfirmed, f => f.Random.Bool(0.7f))
             .RuleFor(u => u.PhoneNumberConfirmed, f => false)
             .RuleFor(u => u.TwoFactorEnabled, f => false)
             .RuleFor(u => u.LockoutEnabled, f => false);
+    }
 
-        // Check if we need to create a moderator (only if no moderators exist)
-        var hasModerator = nonAdminUsers.Any(u => userManager.GetRolesAsync(u).Result.Contains("Moderator"));
+// Helper 3: Complex Email Logic
+    private static string GenerateUniversityEmail(
+        User user,
+        University university,
+        Random random)
+    {
+        var emailPrefix = $"{user.FirstName.ToLower()}.{user.LastName.ToLower()}{random.Next(1, 999)}";
+        var isStudent = random.Next(0, 2) == 0;
 
-        for (int i = 0; i < usersToCreate; i++)
+        if (isStudent && university.EmailDomain.Contains('@'))
         {
-            var university = universities[random.Next(universities.Count)];
-            var user = userFaker.Generate();
-
-            // Set university
-            user.UniversityId = university.Id;
-
-            // Generate email that matches university domain
-            var emailPrefix = $"{user.FirstName.ToLower()}.{user.LastName.ToLower()}{random.Next(1, 999)}";
-            var isStudent = random.Next(0, 2) == 0; // 50% chance to be student
-            
-            if (isStudent && university.EmailDomain.Contains('@'))
-            {
-                var domain = university.EmailDomain.Substring(1);
-                user.Email = $"{emailPrefix}@student.{domain}";
-            }
-            else
-            {
-                user.Email = $"{emailPrefix}{university.EmailDomain}";
-            }
-
-            user.UserName = user.Email;
-            user.NormalizedEmail = user.Email.ToUpper();
-            user.NormalizedUserName = user.Email.ToUpper();
-
-            // Create user with password
-            var password = "Test@1234"; // All users have the same password for testing
-            var result = await userManager.CreateAsync(user, password);
-
-            if (result.Succeeded)
-            {
-                // Assign default "User" role
-                await userManager.AddToRoleAsync(user, "User");
-
-                // Make first non-admin user a moderator (only if no moderator exists)
-                if (!hasModerator && i == 0)
-                {
-                    await userManager.AddToRoleAsync(user, "Moderator");
-                    hasModerator = true;
-                    Logger.Information("Created moderator user: {Email} (Verified: {Verified})", 
-                        user.Email, user.NewEmailConfirmed);
-                }
-                else
-                {
-                    Logger.Information("Created regular user: {Email} (Verified: {Verified})", 
-                        user.Email, user.NewEmailConfirmed);
-                }
-
-                users.Add(user);
-            }
-            else
-            {
-                Logger.Error("Failed to create user: {Errors}", 
-                    string.Join(", ", result.Errors.Select(e => e.Description)));
-            }
+            var domain = university.EmailDomain.Substring(1);
+            return $"{emailPrefix}@student.{domain}";
         }
 
-        Logger.Information("Seeded {Count} new users (Total non-admin: {Total})", users.Count, existingUserCount + users.Count);
-        
-        // Return all users (existing + new)
-        return await context.Users.ToListAsync();
+        return $"{emailPrefix}{university.EmailDomain}";
+    }
+
+// Helper 4: Logic for creating a single user and assigning roles
+    private static async Task<User?> CreateSingleUserAsync(
+        UserManager<User> userManager,
+        List<University> universities,
+        Faker<User> userFaker,
+        Random random,
+        bool shouldBeModerator)
+    {
+        var university = universities[random.Next(universities.Count)];
+        var user = userFaker.Generate();
+
+        user.UniversityId = university.Id;
+        user.Email = GenerateUniversityEmail(user, university, random);
+        user.UserName = user.Email;
+        user.NormalizedEmail = user.Email.ToUpper();
+        user.NormalizedUserName = user.Email.ToUpper();
+
+        var result = await userManager.CreateAsync(user, "Test@1234");
+
+        if (!result.Succeeded)
+        {
+            Logger.Error("Failed to create user: {Errors}",
+                string.Join(", ", result.Errors.Select(e => e.Description)));
+            return null;
+        }
+
+        await userManager.AddToRoleAsync(user, "User");
+
+        if (shouldBeModerator)
+        {
+            await userManager.AddToRoleAsync(user, "Moderator");
+            Logger.Information("Created moderator user: {Email}", user.Email);
+        }
+        else
+        {
+            Logger.Information("Created regular user: {Email}", user.Email);
+        }
+
+        return user;
     }
 
     private static async Task SeedItems(ApplicationContext context, List<User> users)
@@ -336,34 +374,50 @@ public static class DatabaseSeeder
 
         if (existingItemCount >= targetItemCount)
         {
-            Logger.Information("Item count ({ExistingCount}) meets or exceeds target ({TargetCount}), skipping item seeding", 
+            Logger.Information(
+                "Item count ({ExistingCount}) meets or exceeds target ({TargetCount}), skipping item seeding",
                 existingItemCount, targetItemCount);
             return;
         }
 
         var itemsToCreate = targetItemCount - existingItemCount;
-        Logger.Information("Found {ExistingCount} items, creating {ToCreate} more to reach target of {TargetCount}", 
+        Logger.Information("Found {ExistingCount} items, creating {ToCreate} more to reach target of {TargetCount}",
             existingItemCount, itemsToCreate, targetItemCount);
 
         var random = new Random(12345 + existingItemCount); // Different seed based on existing count
         Randomizer.Seed = new Random(12345 + existingItemCount);
 
         // Item name templates by category
-        var bookTitles = new[] { "Introduction to Programming", "Data Structures and Algorithms", 
-            "Calculus I", "Physics Fundamentals", "Chemistry Basics", "English Literature", 
-            "Modern History", "Psychology 101", "Biology Textbook", "Economics Principles" };
+        var bookTitles = new[]
+        {
+            "Introduction to Programming", "Data Structures and Algorithms",
+            "Calculus I", "Physics Fundamentals", "Chemistry Basics", "English Literature",
+            "Modern History", "Psychology 101", "Biology Textbook", "Economics Principles"
+        };
 
-        var electronicItems = new[] { "USB-C Cable", "Wireless Mouse", "Keyboard", "Headphones", 
-            "Laptop Charger", "Phone Holder", "HDMI Cable", "USB Hub", "Webcam", "External Hard Drive" };
+        var electronicItems = new[]
+        {
+            "USB-C Cable", "Wireless Mouse", "Keyboard", "Headphones",
+            "Laptop Charger", "Phone Holder", "HDMI Cable", "USB Hub", "Webcam", "External Hard Drive"
+        };
 
-        var kitchenItems = new[] { "Coffee Mug", "Water Bottle", "Lunch Box", "Food Container", 
-            "Cutlery Set", "Plate", "Bowl", "Frying Pan", "Pot", "Kitchen Knife" };
+        var kitchenItems = new[]
+        {
+            "Coffee Mug", "Water Bottle", "Lunch Box", "Food Container",
+            "Cutlery Set", "Plate", "Bowl", "Frying Pan", "Pot", "Kitchen Knife"
+        };
 
-        var clothingItems = new[] { "T-Shirt", "Hoodie", "Jeans", "Jacket", "Sweater", 
-            "Scarf", "Hat", "Gloves", "Socks", "Sports Shoes" };
+        var clothingItems = new[]
+        {
+            "T-Shirt", "Hoodie", "Jeans", "Jacket", "Sweater",
+            "Scarf", "Hat", "Gloves", "Socks", "Sports Shoes"
+        };
 
-        var accessories = new[] { "Backpack", "Laptop Bag", "Umbrella", "Sunglasses", 
-            "Watch", "Wallet", "Pen Set", "Notebook", "Calculator", "Water Flask" };
+        var accessories = new[]
+        {
+            "Backpack", "Laptop Bag", "Umbrella", "Sunglasses",
+            "Watch", "Wallet", "Pen Set", "Notebook", "Calculator", "Water Flask"
+        };
 
         var itemFaker = new Faker<Item>()
             .RuleFor(i => i.Id, f => Guid.NewGuid())
@@ -376,7 +430,7 @@ public static class DatabaseSeeder
         for (int i = 0; i < itemsToCreate; i++)
         {
             var item = itemFaker.Generate();
-            
+
             // Assign random owner
             var owner = users[random.Next(users.Count)];
             item.OwnerId = owner.Id;
@@ -391,7 +445,8 @@ public static class DatabaseSeeder
                 ItemCategory.Books => bookTitles[random.Next(bookTitles.Length)] + $" (Edition {random.Next(1, 6)})",
                 ItemCategory.Electronics => electronicItems[random.Next(electronicItems.Length)],
                 ItemCategory.Kitchen => kitchenItems[random.Next(kitchenItems.Length)],
-                ItemCategory.Clothing => clothingItems[random.Next(clothingItems.Length)] + $" Size {new[] { "S", "M", "L", "XL" }[random.Next(4)]}",
+                ItemCategory.Clothing => clothingItems[random.Next(clothingItems.Length)] +
+                                         $" Size {new[] { "S", "M", "L", "XL" }[random.Next(4)]}",
                 ItemCategory.Accessories => accessories[random.Next(accessories.Length)],
                 _ => $"Miscellaneous Item {existingItemCount + i + 1}"
             };
@@ -400,10 +455,13 @@ public static class DatabaseSeeder
             var faker = new Faker();
             item.Description = category switch
             {
-                ItemCategory.Books => $"Academic textbook in {new[] { "good", "excellent", "fair" }[random.Next(3)]} condition. {faker.Lorem.Sentence(10)}",
+                ItemCategory.Books =>
+                    $"Academic textbook in {new[] { "good", "excellent", "fair" }[random.Next(3)]} condition. {faker.Lorem.Sentence(10)}",
                 ItemCategory.Electronics => $"Electronic device in working condition. {faker.Lorem.Sentence(8)}",
-                ItemCategory.Kitchen => $"Kitchen item, {new[] { "lightly used", "like new", "well-maintained" }[random.Next(3)]}. {faker.Lorem.Sentence(7)}",
-                ItemCategory.Clothing => $"Clothing item, {new[] { "barely worn", "gently used", "in good shape" }[random.Next(3)]}. {faker.Lorem.Sentence(6)}",
+                ItemCategory.Kitchen =>
+                    $"Kitchen item, {new[] { "lightly used", "like new", "well-maintained" }[random.Next(3)]}. {faker.Lorem.Sentence(7)}",
+                ItemCategory.Clothing =>
+                    $"Clothing item, {new[] { "barely worn", "gently used", "in good shape" }[random.Next(3)]}. {faker.Lorem.Sentence(6)}",
                 ItemCategory.Accessories => $"Useful accessory for daily use. {faker.Lorem.Sentence(8)}",
                 _ => faker.Lorem.Sentences(2)
             };
