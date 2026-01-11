@@ -272,6 +272,7 @@ else
     {
         Log.Warning("Azure Storage Container name is missing. Image upload to blob storage will not be available.");
     }
+    builder.Services.AddSingleton<IAzureStorageService>(new AzureStorageService("", ""));
 }
 
 builder.Services.AddAutoMapper(cfg =>
