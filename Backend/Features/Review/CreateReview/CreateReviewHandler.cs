@@ -31,7 +31,7 @@ public class CreateReviewHandler(ApplicationContext dbContext, IMapper mapper) :
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Unexpected error while creating review for item {TargetItemId} and targetUser {}", request.Review.TargetItemId, request.Review.TargetUserId);
+            _logger.Error(ex, "Unexpected error while creating review for item {TargetItemId} and targetUser {TargetUserId}", request.Review.TargetItemId, request.Review.TargetUserId);
             return Results.InternalServerError();
         }
     }
