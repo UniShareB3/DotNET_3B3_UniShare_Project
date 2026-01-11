@@ -21,7 +21,7 @@ public class RegisterUserHandler(
 
     public async Task<IResult> Handle(RegisterUserRequest request, CancellationToken cancellationToken)
     {
-        RegisterUserDto registerUserDto = request.RegisterUserDto;
+        var registerUserDto = request.RegisterUserDto;
         
         _logger.Information("Attempting to register user with email: {Email}", registerUserDto.Email);
         
