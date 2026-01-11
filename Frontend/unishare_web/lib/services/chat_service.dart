@@ -113,8 +113,8 @@ class ChatService {
   }
 
   /// Send a document message to another user via SignalR
-  /// This expects the blobPath (path in blob storage)
-  static Future<bool> sendDocumentMessage(String receiverId, String blobPath, {String? caption}) async {
+  /// This expects the blobPath (path in blob storage) and the resolved documentUrl (SAS URL)
+  static Future<bool> sendDocumentMessage(String receiverId, String blobName, String documentUrl, {String? caption}) async {
     try {
       final connection = await getConnection();
       if (connection == null) {
@@ -122,7 +122,7 @@ class ChatService {
         return false;
       }
 
-      await connection.invoke('SendImageMessage', args: [receiverId, blobPath, caption ?? '']);
+      await connection.invoke('SendImageMessage', args: [receiverId, blobName, documentUrl, caption ?? '']);
       print('✅ ChatService: Document sent to $receiverId');
       return true;
     } catch (e) {
@@ -133,12 +133,12 @@ class ChatService {
 
   /// Legacy method for backward compatibility
   @Deprecated('Use sendDocumentMessage instead')
-  static Future<bool> sendImageMessage(String receiverId, String blobPath, {String? caption}) async {
-    return sendDocumentMessage(receiverId, blobPath, caption: caption);
+  static Future<bool> sendImageMessage(String receiverId, String blobPath, String documentUrl, {String? caption}) async {
+    return sendDocumentMessage(receiverId, blobPath, documentUrl, caption: caption);
   }
 
   /// Retrieve SAS URL for uploading a document to blob storage
-  static Future<Map<String, dynamic>?> retrieveSasUrl(String fileName) async {
+  static Future<Map<String, dynamic>?> retrieveSasUrl(String fileName, String mimeType) async {
     try {
       final token = await SecureStorageService.getAccessToken();
       if (token == null || token.isEmpty) {
@@ -146,7 +146,7 @@ class ChatService {
         return null;
       }
 
-      final url = Uri.parse('$baseUrl/documents/upload-url');
+      final url = Uri.parse('$baseUrl/chat/documents/upload-url');
       final response = await http.post(
         url,
         headers: {
@@ -155,6 +155,7 @@ class ChatService {
         },
         body: jsonEncode({
           'fileName': fileName,
+          'contentType': mimeType,
         }),
       );
 
@@ -164,8 +165,8 @@ class ChatService {
         final data = jsonDecode(response.body);
         // Expected response: { "sasUrl": "...", "blobPath": "..." }
         return {
-          'sasUrl': data['sasUrl'] as String,
-          'blobPath': data['blobPath'] as String,
+          'sasUrl': data['uploadUrl'] as String,
+          'blobPath': data['blobName'] as String,
         };
       }
 
@@ -177,16 +178,17 @@ class ChatService {
     }
   }
 
-  /// Send confirmation to backend after successful upload to blob storage
-  static Future<bool> sendConfirmationUploadRequest(String blobPath) async {
+  /// Retrieve SAS URL for viewing/downloading a document from blob storage
+  /// Uses POST endpoint with blobName in request body
+  static Future<Map<String, dynamic>?> getDocumentViewUrl(String blobName) async {
     try {
       final token = await SecureStorageService.getAccessToken();
       if (token == null || token.isEmpty) {
-        print('❌ ChatService: No token for confirming upload');
-        return false;
+        print('❌ ChatService: No token for retrieving view URL');
+        return null;
       }
 
-      final url = Uri.parse('$baseUrl/documents/confirm-upload');
+      final url = Uri.parse('$baseUrl/chat/documents/view-url');
       final response = await http.post(
         url,
         headers: {
@@ -194,32 +196,190 @@ class ChatService {
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'blobPath': blobPath,
+          'blobName': blobName,
+        }),
+      );
+
+      print('🔗 ChatService: Get view URL status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        // Expected response: { "blobName": "...", "documentUrl": "https://...", "contentType": "...", "expiresAt": "..." }
+        return {
+          'blobName': data['blobName'] as String?,
+          'documentUrl': data['documentUrl'] as String?,
+          'contentType': data['contentType'] as String?,
+          'expiresAt': data['expiresAt'] as String?,
+        };
+      }
+
+      print('❌ ChatService: Failed to get view URL: ${response.body}');
+      return null;
+    } catch (e) {
+      print('❌ ChatService: Failed to retrieve view URL: $e');
+      return null;
+    }
+  }
+
+  /// Retrieve SAS URLs for multiple documents in bulk
+  /// Uses POST endpoint with list of blobNames in request body
+  static Future<List<Map<String, dynamic>>?> getBulkDocumentViewUrls(List<String> blobNames) async {
+    try {
+      final token = await SecureStorageService.getAccessToken();
+      if (token == null || token.isEmpty) {
+        print('❌ ChatService: No token for retrieving bulk view URLs');
+        return null;
+      }
+
+      final url = Uri.parse('$baseUrl/chat/bulk/documents/url');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'blobNames': blobNames,
+        }),
+      );
+
+      print('🔗 ChatService: Get bulk view URLs status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        // Expected response: [{ "blobName": "...", "documentUrl": "https://...", "contentType": "...", "expiresAt": "..." }, ...]
+        return data.map((item) => {
+          'blobName': item['blobName'] as String?,
+          'documentUrl': item['documentUrl'] as String?,
+          'contentType': item['contentType'] as String?,
+          'expiresAt': item['expiresAt'] as String?,
+        }).toList();
+      }
+
+      print('❌ ChatService: Failed to get bulk view URLs: ${response.body}');
+      return null;
+    } catch (e) {
+      print('❌ ChatService: Failed to retrieve bulk view URLs: $e');
+      return null;
+    }
+  }
+
+  /// Send confirmation to backend after successful upload to blob storage
+  /// Returns the response data including DocumentUrl on success, null on failure
+  static Future<Map<String, dynamic>?> sendConfirmationUploadRequest(String blobName, String receiverId) async {
+    try {
+      final token = await SecureStorageService.getAccessToken();
+      if (token == null || token.isEmpty) {
+        print('❌ ChatService: No token for confirming upload');
+        return null;
+      }
+
+      final url = Uri.parse('$baseUrl/chat/documents/confirm-upload');
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'blobName': blobName,
+          'receiverId': receiverId,
         }),
       );
 
       print('✅ ChatService: Confirm upload status: ${response.statusCode}');
 
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        print('✅ ChatService: Upload confirmed successfully');
-        return true;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ ChatService: Upload confirmed successfully, DocumentUrl: ${data['documentUrl']}');
+        return {
+          'messageId': data['messageId'],
+          'documentUrl': data['documentUrl'],
+          'blobName': data['blobName'],
+          'timestamp': data['timestamp'],
+          'expiresAt': data['expiresAt'],
+        };
       }
 
       print('❌ ChatService: Failed to confirm upload: ${response.body}');
-      return false;
+      return null;
     } catch (e) {
       print('❌ ChatService: Failed to send confirmation: $e');
-      return false;
+      return null;
     }
   }
 
   /// Upload a document directly to blob storage using SAS URL
-  /// Returns the blobPath on success, null on failure
+  /// Returns a map with blobName and documentUrl on success, null on failure
   /// Supports images and other file types
-  static Future<String?> uploadDocument(List<int> fileBytes, String fileName) async {
+  static Future<Map<String, dynamic>?> uploadDocument(List<int> fileBytes, String fileName, String receiverId) async {
+    print('📤 ChatService: uploadDocument called with receiverId: "$receiverId", fileName: "$fileName"');
+    
+    if (receiverId.isEmpty) {
+      print('⚠️ ChatService: WARNING - receiverId is empty!');
+    }
+
+    final extension = fileName.toLowerCase().split('.').last;
+
+    String mimeType;
+    switch (extension) {
+    // Image types
+      case 'jpg':
+      case 'jpeg':
+        mimeType = 'image/jpeg';
+        break;
+      case 'png':
+        mimeType = 'image/png';
+        break;
+      case 'gif':
+        mimeType = 'image/gif';
+        break;
+      case 'webp':
+        mimeType = 'image/webp';
+        break;
+    // Document types
+      case 'pdf':
+        mimeType = 'application/pdf';
+        break;
+      case 'doc':
+        mimeType = 'application/msword';
+        break;
+      case 'docx':
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        break;
+      case 'xls':
+        mimeType = 'application/vnd.ms-excel';
+        break;
+      case 'xlsx':
+        mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        break;
+      case 'ppt':
+        mimeType = 'application/vnd.ms-powerpoint';
+        break;
+      case 'pptx':
+        mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+        break;
+      case 'txt':
+        mimeType = 'text/plain';
+        break;
+      case 'csv':
+        mimeType = 'text/csv';
+        break;
+      case 'zip':
+        mimeType = 'application/zip';
+        break;
+      case 'rar':
+        mimeType = 'application/x-rar-compressed';
+        break;
+      default:
+      // Use generic binary type for unknown files
+        mimeType = 'application/octet-stream';
+        print('⚠️ ChatService: Unknown file type: $extension, using application/octet-stream');
+    }
+
     try {
       // Step 1: Retrieve SAS URL and blob path
-      final sasData = await retrieveSasUrl(fileName);
+      final sasData = await retrieveSasUrl(fileName, mimeType);
       if (sasData == null) {
         print('❌ ChatService: Failed to retrieve SAS URL');
         return null;
@@ -230,63 +390,7 @@ class ChatService {
 
       // Step 2: Upload directly to blob storage using SAS URL
       // Determine content type from file extension
-      final extension = fileName.toLowerCase().split('.').last;
-      String mimeType;
-      switch (extension) {
-        // Image types
-        case 'jpg':
-        case 'jpeg':
-          mimeType = 'image/jpeg';
-          break;
-        case 'png':
-          mimeType = 'image/png';
-          break;
-        case 'gif':
-          mimeType = 'image/gif';
-          break;
-        case 'webp':
-          mimeType = 'image/webp';
-          break;
-        // Document types
-        case 'pdf':
-          mimeType = 'application/pdf';
-          break;
-        case 'doc':
-          mimeType = 'application/msword';
-          break;
-        case 'docx':
-          mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-          break;
-        case 'xls':
-          mimeType = 'application/vnd.ms-excel';
-          break;
-        case 'xlsx':
-          mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-          break;
-        case 'ppt':
-          mimeType = 'application/vnd.ms-powerpoint';
-          break;
-        case 'pptx':
-          mimeType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-          break;
-        case 'txt':
-          mimeType = 'text/plain';
-          break;
-        case 'csv':
-          mimeType = 'text/csv';
-          break;
-        case 'zip':
-          mimeType = 'application/zip';
-          break;
-        case 'rar':
-          mimeType = 'application/x-rar-compressed';
-          break;
-        default:
-          // Use generic binary type for unknown files
-          mimeType = 'application/octet-stream';
-          print('⚠️ ChatService: Unknown file type: $extension, using application/octet-stream');
-      }
-
+      
       final uploadUrl = Uri.parse(sasUrl);
       final uploadResponse = await http.put(
         uploadUrl,
@@ -301,10 +405,10 @@ class ChatService {
 
       if (uploadResponse.statusCode == 201 || uploadResponse.statusCode == 200) {
         // Step 3: Confirm upload with backend
-        final confirmed = await sendConfirmationUploadRequest(blobPath);
-        if (confirmed) {
+        final confirmationData = await sendConfirmationUploadRequest(blobPath, receiverId);
+        if (confirmationData != null) {
           print('✅ ChatService: Document uploaded successfully: $blobPath');
-          return blobPath;
+          return confirmationData;
         } else {
           print('❌ ChatService: Upload succeeded but confirmation failed');
           return null;
@@ -322,13 +426,15 @@ class ChatService {
   /// Legacy method for backward compatibility - now uses the new blob upload flow
   @Deprecated('Use uploadDocument instead')
   static Future<String?> uploadImageToBlob(List<int> imageBytes, String fileName) async {
-    return uploadDocument(imageBytes, fileName);
+    final result = await uploadDocument(imageBytes, fileName, '');
+    return result?['blobName'] as String?;
   }
 
   /// Legacy method for backward compatibility - now uses the new blob upload flow
   @Deprecated('Use uploadDocument instead')
   static Future<String?> uploadImage(List<int> imageBytes, String fileName) async {
-    return uploadDocument(imageBytes, fileName);
+    final result = await uploadDocument(imageBytes, fileName, '');
+    return result?['blobName'] as String?;
   }
 
   /// Get chat history with a specific user via REST API

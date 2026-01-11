@@ -12,11 +12,11 @@ public class GenerateUploadUrlHandler(IAzureStorageService storageService) : IRe
 
     public async Task<IResult> Handle(GenerateUploadUrlRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Generating upload URL for file: {FileName}", request.FileName);
+        _logger.Information("Generating upload URL for file: {FileName}", request.Dto.FileName);
 
         try
         {
-            var fileExtension = Path.GetExtension(request.FileName)?.ToLowerInvariant() ?? string.Empty;
+            var fileExtension = Path.GetExtension(request.Dto.FileName)?.ToLowerInvariant() ?? string.Empty;
 
             // Generate unique blob name
             var blobName = $"{Guid.NewGuid()}{fileExtension}";
@@ -38,7 +38,7 @@ public class GenerateUploadUrlHandler(IAzureStorageService storageService) : IRe
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Error generating upload URL for file {FileName}", request.FileName);
+            _logger.Error(ex, "Error generating upload URL for file {FileName}", request.Dto.FileName);
             return Results.Problem("An unexpected error occurred while generating upload URL.");
         }
     }

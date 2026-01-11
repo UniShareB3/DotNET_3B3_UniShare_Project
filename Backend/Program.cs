@@ -84,6 +84,9 @@ using Backend.Features.Conversations.GetChatHistory;
 using Backend.Features.Conversations.GetConversations;
 using Backend.Features.Conversations.GenerateUploadUrl;
 using Backend.Features.Conversations.ConfirmDocumentUpload;
+using Backend.Features.Conversations.GetDocumentUrl;
+using Backend.Features.Conversations.GetBulkDocumentUrls;
+using Backend.Features.Shared.Authorization.ConversationParticipantAuthorization;
 //comment for testing sonarqube
 // Configure Serilog before building the application
 Log.Logger = new LoggerConfiguration()
@@ -181,8 +184,6 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
-builder.Services.AddSignalR();
 
 builder.Services.AddAuthentication(options =>
     {
@@ -299,6 +300,10 @@ builder.Services.AddValidatorsFromAssemblyContaining<CreateReportRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<GenerateUploadUrlRequest>();
 
 builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddSignalR(options => 
+{
+    options.EnableDetailedErrors = true;
+});
 
 var app = builder.Build();
 
@@ -562,38 +567,6 @@ bookingVerifiedGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator)
     .WithDescription("Delete a booking")
     .RequireAuthorization();
 
-// Note: Stripe endpoints are commented out until the Stripe service handlers are implemented
-// TODO: Implement Stripe service handlers in Features/Shared/StripeService
-/*
-/// Stripe Endpoints
-var stripeGroup = app.MapGroup("/stripe")
-    .WithTags("Stripe")
-    .RequireAuthorization();
-
-// Webhook endpoint - must be anonymous for Stripe to call it
-app.MapPost("/stripe/webhook", async (HttpContext httpContext, IMediator mediator) =>
-    {
-        var json = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
-        var signatureHeader = httpContext.Request.Headers["Stripe-Signature"].ToString();
-        return await mediator.Send(new HandleStripeWebhookRequest(json, signatureHeader));
-    })
-    .WithTags("Stripe")
-    .AllowAnonymous()
-    .WithDescription("Stripe webhook endpoint for payment events");
-
-// Create Stripe Connect account link for onboarding
-stripeGroup.MapPost("/connect/account-link", async (CreateStripeAccountLinkDto dto, IMediator mediator) =>
-        await mediator.Send(new CreateStripeAccountLinkRequest(dto)))
-    .WithDescription("Create a Stripe Connect account onboarding link for a user to become a seller")
-    .RequireEmailVerification();
-
-// Create checkout session for booking payment
-stripeGroup.MapPost("/checkout", async (CreateCheckoutSessionDto dto, IMediator mediator) =>
-        await mediator.Send(new CreateCheckoutSessionRequest(dto)))
-    .WithDescription("Create a Stripe checkout session for booking payment")
-    .RequireEmailVerification();
-*/
-
 /// Reviews Endpoints
 var reviewsGroup = app.MapGroup("/reviews")
     .WithTags("Reviews")
@@ -707,16 +680,16 @@ chatGroup.MapGet("/history/{otherUserId:guid}", async (Guid otherUserId, ClaimsP
 })
 .WithDescription("Get chat history between current user and another user");
 
-chatGroup.MapPost("/documents/upload-url", async (string fileName, string contentType, IMediator mediator) =>
+chatGroup.MapPost("/documents/upload-url", async (Backend.Features.Conversations.DTO.GenerateUploadUrlDto dto, IMediator mediator) =>
 {
-    return await mediator.Send(new GenerateUploadUrlRequest(fileName, contentType));
+    return await mediator.Send(new GenerateUploadUrlRequest(dto));
 })
 .WithDescription("Generate a pre-signed SAS URL for uploading a document to Azure Blob Storage");
 
 chatGroup.MapPost("/documents/confirm-upload", async (Backend.Features.Conversations.DTO.ConfirmDocumentUploadDto dto, ClaimsPrincipal user, IMediator mediator) =>
 {
     var currentUserId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-    return await mediator.Send(new ConfirmDocumentUploadRequest(currentUserId, dto.ReceiverId, dto.BlobName, dto.Caption));
+    return await mediator.Send(new ConfirmDocumentUploadRequest(currentUserId, Guid.Parse(dto.ReceiverId), dto.BlobName, dto.Caption));
 })
 .WithDescription("Confirm document upload and save chat message with document URL");
 
@@ -726,6 +699,21 @@ chatGroup.MapGet("/conversations", async (ClaimsPrincipal user, IMediator mediat
     return await mediator.Send(new GetConversationsRequest(currentUserId));
 })
 .WithDescription("Get list of conversations (users we've chatted with)");
+
+chatGroup.MapPost("/documents/view-url", async (Backend.Features.Conversations.DTO.GetDocumentUrlDto dto, IMediator mediator) =>
+{
+    return await mediator.Send(new GetDocumentUrlRequest(dto));
+})
+.RequireConversationParticipant()
+.WithDescription("Get the download URL for a document (blob) in Azure Storage. Only accessible by conversation participants.");
+
+chatGroup.MapPost("/bulk/documents/url", async (Backend.Features.Conversations.DTO.GetBulkDocumentUrlsDto dto, IMediator mediator) =>
+{
+    return await mediator.Send(new GetBulkDocumentUrlsRequest(dto));
+})
+.RequireConversationParticipant()
+.WithDescription("Get download URLs for multiple documents (blobs) in Azure Storage. Only accessible by conversation participants.");
+
 
 
 // Log the URLs where the application is listening

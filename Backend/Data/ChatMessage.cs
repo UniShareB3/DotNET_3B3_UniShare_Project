@@ -1,13 +1,7 @@
-﻿﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.Data;
-
-public enum MessageType
-{
-    Text = 0,
-    Image = 1
-}
 
 public class ChatMessage
 {
@@ -26,14 +20,16 @@ public class ChatMessage
     public string Content { get; set; } = string.Empty;
 
     /// <summary>
-    /// URL of the image if MessageType is Image
+    /// Blob storage name/path for the document/image (e.g., "chat-documents/guid/filename.png")
     /// </summary>
-    public string? DocumentUrl { get; set; }
+    public string? BlobName { get; set; }
 
     /// <summary>
-    /// Type of message: Text or Image
+    /// MIME type of the message content (e.g., "text/plain", "image/jpeg", "application/pdf")
     /// </summary>
-    public MessageType MessageType { get; set; } = MessageType.Text;
+    [Required]
+    [MaxLength(100)]
+    public string ContentType { get; set; } = "text/plain";
 
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }

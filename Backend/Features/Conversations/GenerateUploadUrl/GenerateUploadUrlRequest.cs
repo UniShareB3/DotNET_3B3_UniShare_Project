@@ -1,6 +1,6 @@
+using Backend.Features.Conversations.DTO;
 using MediatR;
 
 namespace Backend.Features.Conversations.GenerateUploadUrl;
 
-public record GenerateUploadUrlRequest(string FileName, string ContentType) : IRequest<IResult>;
-
+public record GenerateUploadUrlRequest(GenerateUploadUrlDto Dto) : IRequest<IResult>;

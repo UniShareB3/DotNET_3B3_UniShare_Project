@@ -1,8 +1,9 @@
 using Backend.Data;
 using Backend.Persistence;
 using Backend.Services.AzureStorage;
+using Backend.Services.ContentType;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Serilog;
 using ILogger = Serilog.ILogger;
 
@@ -10,6 +11,7 @@ namespace Backend.Features.Conversations.ConfirmDocumentUpload;
 
 public class ConfirmDocumentUploadHandler(
     ApplicationContext dbContext,
+    UserManager<User> userManager,
     IAzureStorageService storageService) : IRequestHandler<ConfirmDocumentUploadRequest, IResult>
 {
     private readonly ILogger _logger = Log.ForContext<ConfirmDocumentUploadHandler>();
@@ -22,7 +24,7 @@ public class ConfirmDocumentUploadHandler(
         try
         {
             // Verify sender exists
-            var sender = await dbContext.Users.FindAsync(new object[] { request.SenderId }, cancellationToken);
+            var sender = await userManager.FindByIdAsync(request.SenderId.ToString());
             if (sender == null)
             {
                 _logger.Warning("Sender {SenderId} not found", request.SenderId);
@@ -30,33 +32,25 @@ public class ConfirmDocumentUploadHandler(
             }
 
             // Verify receiver exists
-            var receiver = await dbContext.Users.FindAsync(new object[] { request.ReceiverId }, cancellationToken);
+            var receiver = await userManager.FindByIdAsync(request.ReceiverId.ToString());
             if (receiver == null)
             {
                 _logger.Warning("Receiver {ReceiverId} not found", request.ReceiverId);
                 return Results.NotFound("Receiver not found");
             }
 
-            // Generate read SAS URL (valid for 7 days)
-            var readUrl = storageService.GenerateReadSasUrl(request.BlobName, TimeSpan.FromDays(7));
+            // Determine content type based on file extension
+            var contentType = ContentTypeResolver.FromFileName(request.BlobName);
 
-            // Determine message type based on file extension
-            var fileExtension = Path.GetExtension(request.BlobName)?.ToLowerInvariant();
-            var messageType = fileExtension switch
-            {
-                ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" => MessageType.Image,
-                _ => MessageType.Text // For documents, we'll use Text type but with ImageUrl populated
-            };
-
-            // Create chat message
+            // Create chat message (store only blob name, not the full URL)
             var chatMessage = new ChatMessage
             {
                 Id = Guid.NewGuid(),
                 SenderId = request.SenderId,
                 ReceiverId = request.ReceiverId,
                 Content = request.Caption ?? string.Empty,
-                DocumentUrl = readUrl,
-                MessageType = messageType,
+                BlobName = request.BlobName,
+                ContentType = contentType,
                 Timestamp = DateTime.UtcNow
             };
 
@@ -65,11 +59,16 @@ public class ConfirmDocumentUploadHandler(
 
             _logger.Information("Document upload confirmed and chat message created with ID {MessageId}", chatMessage.Id);
 
+            // Generate a read URL for the response (using the constant expiry time)
+            var readUrl = storageService.GenerateReadSasUrl(request.BlobName, BlobStorageConstants.ReadSasUrlExpiryTime);
+
             return Results.Ok(new
             {
                 MessageId = chatMessage.Id,
                 DocumentUrl = readUrl,
-                Timestamp = chatMessage.Timestamp
+                BlobName = request.BlobName,
+                Timestamp = chatMessage.Timestamp,
+                ExpiresAt = DateTime.UtcNow.Add(BlobStorageConstants.ReadSasUrlExpiryTime)
             });
         }
         catch (Exception ex)

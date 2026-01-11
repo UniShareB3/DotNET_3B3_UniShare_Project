@@ -22,7 +22,7 @@ public class GenerateUploadUrlRequestValidator : AbstractValidator<GenerateUploa
 
     public GenerateUploadUrlRequestValidator()
     {
-        RuleFor(x => x.FileName)
+        RuleFor(x => x.Dto.FileName)
             .NotEmpty()
             .WithMessage("File name is required.")
             .Must(HaveValidExtension)
@@ -30,13 +30,13 @@ public class GenerateUploadUrlRequestValidator : AbstractValidator<GenerateUploa
             .MaximumLength(255)
             .WithMessage("File name must not exceed 255 characters.");
 
-        RuleFor(x => x.ContentType)
+        RuleFor(x => x.Dto.ContentType)
             .NotEmpty()
             .WithMessage("Content type is required.")
             .Must(BeValidContentType)
             .WithMessage($"Invalid content type. Allowed types: images (JPEG, PNG, GIF, WebP), documents (PDF, Word, Excel), text files, and ZIP archives.");
 
-        RuleFor(x => x)
+        RuleFor(x => x.Dto)
             .Must(HaveMatchingContentTypeAndExtension)
             .WithMessage("Content type does not match file extension.");
     }
@@ -58,13 +58,13 @@ public class GenerateUploadUrlRequestValidator : AbstractValidator<GenerateUploa
         return AllowedContentTypes.Contains(contentType.ToLowerInvariant());
     }
 
-    private bool HaveMatchingContentTypeAndExtension(GenerateUploadUrlRequest request)
+    private bool HaveMatchingContentTypeAndExtension(Backend.Features.Conversations.DTO.GenerateUploadUrlDto dto)
     {
-        if (string.IsNullOrWhiteSpace(request.FileName) || string.IsNullOrWhiteSpace(request.ContentType))
+        if (string.IsNullOrWhiteSpace(dto.FileName) || string.IsNullOrWhiteSpace(dto.ContentType))
             return true; // Let other validators handle null/empty checks
 
-        var extension = Path.GetExtension(request.FileName)?.ToLowerInvariant();
-        var contentType = request.ContentType.ToLowerInvariant();
+        var extension = Path.GetExtension(dto.FileName)?.ToLowerInvariant();
+        var contentType = dto.ContentType.ToLowerInvariant();
 
         // Map extensions to expected content types
         var expectedContentTypes = extension switch
@@ -86,4 +86,3 @@ public class GenerateUploadUrlRequestValidator : AbstractValidator<GenerateUploa
         return expectedContentTypes.Contains(contentType);
     }
 }
-
