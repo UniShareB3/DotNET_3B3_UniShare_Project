@@ -50,7 +50,7 @@ jobs:
         run: |
           # 1. Begin SonarQube Analysis
           # Added /d:sonar.cs.opencover.reportsPaths to pick up the test coverage
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"UniShareB3_DotNET_3B3_UniShare_Project" /o:"unishareb3" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"UniShareB3_DotNET_3B3_UniShare_Project" /o:"unishareb3" /d:sonar.token="${{ env:SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
           
           # 2. Build the specific Backend project
           dotnet build Backend/Backend.csproj
@@ -61,4 +61,4 @@ jobs:
           dotnet test Backend.Tests/Backend.Tests.csproj --no-build --collect:"XPlat Code Coverage" -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
           
           # 4. End SonarQube Analysis
-          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ env:SONAR_TOKEN }}"
