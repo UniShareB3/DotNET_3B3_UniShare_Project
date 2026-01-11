@@ -275,7 +275,7 @@ public static class DatabaseSeeder
             var emailPrefix = $"{user.FirstName.ToLower()}.{user.LastName.ToLower()}{random.Next(1, 999)}";
             var isStudent = random.Next(0, 2) == 0; // 50% chance to be student
             
-            if (isStudent && university.EmailDomain.Contains("@"))
+            if (isStudent && university.EmailDomain.Contains('@'))
             {
                 var domain = university.EmailDomain.Substring(1);
                 user.Email = $"{emailPrefix}@student.{domain}";

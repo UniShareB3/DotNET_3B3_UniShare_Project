@@ -8,7 +8,7 @@ public class DeleteReviewHandler(ApplicationContext dbContext, ILogger<DeleteRev
     public async Task<IResult> Handle(DeleteReviewRequest request, CancellationToken cancellationToken)
     {
         
-        var review = await dbContext.Reviews.FindAsync(request.Id, cancellationToken);
+        var review = await dbContext.Reviews.FindAsync([request.Id, cancellationToken], cancellationToken: cancellationToken);
         
         if (review == null)
         {

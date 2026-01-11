@@ -65,7 +65,7 @@ public class CreateReportHandler(ApplicationContext context, IMapper mapper)
                  .ToListAsync(cancellationToken);
             _logger.Information("Found {Count} moderator user ids", moderatorUserIds.Count);
 
-             if (moderatorUserIds.Any())
+             if (moderatorUserIds.Count != 0)
              {
                  // For each moderator, compute the count of Pending reports assigned to them (0 if none)
                  var moderatorWithCounts = await context.Users

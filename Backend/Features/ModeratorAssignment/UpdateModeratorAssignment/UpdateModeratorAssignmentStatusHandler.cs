@@ -81,7 +81,7 @@ public class UpdateModeratorAssignmentStatusHandler(
                                     .Select(ur => ur.UserId)
                                     .ToListAsync(cancellationToken);
 
-                                if (adminUserIds.Any())
+                                if (adminUserIds.Count != 0)
                                 {
                                     // Select up to 5 oldest pending reports that are currently assigned to admins
                                     var pendingAdminReports = await context.Reports
@@ -95,7 +95,7 @@ public class UpdateModeratorAssignmentStatusHandler(
                                         rep.ModeratorId = user.Id;
                                     }
 
-                                    if (pendingAdminReports.Any())
+                                    if (pendingAdminReports.Count != 0)
                                     {
                                         _logger.Information("Reassigned {Count} pending reports to new moderator {UserId}", pendingAdminReports.Count, user.Id);
                                     }
