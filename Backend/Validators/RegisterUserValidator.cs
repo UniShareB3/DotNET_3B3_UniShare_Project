@@ -18,7 +18,7 @@ public class RegisterUserValidator:AbstractValidator<RegisterUserRequest>
         RuleFor(x => x.RegisterUserDto.Email)
             .NotEmpty().WithMessage("Email is required.")
             .EmailAddress().WithMessage("Invalid email format.")
-            .MustAsync(async (email, _) => !await _context.Users.AnyAsync(u => u.Email == email))
+            .MustAsync(async (email, _) => !await _context.Users.AnyAsync(u => u.Email == email, cancellationToken: _))
             .WithMessage("Email already in use.");
 
         RuleFor(x => x.RegisterUserDto.Password)

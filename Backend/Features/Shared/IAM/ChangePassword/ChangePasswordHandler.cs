@@ -56,11 +56,13 @@ public class ChangePasswordHandler(
             var errors = new Dictionary<string, List<string>>();
             foreach (var error in result.Errors)
             {
-                if (!errors.ContainsKey(error.Code))
+                if (!errors.TryGetValue(error.Code, out List<string>? value))
                 {
-                    errors[error.Code] = new List<string>();
+                    value = [];
+                    errors[error.Code] = value;
                 }
-                errors[error.Code].Add(error.Description);
+
+                value.Add(error.Description);
             }
 
             return Results.BadRequest(errors);

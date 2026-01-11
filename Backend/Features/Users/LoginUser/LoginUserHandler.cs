@@ -41,7 +41,7 @@ public class LoginUserHandler(
             .Where(rt => rt.UserId == user.Id)
             .ToListAsync(cancellationToken);
         
-        if (existingTokens.Any())
+        if (existingTokens.Count != 0)
         {
             _logger.Information("Removing {TokenCount} existing refresh tokens for user {UserId}", 
                 existingTokens.Count, user.Id);
