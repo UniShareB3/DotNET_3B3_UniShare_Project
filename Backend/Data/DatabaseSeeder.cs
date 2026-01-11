@@ -27,7 +27,7 @@ public static class DatabaseSeeder
             var universities = await SeedUniversities(context);
 
             // 3. Seed Admin Account (fixed admin user)
-            await SeedAdminAccount(context, userManager, universities);
+            await SeedAdminAccount(userManager, universities);
 
             // 4. Seed Users (Moderators and regular Users only)
             var users = await SeedUsers(context, userManager, universities);
@@ -39,8 +39,7 @@ public static class DatabaseSeeder
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "An error occurred while seeding the database");
-            throw;
+            throw new InvalidOperationException("Fatal error: Database seeding failed.", ex);
         }
     }
 
@@ -151,7 +150,6 @@ public static class DatabaseSeeder
     }
 
     private static async Task SeedAdminAccount(
-        ApplicationContext context,
         UserManager<User> userManager,
         List<University> universities)
     {
@@ -172,7 +170,7 @@ public static class DatabaseSeeder
 
         // Get UAIC university for admin (or first university as fallback)
         var adminUniversity = universities.FirstOrDefault(u => u.ShortCode == "UAIC")
-                              ?? universities.First();
+                              ?? universities[0];
 
         var adminUser = new User
         {

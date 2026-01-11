@@ -76,8 +76,11 @@ public class LoginUserHandler(
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Failed to save refresh token for user {UserId}", user.Id);
-            throw;
+            _logger.Error(ex, "Error saving refresh token for user {UserId}", user.Id);
+            return Results.Problem(
+                statusCode: StatusCodes.Status500InternalServerError,
+                title: "Internal Server Error",
+                detail: "An error occurred while processing your request.");
         }
         
         var response = new LoginUserResponseDto(

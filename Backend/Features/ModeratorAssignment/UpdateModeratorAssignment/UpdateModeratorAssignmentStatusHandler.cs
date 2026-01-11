@@ -97,8 +97,6 @@ private async Task ReassignPendingReportsToNewModeratorAsync(Guid newModeratorId
             .Select(r => r.Id)
             .FirstOrDefaultAsync(ct);
 
-        if (adminRoleId == null) return;
-
         var adminUserIds = await context.UserRoles
             .Where(ur => ur.RoleId == adminRoleId)
             .Select(ur => ur.UserId)

@@ -42,8 +42,10 @@ public class ItemMapper:Profile
                 opt => opt.MapFrom(src => src.OwnerId)
             )
             .ForMember(
-                dest => dest.OwnerName,
-                opt => opt.MapFrom(src => (src.Owner.FirstName + " " + src.Owner.LastName).Trim())
+                dest => dest.OwnerName, 
+                opt => opt.MapFrom(src => src.Owner != null 
+                    ? (src.Owner.FirstName + " " + src.Owner.LastName).Trim() 
+                    : "Unknown Owner") 
             )
             .MaxDepth(1);
     }
