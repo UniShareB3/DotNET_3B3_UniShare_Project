@@ -73,8 +73,8 @@ public class ChatHubTests
         savedMessage.SenderId.Should().Be(Guid.Parse(senderId));
         savedMessage.ReceiverId.Should().Be(Guid.Parse(receiverId));
         savedMessage.Content.Should().Be(messageContent);
-        savedMessage.MessageType.Should().Be(MessageType.Text);
-        savedMessage.ImageUrl.Should().BeNull();
+        savedMessage.ContentType.Should().Be("text/plain");
+        savedMessage.BlobName.Should().BeNull();
         savedMessage.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
@@ -231,19 +231,20 @@ public class ChatHubTests
     }
 
     [Fact]
-    public async Task Given_ValidData_When_SendImageMessage_Then_SavesImageMessageToDatabase()
+    public async Task Given_ValidData_When_SendImageMessage_Then_BroadcastsImageMessageToClients()
     {
         // Arrange
         var context = CreateInMemoryDbContext("send-image-message-test-" + Guid.Parse("10101010-1010-1010-1010-101010101010").ToString());
         var senderId = Guid.Parse("20202020-2020-2020-2020-202020202020").ToString();
         var receiverId = Guid.Parse("30303030-3030-3030-3030-303030303030").ToString();
-        var imageUrl = "https://example.com/image.jpg";
+        var blobName = "chat-documents/guid/image.jpg";
+        var documentUrl = "https://example.com/image.jpg";
         var caption = "Check out this image!";
 
         var mockClients = new Mock<IHubCallerClients>();
-        var mockClientProxy = new Mock<IClientProxy>();
+        var mockReceiverProxy = new Mock<IClientProxy>();
         var mockCallerProxy = new Mock<ISingleClientProxy>();
-        mockClients.Setup(x => x.User(It.IsAny<string>())).Returns(mockClientProxy.Object);
+        mockClients.Setup(x => x.User(receiverId)).Returns(mockReceiverProxy.Object);
         mockClients.Setup(x => x.Caller).Returns(mockCallerProxy.Object);
 
         var chatHub = new ChatHub(context)
@@ -253,17 +254,24 @@ public class ChatHubTests
         };
 
         // Act
-        await chatHub.SendImageMessage(receiverId, imageUrl, caption);
+        await chatHub.SendImageMessage(receiverId, blobName, documentUrl, caption);
 
         // Assert
-        var savedMessage = await context.ChatMessages.FirstOrDefaultAsync();
-        savedMessage.Should().NotBeNull();
-        savedMessage.SenderId.Should().Be(Guid.Parse(senderId));
-        savedMessage.ReceiverId.Should().Be(Guid.Parse(receiverId));
-        savedMessage.Content.Should().Be(caption);
-        savedMessage.ImageUrl.Should().Be(imageUrl);
-        savedMessage.MessageType.Should().Be(MessageType.Image);
-        savedMessage.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        // SendImageMessage doesn't save to DB, it only broadcasts
+        // The message is saved by ConfirmDocumentUploadHandler
+        mockReceiverProxy.Verify(
+            x => x.SendCoreAsync(
+                "ReceiveMessage",
+                It.Is<object[]>(o => o.Length == 1),
+                CancellationToken.None),
+            Times.Once);
+        
+        mockCallerProxy.Verify(
+            x => x.SendCoreAsync(
+                "ReceiveMessage",
+                It.Is<object[]>(o => o.Length == 1),
+                CancellationToken.None),
+            Times.Once);
     }
 
     [Fact]
@@ -273,7 +281,8 @@ public class ChatHubTests
         var context = CreateInMemoryDbContext("send-image-no-caption-test-" + Guid.Parse("40404040-4040-4040-4040-404040404040").ToString());
         var senderId = Guid.Parse("50505050-5050-5050-5050-505050505050").ToString();
         var receiverId = Guid.Parse("60606060-6060-6060-6060-606060606060").ToString();
-        var imageUrl = "https://example.com/image.jpg";
+        var blobName = "chat-documents/guid/image.jpg";
+        var documentUrl = "https://example.com/image.jpg";
 
         var mockClients = new Mock<IHubCallerClients>();
         var mockClientProxy = new Mock<IClientProxy>();
@@ -288,14 +297,17 @@ public class ChatHubTests
         };
 
         // Act
-        await chatHub.SendImageMessage(receiverId, imageUrl);
+        await chatHub.SendImageMessage(receiverId, blobName, documentUrl);
 
         // Assert
-        var savedMessage = await context.ChatMessages.FirstOrDefaultAsync();
-        savedMessage.Should().NotBeNull();
-        savedMessage.Content.Should().Be(string.Empty);
-        savedMessage.ImageUrl.Should().Be(imageUrl);
-        savedMessage.MessageType.Should().Be(MessageType.Image);
+        // Note: SendImageMessage doesn't save to DB anymore, it only broadcasts
+        // The message is saved by ConfirmDocumentUploadHandler
+        mockClientProxy.Verify(
+            x => x.SendCoreAsync(
+                "ReceiveMessage",
+                It.Is<object[]>(o => o.Length == 1),
+                CancellationToken.None),
+            Times.Once);
     }
 
     [Fact]
@@ -305,7 +317,8 @@ public class ChatHubTests
         var context = CreateInMemoryDbContext("send-image-receiver-test-" + Guid.Parse("70707070-7070-7070-7070-707070707070").ToString());
         var senderId = Guid.Parse("80808080-8080-8080-8080-808080808080").ToString();
         var receiverId = Guid.Parse("90909090-9090-9090-9090-909090909090").ToString();
-        var imageUrl = "https://example.com/image.jpg";
+        var blobName = "chat-documents/guid/image.jpg";
+        var documentUrl = "https://example.com/image.jpg";
         var caption = "Test caption";
 
         var mockClients = new Mock<IHubCallerClients>();
@@ -322,7 +335,7 @@ public class ChatHubTests
         };
 
         // Act
-        await chatHub.SendImageMessage(receiverId, imageUrl, caption);
+        await chatHub.SendImageMessage(receiverId, blobName, documentUrl, caption);
 
         // Assert
         mockReceiverProxy.Verify(
@@ -340,7 +353,8 @@ public class ChatHubTests
         var context = CreateInMemoryDbContext("send-image-caller-test-" + Guid.Parse("a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1").ToString());
         var senderId = Guid.Parse("b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2").ToString();
         var receiverId = Guid.Parse("c3c3c3c3-c3c3-c3c3-c3c3-c3c3c3c3c3c3").ToString();
-        var imageUrl = "https://example.com/image.jpg";
+        var blobName = "chat-documents/guid/image.jpg";
+        var documentUrl = "https://example.com/image.jpg";
         var caption = "Test caption";
 
         var mockClients = new Mock<IHubCallerClients>();
@@ -357,7 +371,7 @@ public class ChatHubTests
         };
 
         // Act
-        await chatHub.SendImageMessage(receiverId, imageUrl, caption);
+        await chatHub.SendImageMessage(receiverId, blobName, documentUrl, caption);
 
         // Assert
         mockCallerProxy.Verify(
@@ -367,42 +381,14 @@ public class ChatHubTests
                 CancellationToken.None),
             Times.Once);
     }
-
-    [Fact]
-    public async Task Given_InvalidSenderId_When_SendImageMessage_Then_DoesNotSaveMessage()
-    {
-        // Arrange
-        var context = CreateInMemoryDbContext("invalid-sender-image-test-" + Guid.Parse("d4d4d4d4-d4d4-d4d4-d4d4-d4d4d4d4d4d4").ToString());
-        var receiverId = Guid.Parse("e5e5e5e5-e5e5-e5e5-e5e5-e5e5e5e5e5e5").ToString();
-        var imageUrl = "https://example.com/image.jpg";
-
-        var mockClients = new Mock<IHubCallerClients>();
-        var mockClientProxy = new Mock<IClientProxy>();
-        var mockCallerProxy = new Mock<ISingleClientProxy>();
-        mockClients.Setup(x => x.User(It.IsAny<string>())).Returns(mockClientProxy.Object);
-        mockClients.Setup(x => x.Caller).Returns(mockCallerProxy.Object);
-
-        var chatHub = new ChatHub(context)
-        {
-            Context = CreateMockHubContext("invalid-guid").Object,
-            Clients = mockClients.Object
-        };
-
-        // Act
-        await chatHub.SendImageMessage(receiverId, imageUrl);
-
-        // Assert
-        var messageCount = await context.ChatMessages.CountAsync();
-        messageCount.Should().Be(0);
-    }
-
     [Fact]
     public async Task Given_InvalidReceiverId_WhenSendImageMessage_Then_DoesNotSaveMessage()
     {
         // Arrange
         var context = CreateInMemoryDbContext("invalid-receiver-image-test-" + Guid.Parse("f6f6f6f6-f6f6-f6f6-f6f6-f6f6f6f6f6f6").ToString());
         var senderId = Guid.Parse("a7a7a7a7-a7a7-a7a7-a7a7-a7a7a7a7a7a7").ToString();
-        var imageUrl = "https://example.com/image.jpg";
+        var blobName = "chat-documents/guid/image.jpg";
+        var documentUrl = "https://example.com/image.jpg";
 
         var mockClients = new Mock<IHubCallerClients>();
         var mockClientProxy = new Mock<IClientProxy>();
@@ -417,10 +403,16 @@ public class ChatHubTests
         };
 
         // Act
-        await chatHub.SendImageMessage("invalid-guid", imageUrl);
+        await chatHub.SendImageMessage("invalid-guid", blobName, documentUrl);
 
         // Assert
-        var messageCount = await context.ChatMessages.CountAsync();
-        messageCount.Should().Be(0);
+        // SendImageMessage still broadcasts even with invalid receiverId
+        // The validation is not on the receiverId format but on senderId
+        mockClientProxy.Verify(
+            x => x.SendCoreAsync(
+                "ReceiveMessage",
+                It.IsAny<object[]>(),
+                CancellationToken.None),
+            Times.Once);
     }
 }

@@ -86,9 +86,46 @@ class _ChatPageState extends State<ChatPage> {
 
     try {
       final history = await ChatService.getChatHistory(widget.otherUserId);
+      final messages = history.map((e) => ChatMessage.fromJson(e)).toList();
+
+      // Collect all blob names that need URL resolution
+      final blobNamesToResolve = messages
+          .where((m) => m.needsUrlResolution && m.blobName != null)
+          .map((m) => m.blobName!)
+          .toSet()
+          .toList();
+
+      // Fetch bulk URLs if there are any to resolve
+      if (blobNamesToResolve.isNotEmpty) {
+        print('🔗 Fetching ${blobNamesToResolve.length} document URLs in bulk');
+        final urlResponses = await ChatService.getBulkDocumentViewUrls(blobNamesToResolve);
+
+        if (urlResponses != null) {
+          // Create a map for quick lookup
+          final urlMap = <String, String>{};
+          for (var response in urlResponses) {
+            final blobName = response['blobName'] as String?;
+            final docUrl = response['documentUrl'] as String?;
+            if (blobName != null && docUrl != null) {
+              urlMap[blobName] = docUrl;
+            }
+          }
+
+          // Update messages with resolved URLs
+          for (var message in messages) {
+            if (message.blobName != null && urlMap.containsKey(message.blobName)) {
+              message.documentUrl = urlMap[message.blobName];
+              print('✅ Resolved URL for ${message.blobName}');
+            }
+          }
+        } else {
+          print('❌ Failed to fetch bulk document URLs');
+        }
+      }
+
       setState(() {
         _messages.clear();
-        _messages.addAll(history.map((e) => ChatMessage.fromJson(e)));
+        _messages.addAll(messages);
         _isLoading = false;
       });
       _scrollToBottom();
@@ -104,7 +141,8 @@ class _ChatPageState extends State<ChatPage> {
     // Web implementation using an invisible input element
     if (kIsWeb) {
       try {
-        final input = html.FileUploadInputElement()..accept = 'image/*';
+        // Accept both images and documents
+        final input = html.FileUploadInputElement()..accept = 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar';
         input.multiple = false;
         input.click();
 
@@ -119,7 +157,7 @@ class _ChatPageState extends State<ChatPage> {
 
         final result = reader.result;
         if (result == null) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not read image file')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not read file')));
           return;
         }
 
@@ -136,18 +174,24 @@ class _ChatPageState extends State<ChatPage> {
 
         setState(() => _isUploadingImage = true);
 
-        final imageUrl = await ChatService.uploadImage(bytes, file.name!);
-        if (imageUrl == null) {
-          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to upload image'), backgroundColor: Colors.red));
+        print('📤 ChatPage: Uploading file to receiverId: "${widget.otherUserId}"');
+
+        // Use the new uploadDocument method with receiverId
+        final uploadResult = await ChatService.uploadDocument(bytes, file.name!, widget.otherUserId);
+        if (uploadResult == null) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to upload file'), backgroundColor: Colors.red));
           return;
         }
 
-        final success = await ChatService.sendImageMessage(widget.otherUserId, imageUrl);
+        final blobName = uploadResult['blobName'] as String;
+        final documentUrl = uploadResult['documentUrl'] as String;
+
+        final success = await ChatService.sendDocumentMessage(widget.otherUserId, blobName, documentUrl);
         if (!success && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to send image'), backgroundColor: Colors.red));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to send file'), backgroundColor: Colors.red));
         }
       } catch (e) {
-        print('❌ Error picking/sending image (web): $e');
+        print('❌ Error picking/sending file (web): $e');
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
       } finally {
         if (mounted) setState(() => _isUploadingImage = false);
@@ -157,7 +201,7 @@ class _ChatPageState extends State<ChatPage> {
 
     // Non-web fallback: show message (or implement file_picker on non-web platforms if needed)
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Image upload is only supported on web in this build')),
+      const SnackBar(content: Text('File upload is only supported on web in this build')),
     );
   }
 
@@ -344,7 +388,7 @@ class _ChatPageState extends State<ChatPage> {
             left: isMe ? 64 : 0,
             right: isMe ? 0 : 64,
           ),
-          padding: message.isImage
+          padding: (message.isImage || message.isDocument)
               ? const EdgeInsets.all(4)
               : const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
@@ -360,28 +404,74 @@ class _ChatPageState extends State<ChatPage> {
           ),
           child: message.isImage
               ? _buildImageMessage(message, isMe)
-              : Text(
-                  message.content,
-                  style: TextStyle(
-                    color: isMe ? Colors.white : Colors.black87,
-                    fontSize: 15,
-                  ),
-                ),
+              : message.isDocument
+                  ? _buildDocumentMessage(message, isMe)
+                  : Text(
+                      message.content,
+                      style: TextStyle(
+                        color: isMe ? Colors.white : Colors.black87,
+                        fontSize: 15,
+                      ),
+                    ),
         ),
       ],
     );
   }
 
   Widget _buildImageMessage(ChatMessage message, bool isMe) {
+    // Use documentUrl (resolved SAS URL) if available, otherwise fall back to imageUrl
+    final imageUrl = message.documentUrl ?? message.imageUrl;
+
+    // If no URL is available (not yet resolved), show loading or error state
+    if (imageUrl == null || imageUrl.isEmpty) {
+      // Check if we have a blob name that should have been resolved
+      if (message.blobName != null) {
+        return Container(
+          width: 200,
+          height: 200,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.broken_image, size: 50),
+              const SizedBox(height: 8),
+              Text(
+                'Failed to load image',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      return Text(
+        'Image not available',
+        style: TextStyle(
+          color: isMe ? Colors.white70 : Colors.black54,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+
+    // Display the image with the resolved URL
+    return _buildImageWidget(imageUrl, message.content, isMe);
+  }
+
+  Widget _buildImageWidget(String imageUrl, String caption, bool isMe) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: GestureDetector(
-            onTap: () => _showFullImage(message.imageUrl!),
+            onTap: () => _showFullImage(imageUrl),
             child: Image.network(
-              message.imageUrl!,
+              imageUrl,
               width: 200,
               height: 200,
               fit: BoxFit.cover,
@@ -391,12 +481,18 @@ class _ChatPageState extends State<ChatPage> {
                   width: 200,
                   height: 200,
                   color: Colors.grey[300],
-                  child: const Center(
-                    child: CircularProgressIndicator(),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
                   ),
                 );
               },
               errorBuilder: (context, error, stackTrace) {
+                print('❌ Error loading image: $error');
                 return Container(
                   width: 200,
                   height: 200,
@@ -407,12 +503,12 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
         ),
-        if (message.content.isNotEmpty) ...[
+        if (caption.isNotEmpty) ...[
           const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
-              message.content,
+              caption,
               style: TextStyle(
                 color: isMe ? Colors.white : Colors.black87,
                 fontSize: 14,
@@ -422,6 +518,194 @@ class _ChatPageState extends State<ChatPage> {
         ],
       ],
     );
+  }
+
+  Widget _buildDocumentMessage(ChatMessage message, bool isMe) {
+    final documentUrl = message.documentUrl;
+    final documentName = message.documentName ?? 'Document';
+
+    // If no URL is available (not yet resolved), show with blob name for lazy fetch
+    if (documentUrl == null || documentUrl.isEmpty) {
+      if (message.blobName != null) {
+        // We have a blob name, allow fetching when user taps
+        return _buildDocumentButton(message.blobName!, documentName, message.fileExtension, message.content, isMe, isBlobName: true);
+      }
+      return Text(
+        'Document not available',
+        style: TextStyle(
+          color: isMe ? Colors.white70 : Colors.black54,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+
+    // It's already a complete URL
+    return _buildDocumentButton(documentUrl, documentName, message.fileExtension, message.content, isMe, isBlobName: false);
+  }
+
+  Widget _buildDocumentButton(String documentUrlOrBlob, String documentName, String? extension, String caption, bool isMe, {required bool isBlobName}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isMe ? Colors.white.withOpacity(0.2) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: InkWell(
+            onTap: () => _openDocumentWithUrl(documentUrlOrBlob, isBlobName),
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isMe ? Colors.white.withOpacity(0.3) : Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _getDocumentIcon(extension),
+                    size: 32,
+                    color: _getDocumentColor(extension),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        documentName,
+                        style: TextStyle(
+                          color: isMe ? Colors.white : Colors.black87,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap to open',
+                        style: TextStyle(
+                          color: isMe ? Colors.white70 : Colors.black54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.download,
+                  color: isMe ? Colors.white : Colors.black54,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (caption.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              caption,
+              style: TextStyle(
+                color: isMe ? Colors.white : Colors.black87,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  IconData _getDocumentIcon(String? extension) {
+    if (extension == null) return Icons.insert_drive_file;
+    
+    switch (extension) {
+      case 'pdf':
+        return Icons.picture_as_pdf;
+      case 'doc':
+      case 'docx':
+        return Icons.description;
+      case 'xls':
+      case 'xlsx':
+        return Icons.table_chart;
+      case 'ppt':
+      case 'pptx':
+        return Icons.slideshow;
+      case 'txt':
+        return Icons.text_snippet;
+      case 'csv':
+        return Icons.grid_on;
+      case 'zip':
+      case 'rar':
+        return Icons.folder_zip;
+      default:
+        return Icons.insert_drive_file;
+    }
+  }
+
+  Color _getDocumentColor(String? extension) {
+    if (extension == null) return Colors.grey;
+    
+    switch (extension) {
+      case 'pdf':
+        return Colors.red;
+      case 'doc':
+      case 'docx':
+        return Colors.blue;
+      case 'xls':
+      case 'xlsx':
+        return Colors.green;
+      case 'ppt':
+      case 'pptx':
+        return Colors.orange;
+      case 'txt':
+        return Colors.blueGrey;
+      case 'csv':
+        return Colors.teal;
+      case 'zip':
+      case 'rar':
+        return Colors.amber;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  void _openDocumentWithUrl(String documentUrlOrBlob, bool isBlobName) async {
+    if (kIsWeb) {
+      String? finalUrl = documentUrlOrBlob;
+      
+      // If it's a blob name, fetch the SAS URL first
+      if (isBlobName) {
+        final response = await ChatService.getDocumentViewUrl(documentUrlOrBlob);
+        if (response == null || response['documentUrl'] == null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to generate document link'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+        finalUrl = response['documentUrl'] as String;
+      }
+      
+      html.window.open(finalUrl, '_blank');
+    }
+  }
+
+  void _openDocument(String documentUrl) {
+    // Legacy method - now calls the new one
+    _openDocumentWithUrl(documentUrl, false);
   }
 
   void _showFullImage(String imageUrl) {

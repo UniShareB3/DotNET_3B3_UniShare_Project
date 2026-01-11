@@ -35,7 +35,6 @@ using Backend.Features.Review.DTO;
 using Backend.Features.Shared.IAM.DTO;
 using Serilog;
 using DotNetEnv;
-using Backend.Features.Shared.StripeService.HandleStripeWebhook;
 using Backend.Features.Reports.CreateReport;
 using Backend.Features.Reports.DTO;
 using Backend.Features.Reports.GetAcceptedReportsCount;
@@ -58,9 +57,6 @@ using Backend.Features.Shared.IAM.SendEmailVerification;
 using Backend.Features.Shared.IAM.VerifyPasswordReset;
 using Backend.Features.Shared.Pipeline.Logging;
 using Backend.Features.Shared.Pipeline.Validation;
-using Backend.Features.Shared.StripeService.CreateCheckoutSession;
-using Backend.Features.Shared.StripeService.CreateStripeAccountLink;
-using Backend.Features.Shared.StripeService.DTO;
 using Backend.Features.Universities.GetAllUniversities;
 using Backend.Features.Universities.PostUniversities;
 using Backend.Features.Users.AssignModeratorRole;
@@ -83,6 +79,14 @@ using Backend.Mapping;
 using Backend.Services.EmailSender;
 using Backend.Services.Hashing;
 using Backend.Services.Token;
+using Backend.Services.AzureStorage;
+using Backend.Features.Conversations.GetChatHistory;
+using Backend.Features.Conversations.GetConversations;
+using Backend.Features.Conversations.GenerateUploadUrl;
+using Backend.Features.Conversations.ConfirmDocumentUpload;
+using Backend.Features.Conversations.GetDocumentUrl;
+using Backend.Features.Conversations.GetBulkDocumentUrls;
+using Backend.Features.Shared.Authorization.ConversationParticipantAuthorization;
 //comment for testing sonarqube
 // Configure Serilog before building the application
 Log.Logger = new LoggerConfiguration()
@@ -181,8 +185,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-builder.Services.AddSignalR();
-
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -250,6 +252,29 @@ if (builder.Environment.EnvironmentName != "Testing")
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IHashingService, HashingService>();
+
+// Register Azure Storage Service
+var azureStorageConnectionString = builder.Configuration.GetConnectionString("AzureStorageAccount");
+var containerName = builder.Configuration["BlobStorage:ContainerName"];
+
+if (!string.IsNullOrEmpty(azureStorageConnectionString) && !string.IsNullOrEmpty(containerName))
+{
+    builder.Services.AddSingleton<IAzureStorageService>(new AzureStorageService(azureStorageConnectionString, containerName));
+    Log.Information("Azure Storage Service registered successfully with container: {ContainerName}", containerName);
+}
+else
+{
+    if (string.IsNullOrEmpty(azureStorageConnectionString))
+    {
+        Log.Warning("Azure Storage Account connection string is missing. Image upload to blob storage will not be available.");
+    }
+    if (string.IsNullOrEmpty(containerName))
+    {
+        Log.Warning("Azure Storage Container name is missing. Image upload to blob storage will not be available.");
+    }
+    builder.Services.AddSingleton<IAzureStorageService>(new AzureStorageService("", ""));
+}
+
 builder.Services.AddAutoMapper(cfg =>
     {
         cfg.AddProfile<UserMapper>();
@@ -273,9 +298,13 @@ builder.Services.AddValidatorsFromAssemblyContaining<UpdateUserRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<ChangePasswordRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateModeratorAssignmentRequest>();
 builder.Services.AddValidatorsFromAssemblyContaining<CreateReportRequest>();
-
+builder.Services.AddValidatorsFromAssemblyContaining<GenerateUploadUrlRequest>();
 
 builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddSignalR(options => 
+{
+    options.EnableDetailedErrors = true;
+});
 
 var app = builder.Build();
 
@@ -539,36 +568,6 @@ bookingVerifiedGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator)
     .WithDescription("Delete a booking")
     .RequireAuthorization();
 
-
-/// Stripe Endpoints
-var stripeGroup = app.MapGroup("/stripe")
-    .WithTags("Stripe")
-    .RequireAuthorization();
-
-// Webhook endpoint - must be anonymous for Stripe to call it
-app.MapPost("/stripe/webhook", async (HttpContext httpContext, IMediator mediator) =>
-    {
-        var json = await new StreamReader(httpContext.Request.Body).ReadToEndAsync();
-        var signatureHeader = httpContext.Request.Headers["Stripe-Signature"].ToString();
-        return await mediator.Send(new HandleStripeWebhookRequest(json, signatureHeader));
-    })
-    .WithTags("Stripe")
-    .AllowAnonymous()
-    .WithDescription("Stripe webhook endpoint for payment events");
-
-// Create Stripe Connect account link for onboarding
-stripeGroup.MapPost("/connect/account-link", async (CreateStripeAccountLinkDto dto, IMediator mediator) =>
-        await mediator.Send(new CreateStripeAccountLinkRequest(dto)))
-    .WithDescription("Create a Stripe Connect account onboarding link for a user to become a seller")
-    .RequireEmailVerification();
-
-// Create checkout session for booking payment
-stripeGroup.MapPost("/checkout", async (CreateCheckoutSessionDto dto, IMediator mediator) =>
-        await mediator.Send(new CreateCheckoutSessionRequest(dto)))
-    .WithDescription("Create a Stripe checkout session for booking payment")
-    .RequireEmailVerification();
-
-
 /// Reviews Endpoints
 var reviewsGroup = app.MapGroup("/reviews")
     .WithTags("Reviews")
@@ -670,167 +669,52 @@ moderatorAssignmentsGroup.MapPatch("/{assignmentId:guid}",
     .WithDescription("Update the status of a moderator assignment (Admin only)")
     .RequireAdmin();
 
-// Add this inside a "Chat" group in Program.cs
-var chatGroup = app.MapGroup("/chat").RequireAuthorization();
+/// Conversations Endpoints
+var chatGroup = app.MapGroup("/chat")
+    .WithTags("Conversations")
+    .RequireAuthorization();
 
-chatGroup.MapGet("/history/{otherUserId:guid}", async (Guid otherUserId, ClaimsPrincipal user, ApplicationContext db) =>
+chatGroup.MapGet("/history/{otherUserId:guid}", async (Guid otherUserId, ClaimsPrincipal user, IMediator mediator) =>
 {
     var currentUserId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    return await mediator.Send(new GetChatHistoryRequest(currentUserId, otherUserId));
+})
+.WithDescription("Get chat history between current user and another user");
 
-    var messages = await db.ChatMessages
-        .Where(m => (m.SenderId == currentUserId && m.ReceiverId == otherUserId) || 
-                    (m.SenderId == otherUserId && m.ReceiverId == currentUserId))
-        .OrderBy(m => m.Timestamp)
-        .Select(m => new {
-            m.SenderId,
-            m.Content,
-            m.ImageUrl,
-            MessageType = m.MessageType.ToString(),
-            m.Timestamp
-        })
-        .ToListAsync();
-
-    return Results.Ok(messages);
-});
-
-// Upload image for chat
-chatGroup.MapPost("/upload-image", async (HttpRequest request, IWebHostEnvironment env) =>
+chatGroup.MapPost("/documents/upload-url", async (Backend.Features.Conversations.DTO.GenerateUploadUrlDto dto, IMediator mediator) =>
 {
-    try
-    {
-        if (!request.HasFormContentType)
-        {
-            Log.Warning("Upload-image: request did not have form content type");
-            return Results.BadRequest("Expected form content type");
-        }
+    return await mediator.Send(new GenerateUploadUrlRequest(dto));
+})
+.WithDescription("Generate a pre-signed SAS URL for uploading a document to Azure Blob Storage");
 
-        var form = await request.ReadFormAsync();
-        var file = form.Files.GetFile("image");
-
-        if (file == null || file.Length == 0)
-        {
-            Log.Warning("Upload-image: no file provided or empty file");
-            return Results.BadRequest("No image provided");
-        }
-
-        // Normalize content type and file extension
-        var contentType = (file.ContentType ?? string.Empty).ToLowerInvariant();
-        var allowedContentTypes = new[] { "image/jpeg", "image/jpg", "image/pjpeg", "image/png", "image/x-png", "image/gif", "image/webp" };
-        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-
-        // Try to read extension from the uploaded filename
-        var fileExtension = Path.GetExtension(file.FileName)?.ToLowerInvariant() ?? string.Empty;
-
-        // If the content-type is not in the allowed list, we'll still try to infer from extension
-        if (!allowedContentTypes.Contains(contentType) && string.IsNullOrEmpty(fileExtension))
-        {
-            Log.Warning("Upload-image: unknown content type and no extension; ContentType={ContentType}, FileName={FileName}", contentType, file.FileName);
-            return Results.BadRequest("Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.");
-        }
-
-        // Map some common content types to extensions if extension is missing or unexpected
-        if (string.IsNullOrEmpty(fileExtension) || !allowedExtensions.Contains(fileExtension))
-        {
-            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                { "image/jpeg", ".jpg" },
-                { "image/jpg", ".jpg" },
-                { "image/pjpeg", ".jpg" },
-                { "image/png", ".png" },
-                { "image/x-png", ".png" },
-                { "image/gif", ".gif" },
-                { "image/webp", ".webp" }
-            };
-
-            if (map.TryGetValue(contentType, out var extFromContentType))
-            {
-                fileExtension = extFromContentType;
-            }
-        }
-
-        // Final validation by extension
-        if (string.IsNullOrEmpty(fileExtension) || !allowedExtensions.Contains(fileExtension))
-        {
-            Log.Warning("Upload-image: invalid file type after checks; ContentType={ContentType}, FileName={FileName}, Extension={Extension}", contentType, file.FileName, fileExtension);
-            return Results.BadRequest("Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed.");
-        }
-
-        // Validate file size (max 5MB)
-        if (file.Length > 5 * 1024 * 1024)
-        {
-            Log.Warning("Upload-image: file too large ({Length} bytes)", file.Length);
-            return Results.BadRequest("File too large. Maximum size is 5MB.");
-        }
-
-        // Create uploads directory if it doesn't exist
-        var webRoot = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
-        Log.Information("Upload-image: WebRootPath={WebRoot}", webRoot);
-        var uploadsPath = Path.Combine(webRoot, "uploads", "chat");
-        Directory.CreateDirectory(uploadsPath);
-
-        // Generate unique filename
-        var safeFileName = $"{Guid.NewGuid()}{fileExtension}";
-        var filePath = Path.Combine(uploadsPath, safeFileName);
-
-        // Save the file
-        await using var stream = new FileStream(filePath, FileMode.Create);
-        await file.CopyToAsync(stream);
-
-        // Return the URL
-        var imageUrl = $"/uploads/chat/{safeFileName}";
-        Log.Information("Upload-image: saved {ImageUrl} (ContentType={ContentType}, OriginalFileName={OriginalFileName})", imageUrl, contentType, file.FileName);
-        return Results.Ok(new { imageUrl });
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "Upload-image: unexpected error");
-        return Results.StatusCode(500);
-    }
-}).DisableAntiforgery();
-
-// Get list of conversations (users we've chatted with)
-chatGroup.MapGet("/conversations", async (ClaimsPrincipal user, ApplicationContext db) =>
+chatGroup.MapPost("/documents/confirm-upload", async (Backend.Features.Conversations.DTO.ConfirmDocumentUploadDto dto, ClaimsPrincipal user, IMediator mediator) =>
 {
     var currentUserId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    return await mediator.Send(new ConfirmDocumentUploadRequest(currentUserId, Guid.Parse(dto.ReceiverId), dto.BlobName, dto.Caption));
+})
+.WithDescription("Confirm document upload and save chat message with document URL");
 
-    // Get all unique user IDs we've chatted with
-    var sentToUserIds = db.ChatMessages
-        .Where(m => m.SenderId == currentUserId)
-        .Select(m => m.ReceiverId);
+chatGroup.MapGet("/conversations", async (ClaimsPrincipal user, IMediator mediator) =>
+{
+    var currentUserId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    return await mediator.Send(new GetConversationsRequest(currentUserId));
+})
+.WithDescription("Get list of conversations (users we've chatted with)");
 
-    var receivedFromUserIds = db.ChatMessages
-        .Where(m => m.ReceiverId == currentUserId)
-        .Select(m => m.SenderId);
+chatGroup.MapPost("/documents/view-url", async (Backend.Features.Conversations.DTO.GetDocumentUrlDto dto, IMediator mediator) =>
+{
+    return await mediator.Send(new GetDocumentUrlRequest(dto));
+})
+.RequireConversationParticipant()
+.WithDescription("Get the download URL for a document (blob) in Azure Storage. Only accessible by conversation participants.");
 
-    var allUserIds = await sentToUserIds.Union(receivedFromUserIds).Distinct().ToListAsync();
+chatGroup.MapPost("/bulk/documents/url", async (Backend.Features.Conversations.DTO.GetBulkDocumentUrlsDto dto, IMediator mediator) =>
+{
+    return await mediator.Send(new GetBulkDocumentUrlsRequest(dto));
+})
+.RequireConversationParticipant()
+.WithDescription("Get download URLs for multiple documents (blobs) in Azure Storage. Only accessible by conversation participants.");
 
-    // Get user details and last message for each conversation
-    var conversations = new List<object>();
-    foreach (var otherUserId in allUserIds)
-    {
-        var otherUser = await db.Users.FindAsync(otherUserId);
-        if (otherUser == null) continue;
-
-        var lastMessage = await db.ChatMessages
-            .Where(m => (m.SenderId == currentUserId && m.ReceiverId == otherUserId) ||
-                        (m.SenderId == otherUserId && m.ReceiverId == currentUserId))
-            .OrderByDescending(m => m.Timestamp)
-            .FirstOrDefaultAsync();
-
-        conversations.Add(new
-        {
-            UserId = otherUserId,
-            UserName = $"{otherUser.FirstName} {otherUser.LastName}",
-            UserEmail = otherUser.Email,
-            LastMessage = lastMessage?.Content,
-            LastMessageTime = lastMessage?.Timestamp,
-            LastMessageSenderId = lastMessage?.SenderId
-        });
-    }
-
-    // Sort by last message time (most recent first)
-    return Results.Ok(conversations.OrderByDescending(c => ((dynamic)c).LastMessageTime));
-});
 
 
 // Log the URLs where the application is listening
@@ -842,4 +726,3 @@ await app.RunAsync();
 public partial class Program
 {
 }
-
