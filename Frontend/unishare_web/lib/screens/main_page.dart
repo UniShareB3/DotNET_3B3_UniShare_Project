@@ -40,13 +40,11 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _setupMessageListener() {
-    // Connect to SignalR and listen for new messages
     ChatService.getConnection();
     ChatService.addMessageListener(_onNewMessage);
   }
 
   void _onNewMessage(Map<String, dynamic> message) {
-    // When a new message arrives, show the notification badge
     if (mounted) {
       setState(() {
         _hasUnreadMessages = true;
@@ -57,10 +55,9 @@ class _MainPageState extends State<MainPage> {
   Future<void> _checkForUnreadMessages() async {
     try {
       final conversations = await ChatService.getConversations();
-      // If there are any conversations, we could check for unread messages
-      // For now, just having conversations means potential messages
       if (mounted && conversations.isNotEmpty) {
-        // You could add more sophisticated unread tracking here
+        // Logică simplificată: dacă există conversații, presupunem că pot fi mesaje
+        // Într-o implementare reală, backend-ul ar trebui să returneze un flag 'unreadCount'
       }
     } catch (e) {
       print('Error checking unread messages: $e');
@@ -75,7 +72,11 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
-  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
+  void _onItemTapped(int index) {
+    setState(() => _selectedIndex = index);
+    // Dacă utilizatorul merge pe profil (unde poate accesa mesaje), putem ascunde badge-ul
+    // sau îl lăsăm până intră efectiv în mesaje.
+  }
 
   void _logout() {
     final auth = context.read<AuthProvider>();
@@ -91,70 +92,56 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     final userEmail = context.watch<AuthProvider>().currentUserEmail ?? "Guest";
 
+    // Paginile care vor fi afișate. Fiecare își gestionează acum propriul AppBar.
     final pages = [
       const HomePage(),
       const DashboardPage(),
-      const ProfilePage(),
+      const ProfilePage(), // Asigură-te că ProfilePage are acum un Scaffold
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("UniShare"),
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.message),
-                tooltip: 'Messages',
-                onPressed: () {
-                  // Clear the notification badge when opening messages
-                  setState(() {
-                    _hasUnreadMessages = false;
-                  });
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ConversationsPage(),
-                    ),
-                  );
-                },
-              ),
-              if (_hasUnreadMessages)
-                Positioned(
-                  right: 8,
-                  top: 8,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 12,
-                      minHeight: 12,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
-        ],
-      ),
+      // --- AM SCOS APPBAR-UL DE AICI PENTRU A EVITA DUPLICAREA ---
+
       body: pages[_selectedIndex],
+
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         selectedItemColor: Theme.of(context).primaryColor,
         unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: "Dashboard"),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
+        type: BottomNavigationBarType.fixed,
+        items: [
+          const BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+          const BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: "Dashboard"),
+          BottomNavigationBarItem(
+            icon: Stack(
+              children: [
+                const Icon(Icons.person),
+                if (_hasUnreadMessages)
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 8,
+                        minHeight: 8,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            label: "Profile",
+          ),
         ],
       ),
+
+      // Drawer-ul rămâne aici. Poate fi deschis prin swipe de la stânga
+      // sau adăugând un buton dedicat în AppBar-ul paginilor copil.
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -170,12 +157,18 @@ class _MainPageState extends State<MainPage> {
             ListTile(
               leading: const Icon(Icons.home),
               title: const Text("Home"),
-              onTap: () => _onItemTapped(0),
+              onTap: () {
+                Navigator.pop(context);
+                _onItemTapped(0);
+              },
             ),
             ListTile(
               leading: const Icon(Icons.dashboard),
               title: const Text("Dashboard"),
-              onTap: () => _onItemTapped(1),
+              onTap: () {
+                Navigator.pop(context);
+                _onItemTapped(1);
+              },
             ),
             ListTile(
               leading: Stack(
@@ -204,7 +197,7 @@ class _MainPageState extends State<MainPage> {
                 setState(() {
                   _hasUnreadMessages = false;
                 });
-                Navigator.pop(context); // Close drawer
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -216,7 +209,10 @@ class _MainPageState extends State<MainPage> {
             ListTile(
               leading: const Icon(Icons.person),
               title: const Text("Profile"),
-              onTap: () => _onItemTapped(2),
+              onTap: () {
+                Navigator.pop(context);
+                _onItemTapped(2);
+              },
             ),
             if (_isAdminOrModerator) ...[
               const Divider(),
@@ -224,7 +220,7 @@ class _MainPageState extends State<MainPage> {
                 leading: const Icon(Icons.flag, color: Colors.red),
                 title: const Text("Moderator Reports"),
                 onTap: () {
-                  Navigator.pop(context); // Close drawer
+                  Navigator.pop(context);
                   Navigator.push(
                     context,
                     MaterialPageRoute(

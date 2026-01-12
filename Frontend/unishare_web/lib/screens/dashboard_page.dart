@@ -24,13 +24,11 @@ class _DashboardPageState extends State<DashboardPage>
 
   Map<String, Map<String, dynamic>> _itemCache = {};
   Map<String, Map<String, dynamic>> _userCache = {};
-  // Debugging: toggle to show raw received bookings on the Received tab
-  bool _showDebugReceived = false;
 
   @override
   void initState() {
     super.initState();
-    // Now have 5 tabs: My Items, Sent, Received, Lent, Borrowed
+    // 5 tab-uri: My Items, Sent, Received, Lent, Borrowed
     _tabController = TabController(length: 5, vsync: this);
     _loadData();
   }
@@ -64,18 +62,10 @@ class _DashboardPageState extends State<DashboardPage>
     });
 
     try {
-      // Use timeouts to avoid indefinite hanging; catch and report per-call problems
-      print('Dashboard: fetching myItems...');
       final items = await ApiService.getMyItems().timeout(const Duration(seconds: 10));
-      print('Dashboard: fetching myBookings...');
       final sent = await ApiService.getMyBookings().timeout(const Duration(seconds: 10));
-      print('Dashboard: fetching receivedBookings...');
       final received = await ApiService.getReceivedBookings().timeout(const Duration(seconds: 10));
 
-      // Debug: print the raw received bookings so you can inspect why buttons may not appear
-      print('Dashboard: received bookings (raw): ${received}');
-
-      // Populam cache-ul pentru items
       for (var item in items) {
         _itemCache[item['id']] = item;
       }
@@ -85,20 +75,16 @@ class _DashboardPageState extends State<DashboardPage>
         requestsSent = sent;
         requestsReceived = received;
       });
-    } catch (e, st) {
+    } catch (e) {
       print('Dashboard _loadData error: $e');
-      print(st.toString());
       setState(() {
-        _errorMessage = "Failed to load dashboard data: $e";
+        _errorMessage = "Failed to load dashboard data.";
       });
-    }
-    finally {
-      // Ensure loading indicator is removed
+    } finally {
       if (mounted) setState(() { _isLoading = false; });
     }
   }
 
-  // Helper: consider booking approved when bookingStatus == 1 or status == 'Approved'
   bool _bookingIsApproved(Map<String, dynamic> b) {
     final bs = b['bookingStatus'];
     if (bs is int) return bs == 1;
@@ -111,65 +97,79 @@ class _DashboardPageState extends State<DashboardPage>
     return false;
   }
 
-  // Bookings the current user has lent to others (owner view) and are approved
   List<Map<String, dynamic>> _lentBookings() {
     return requestsReceived.where((b) => _bookingIsApproved(b)).toList();
   }
 
-  // Bookings the current user has borrowed from others (borrower view) and are approved
   List<Map<String, dynamic>> _borrowedBookings() {
     return requestsSent.where((b) => _bookingIsApproved(b)).toList();
   }
 
   Widget _buildItemCard(Map<String, dynamic> item) {
-    final bool isAvailable = item['isAvailable'] ?? true;
-    final String status = isAvailable ? 'Available' : 'On Loan';
-    final Color statusColor = isAvailable ? Colors.green.shade600 : Colors.red.shade600;
     final String description = item['description'] ?? "No description provided.";
     final String category = item['category'] ?? "N/A";
     final String condition = item['condition'] ?? "N/A";
     final String? imageUrl = item['imageUrl'];
 
+    // Design: Imagine dreptunghiulară cu colțuri rotunjite (ClipRRect)
     Widget leadingImage;
     if (imageUrl != null && imageUrl.isNotEmpty) {
-      leadingImage = CircleAvatar(
-        radius: 25,
-        backgroundImage: NetworkImage(imageUrl),
-        backgroundColor: Colors.deepPurple.shade50,
+      leadingImage = ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          imageUrl,
+          width: 70,
+          height: 70,
+          fit: BoxFit.cover,
+          errorBuilder: (ctx, err, stack) => Container(
+            width: 70,
+            height: 70,
+            color: Colors.grey[200],
+            child: const Icon(Icons.broken_image, color: Colors.grey),
+          ),
+        ),
       );
     } else {
-      leadingImage = CircleAvatar(
-        radius: 25,
-        backgroundColor: Colors.deepPurple.shade50,
-        child: const Icon(Icons.photo_library_outlined, color: Colors.deepPurple, size: 20),
+      leadingImage = Container(
+        width: 70,
+        height: 70,
+        decoration: BoxDecoration(
+          color: Colors.deepPurple.shade50,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: const Icon(Icons.inventory_2_outlined, color: Colors.deepPurple, size: 30),
       );
     }
 
     return Card(
       elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 leadingImage,
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item['name'] ?? "No Name",
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                          overflow: TextOverflow.ellipsis),
+                      Text(
+                        item['name'] ?? "No Name",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       const SizedBox(height: 4),
                       Text(
-                        description.length > 50 ? '${description.substring(0, 50)}...' : description,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                        maxLines: 1,
+                        description,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -177,52 +177,36 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
+            // Tags / Chips simplificate
             Wrap(
               spacing: 8.0,
               runSpacing: 4.0,
               children: [
-                Chip(
-                  label: Text(category),
-                  backgroundColor: Colors.blue.shade50,
-                  labelStyle: TextStyle(color: Colors.blue.shade800, fontSize: 12),
-                ),
-                Chip(
-                  label: Text(condition),
-                  backgroundColor: Colors.grey.shade200,
-                  labelStyle: TextStyle(color: Colors.black54, fontSize: 12),
-                ),
-                Chip(
-                  label: Text(status),
-                  backgroundColor: statusColor.withOpacity(0.1),
-                  labelStyle: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12),
-                  avatar: Icon(isAvailable ? Icons.check_circle_outline : Icons.schedule, color: statusColor, size: 16),
-                ),
+                _buildTag(category, Colors.blue),
+                _buildTag(condition, Colors.orange),
               ],
             ),
-            const Divider(height: 15),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    final itemId = item['id']?.toString();
-                    if (itemId != null && itemId.isNotEmpty) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ProductPage(itemId: itemId),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Cannot open item - missing ID')),
-                      );
-                    }
-                  },
-                  child: const Text('Manage Item', style: TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.bold)),
-                ),
-              ],
+            const SizedBox(height: 8),
+            const Divider(),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  final itemId = item['id']?.toString();
+                  if (itemId != null && itemId.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProductPage(itemId: itemId),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.edit, size: 16),
+                label: const Text('Manage Item', style: TextStyle(fontWeight: FontWeight.w600)),
+                style: TextButton.styleFrom(foregroundColor: Colors.deepPurple),
+              ),
             ),
           ],
         ),
@@ -230,17 +214,30 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
+  Widget _buildTag(String text, MaterialColor color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.shade50,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.shade100),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: color.shade800, fontSize: 11, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
   Widget _buildBookingCard(Map<String, dynamic> booking, {required bool received, bool showItemMeta = false, bool allowFinish = false}) {
-    // If booking status is missing (null) set it to 0 (Pending) by default
     try {
       if (!booking.containsKey('bookingStatus') || booking['bookingStatus'] == null) {
         booking['bookingStatus'] = 0;
       }
     } catch (e) {
-      // If booking is not a mutable map for some reason, ignore and rely on helpers below
-      print('Warning: could not set default bookingStatus: $e');
+      // ignore
     }
-    // Normalize booking status: backend may return either a string `status` or numeric `bookingStatus`.
+
     String _bookingStatusLabel(Map<String, dynamic> b) {
       final s = b['status'];
       if (s != null) return s.toString();
@@ -257,31 +254,17 @@ class _DashboardPageState extends State<DashboardPage>
       return 'Pending';
     }
 
-    bool _isBookingPending(Map<String, dynamic> b) {
-      final s = b['status']?.toString().toLowerCase();
-      if (s != null) return s == 'pending';
-      final bs = b['bookingStatus'];
-      if (bs is int) return bs == 0; // enum: 0 = Pending
-      if (bs is String) return bs == '0' || bs.toLowerCase() == 'pending';
-      return true; // be permissive by default
-    }
-
     final status = _bookingStatusLabel(booking);
     Color statusColor;
     switch (status) {
-      case 'Approved':
-        statusColor = Colors.green;
-        break;
-      case 'Rejected':
-        statusColor = Colors.red;
-        break;
-      default:
-        statusColor = Colors.orange;
+      case 'Approved': statusColor = Colors.green; break;
+      case 'Rejected': statusColor = Colors.red; break;
+      case 'Completed': statusColor = Colors.grey; break;
+      case 'Canceled': statusColor = Colors.red; break;
+      default: statusColor = Colors.orange;
     }
 
     final String itemId = booking['itemId']?.toString() ?? '';
-    // Try to determine the other user's id (borrower when received, owner when sent).
-    // Booking payloads may omit ownerId; try booking['ownerId'] then booking['item']?.['ownerId'].
     String? otherUserId;
     if (received) {
       otherUserId = booking['borrowerId']?.toString();
@@ -292,7 +275,6 @@ class _DashboardPageState extends State<DashboardPage>
     final String startDate = booking['startDate']?.toString().substring(0, 10) ?? "N/A";
     final String endDate = booking['endDate']?.toString().substring(0, 10) ?? "N/A";
 
-    // Build list of futures: always fetch item; fetch user only if we have an id
     final futures = <Future<Map<String, dynamic>>>[];
     futures.add(_getItem(itemId));
     final bool willFetchUser = otherUserId != null && otherUserId.isNotEmpty && otherUserId != 'N/A';
@@ -301,18 +283,14 @@ class _DashboardPageState extends State<DashboardPage>
     return FutureBuilder(
       future: Future.wait(futures),
       builder: (context, AsyncSnapshot<List<Map<String, dynamic>>> snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty || snapshot.data![0].isEmpty) {
-          if (!snapshot.hasData) {
-            return const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: LinearProgressIndicator(),
-                ));
-          }
+        if (!snapshot.hasData) {
           return Card(
-              child: ListTile(
-                title: Text(received ? 'Item Not Found' : 'Booking for Unknown Item'),
-              ));
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            child: Container(height: 100, alignment: Alignment.center, child: const CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.data!.isEmpty || snapshot.data![0].isEmpty) {
+          return const Card(child: ListTile(title: Text('Item info unavailable')));
         }
 
         final itemDetails = snapshot.data![0];
@@ -320,17 +298,12 @@ class _DashboardPageState extends State<DashboardPage>
 
         final String itemTitle = itemDetails['name'] ?? "Item Not Found";
         final String? itemImageUrl = itemDetails['imageUrl'];
-        final String itemCategory = itemDetails['category']?.toString() ?? '';
-        final String itemCondition = itemDetails['condition']?.toString() ?? '';
 
-        // Compute display name for the other user. Prefer fetched user details, then item.ownerName, then booking fields.
         String otherUserName = 'Unknown';
         if (userDetails.isNotEmpty) {
           otherUserName = received
-              ? '${userDetails['firstName'] ?? 'User'} ${userDetails['lastName'] ?? ''}'.trim()
-              : '${userDetails['firstName'] ?? 'Owner'} ${userDetails['lastName'] ?? ''}'.trim();
-        } else if (itemDetails.containsKey('ownerName') && itemDetails['ownerName'] != null && itemDetails['ownerName'].toString().trim().isNotEmpty) {
-          otherUserName = itemDetails['ownerName'].toString();
+              ? '${userDetails['firstName'] ?? 'User'} ${userDetails['lastName'] ?? ''}'
+              : '${userDetails['firstName'] ?? 'Owner'} ${userDetails['lastName'] ?? ''}';
         } else if (received) {
           otherUserName = booking['borrowerName'] ?? 'User';
         } else {
@@ -339,27 +312,34 @@ class _DashboardPageState extends State<DashboardPage>
 
         Widget leadingImage;
         if (itemImageUrl != null && itemImageUrl.isNotEmpty) {
-          leadingImage = CircleAvatar(
-            radius: 25,
-            backgroundImage: NetworkImage(itemImageUrl),
-            backgroundColor: Colors.deepPurple.shade50,
+          leadingImage = ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              itemImageUrl,
+              width: 60,
+              height: 60,
+              fit: BoxFit.cover,
+            ),
           );
         } else {
-          leadingImage = CircleAvatar(
-            radius: 25,
-            backgroundColor: Colors.deepPurple.shade50,
-            child: const Icon(Icons.inventory_2, color: Colors.deepPurple, size: 20),
+          leadingImage = Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.deepPurple.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.inventory_2, color: Colors.deepPurple),
           );
         }
 
         return Card(
-          elevation: 1,
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          elevation: 2,
+          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Padding(
             padding: const EdgeInsets.all(12.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -372,181 +352,101 @@ class _DashboardPageState extends State<DashboardPage>
                         children: [
                           Text(
                             itemTitle,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.deepPurple),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            received
-                                ? 'Request From: $otherUserName'
-                                : 'Requested To: $otherUserName',
-                            style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500),
-                            overflow: TextOverflow.ellipsis,
+                            received ? 'From: $otherUserName' : 'To: $otherUserName',
+                            style: TextStyle(color: Colors.grey[700], fontSize: 13),
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.calendar_month,
-                                  size: 16, color: Colors.grey),
-                              const SizedBox(width: 5),
-                              Text("Period: $startDate to $endDate",
-                                  style: TextStyle(
-                                      fontSize: 13, color: Colors.grey[600])),
-                            ],
+                          const SizedBox(height: 4),
+                          Text(
+                            "$startDate  ➔  $endDate",
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600], fontStyle: FontStyle.italic),
                           ),
                         ],
                       ),
                     ),
-                  ],
-                ),
-                const Divider(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Status chip
-                    Chip(
-                      label: Text(status),
-                      backgroundColor: statusColor.withOpacity(0.1),
-                      labelStyle: TextStyle(
-                          color: statusColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 11),
+                      ),
                     ),
-                    // If we're showing item meta (Lent/Borrowed), show category & condition chips
-                    if (showItemMeta)
-                      Row(children: [
-                        if (itemCategory.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: Chip(
-                              label: Text(itemCategory),
-                              backgroundColor: Colors.blue.shade50,
-                              labelStyle: TextStyle(color: Colors.blue.shade800, fontSize: 12),
-                            ),
-                          ),
-                        if (itemCondition.isNotEmpty)
-                          Chip(
-                            label: Text(itemCondition),
-                            backgroundColor: Colors.grey.shade200,
-                            labelStyle: TextStyle(color: Colors.black54, fontSize: 12),
-                          ),
-                      ])
-                    else
-                      // Default actions: Approve/Reject for owner (received) or Cancel for borrower
-                      if (received && status == 'Pending')
-                        Row(
-                          children: [
-                            ElevatedButton(
-                              onPressed: () async {
-                                final result = await ApiService.updateBookingResult(booking['id'].toString(), 1);
-                                if (result['success'] == true && mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Request Approved')));
-                                  _loadData();
-                                } else if (mounted) {
-                                  final msg = result['message'] ?? 'Failed to approve request';
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(msg), backgroundColor: Colors.red));
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10)),
-                              child: const Text('Approve', style: TextStyle(fontSize: 12)),
-                            ),
-                            const SizedBox(width: 8),
-                            OutlinedButton(
-                              onPressed: () async {
-                                final result = await ApiService.updateBookingResult(booking['id'].toString(), 2);
-                                if (result['success'] == true && mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Request Rejected')));
-                                  _loadData();
-                                } else if (mounted) {
-                                  final msg = result['message'] ?? 'Failed to reject request';
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(msg), backgroundColor: Colors.red));
-                                }
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red,
-                                side: const BorderSide(color: Colors.red),
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
-                              ),
-                              child:
-                              const Text('Reject', style: TextStyle(fontSize: 12)),
-                            ),
-                          ],
-                        )
-                      else if (!received && status == 'Pending')
-                        TextButton(
-                          onPressed: () async {
-                            final result = await ApiService.updateBookingResult(booking['id'].toString(), 4);
-                            if (result['success'] == true && mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Request Cancelled')));
-                              _loadData();
-                            } else if (mounted) {
-                              final msg = result['message'] ?? 'Failed to cancel request';
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(msg), backgroundColor: Colors.red));
-                            }
-                          },
-                          child: const Text('Cancel Request',
-                              style: TextStyle(color: Colors.red)),
-                        ),
-                    // If allowed, show Finish Borrowing button for Borrowed tab when approved and not completed
-                    if (allowFinish)
-                      Builder(builder: (ctx) {
-                        final bs = booking['bookingStatus'];
-                        final bool isCompleted = (bs is int && bs == 3) || (booking['status']?.toString().toLowerCase() == 'completed');
-                        final bool isApproved = status == 'Approved' || (bs is int && bs == 1);
-                        if (isApproved && !isCompleted) {
-                          return Padding(
-                            padding: const EdgeInsets.only(left: 8.0),
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                final confirm = await showDialog<bool>(
-                                  context: ctx,
-                                  builder: (dctx) => AlertDialog(
-                                    title: const Text('Confirm finish'),
-                                    content: const Text('Are you sure you want to finish this borrowing? This will mark the item as returned.'),
-                                    actions: [
-                                      TextButton(onPressed: () => Navigator.of(dctx).pop(false), child: const Text('Cancel')),
-                                      TextButton(onPressed: () => Navigator.of(dctx).pop(true), child: const Text('Finish')),
-                                    ],
-                                  ),
-                                );
-                                if (confirm != true) return;
-                                final result = await ApiService.updateBookingResult(booking['id'].toString(), 3);
-                                if (result['success'] == true && mounted) {
-                                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Borrowing finished')));
-                                  _loadData();
-                                } else if (mounted) {
-                                  final msg = result['message'] ?? 'Failed to finish borrowing';
-                                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Failed to finish borrowing'), backgroundColor: Colors.red));
-                                  // Show detailed message in debug console and small dialog
-                                  debugPrint('Finish result: ${result}');
-                                  showDialog(context: ctx, builder: (d) => AlertDialog(title: const Text('Error'), content: Text(msg), actions: [TextButton(onPressed: () => Navigator.of(d).pop(), child: const Text('Close'))]));
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white),
-                              child: const Text('Finish Borrowing', style: TextStyle(fontSize: 12)),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      }),
                   ],
                 ),
+
+                if ((received && status == 'Pending') || (!received && status == 'Pending') || (allowFinish && status == 'Approved')) ...[
+                  const Divider(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (received && status == 'Pending') ...[
+                        OutlinedButton.icon(
+                          onPressed: () => _updateBookingStatus(booking['id'], 2, 'Rejected'),
+                          icon: const Icon(Icons.close, size: 16),
+                          label: const Text('Reject'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          onPressed: () => _updateBookingStatus(booking['id'], 1, 'Approved'),
+                          icon: const Icon(Icons.check, size: 16),
+                          label: const Text('Approve'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                          ),
+                        ),
+                      ]
+                      else if (!received && status == 'Pending') ...[
+                        TextButton.icon(
+                          onPressed: () => _updateBookingStatus(booking['id'], 4, 'Cancelled'),
+                          icon: const Icon(Icons.cancel_outlined, size: 16),
+                          label: const Text('Cancel Request'),
+                          style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        ),
+                      ]
+                      else if (allowFinish && status == 'Approved') ...[
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Return Item?'),
+                                  content: const Text('Confirm that you have returned this item.'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+                                    TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes, Returned')),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                _updateBookingStatus(booking['id'], 3, 'Finished');
+                              }
+                            },
+                            icon: const Icon(Icons.done_all, size: 16),
+                            label: const Text('Finish & Return'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurple,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -555,72 +455,42 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
+  Future<void> _updateBookingStatus(dynamic id, int status, String actionLabel) async {
+    final result = await ApiService.updateBookingResult(id.toString(), status);
+    if (mounted) {
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Request $actionLabel successfully'), backgroundColor: Colors.green));
+        _loadData();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? 'Error'), backgroundColor: Colors.red));
+      }
+    }
+  }
 
   Widget _buildTabContent(List<Map<String, dynamic>> list, {required bool isBooking, bool received = false, bool showItemMeta = false, bool allowFinish = false}) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_errorMessage != null) return Center(child: Text(_errorMessage!));
+    if (_errorMessage != null) return Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)));
 
     if (list.isEmpty) {
-      String message = isBooking ? (received ? "No requests received yet." : "No requests sent yet.") : "You haven't listed any items yet. Tap '+' to add one!";
+      String message = isBooking ? (received ? "No requests received yet." : "No requests sent yet.") : "You haven't listed any items yet.";
+      IconData icon = isBooking ? (received ? Icons.inbox : Icons.outbox) : Icons.add_business;
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(isBooking ? Icons.notification_important_outlined : Icons.inventory_2_outlined, size: 60, color: Colors.grey[400]),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40.0),
-              child: Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+              child: Icon(icon, size: 50, color: Colors.grey.shade400),
             ),
-            const SizedBox(height: 12),
-            // If this is the Received tab and there was a server error while fetching booked-items, show a banner
-            if (isBooking && received && ApiService.lastReceivedError != null)
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  border: Border.all(color: Colors.orange.shade200),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.error_outline, color: Colors.orange),
-                        const SizedBox(width: 8),
-                        Expanded(child: Text('We could not load received requests due to a server issue.')),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          showDialog(context: context, builder: (ctx) {
-                            return AlertDialog(
-                              title: const Text('Server error details'),
-                              content: SizedBox(
-                                width: double.maxFinite,
-                                child: SingleChildScrollView(child: Text(ApiService.lastReceivedError ?? '')),
-                              ),
-                              actions: [TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Close'))],
-                            );
-                          });
-                        },
-                        child: const Text('View details'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            const SizedBox(height: 16),
+            Text(message, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
           ],
         ),
       );
     }
 
-    // If this is the Received bookings tab but the API returned ItemDto objects
-    // (e.g. GET /users/{userId}/booked-items returns items), render them as items.
     if (isBooking && received && list.isNotEmpty && list[0].containsKey('name') && list[0].containsKey('ownerName')) {
       return ListView.builder(
         padding: const EdgeInsets.all(10),
@@ -630,108 +500,65 @@ class _DashboardPageState extends State<DashboardPage>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(12),
       itemCount: list.length,
-      itemBuilder: (_, i) => isBooking ? _buildBookingCard(list[i], received: received, showItemMeta: showItemMeta, allowFinish: allowFinish) : _buildItemCard(list[i]),
+      itemBuilder: (_, i) => isBooking
+          ? _buildBookingCard(list[i], received: received, showItemMeta: showItemMeta, allowFinish: allowFinish)
+          : _buildItemCard(list[i]),
     );
   }
 
-  Widget _debugReceivedCard() {
-    return Card(
-      margin: const EdgeInsets.all(10),
-      color: Colors.orange.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Dashboard", style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: false,
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.amber,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white60,
+          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          tabs: const [
+            Tab(text: "My Items"),
+            Tab(text: "Sent"),
+            Tab(text: "Received"),
+            Tab(text: "Lent"),
+            Tab(text: "Borrowed"),
+          ],
+        ),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData, tooltip: 'Refresh Data'),
+        ],
+      ),
+      body: Container(
+        color: Colors.grey.shade50,
+        child: TabBarView(
+          controller: _tabController,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Debug: Received bookings (${requestsReceived.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
-                TextButton(onPressed: () { setState(() { requestsReceived = []; }); }, child: const Text('Clear'))
-              ],
-            ),
-            const SizedBox(height: 6),
-            SizedBox(
-              height: 110,
-              child: requestsReceived.isEmpty
-                  ? const Text('No received bookings')
-                  : ListView.builder(
-                  itemCount: requestsReceived.length,
-                  itemBuilder: (_, i) {
-                    final b = requestsReceived[i];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2.0),
-                      child: Text('${i+1}. id=${b['id'] ?? 'n/a'} | status=${b['status'] ?? b['bookingStatus'] ?? 'n/a'} | itemId=${b['itemId'] ?? 'n/a'}', style: const TextStyle(fontSize: 12)),
-                    );
-                  }),
-            ),
+            _buildTabContent(myItems, isBooking: false),
+            _buildTabContent(requestsSent, isBooking: true, received: false),
+            _buildTabContent(requestsReceived, isBooking: true, received: true),
+            _buildTabContent(_lentBookings(), isBooking: true, received: true, showItemMeta: true),
+            _buildTabContent(_borrowedBookings(), isBooking: true, received: false, showItemMeta: true, allowFinish: true),
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final created = await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddItemPage()));
+          if (created == true && mounted) _loadData();
+        },
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Item'),
+      ),
     );
   }
-
-   @override
-   Widget build(BuildContext context) {
-     return Scaffold(
-       appBar: AppBar(
-         title: const Text("Dashboard", style: TextStyle(fontWeight: FontWeight.bold)),
-         backgroundColor: Colors.deepPurple,
-         foregroundColor: Colors.white,
-         bottom: TabBar(
-           controller: _tabController,
-           indicatorColor: Colors.white,
-           labelColor: Colors.white,
-           unselectedLabelColor: Colors.white70,
-           tabs: const [
-             Tab(text: "My Items", icon: Icon(Icons.list_alt)),
-             Tab(text: "Sent", icon: Icon(Icons.send)),
-             Tab(text: "Received", icon: Icon(Icons.call_received)),
-             Tab(text: "Lent", icon: Icon(Icons.arrow_upward)),
-             Tab(text: "Borrowed", icon: Icon(Icons.arrow_downward)),
-           ],
-         ),
-         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadData),
-          IconButton(
-            icon: const Icon(Icons.bug_report),
-            tooltip: 'Toggle received debug',
-            onPressed: () {
-              setState(() { _showDebugReceived = !_showDebugReceived; });
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_showDebugReceived ? 'Showing debug for received' : 'Hiding debug')));
-            },
-          ),
-         ],
-       ),
-       body: TabBarView(
-         controller: _tabController,
-         children: [
-           _buildTabContent(myItems, isBooking: false),
-           _buildTabContent(requestsSent, isBooking: true, received: false),
-           // Wrap the Received tab so we can optionally show a debug card on top
-           Column(
-             children: [
-               if (_showDebugReceived) _debugReceivedCard(),
-               Expanded(child: _buildTabContent(requestsReceived, isBooking: true, received: true)),
-             ],
-           ),
-           // Lent tab: bookings where current user is owner and booking is approved
-           _buildTabContent(_lentBookings(), isBooking: true, received: true, showItemMeta: true),
-           // Borrowed tab: bookings where current user is borrower and booking is approved
-           _buildTabContent(_borrowedBookings(), isBooking: true, received: false, showItemMeta: true, allowFinish: true),
-         ],
-       ),
-       floatingActionButton: FloatingActionButton(
-         onPressed: () async {
-           final created = await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddItemPage()));
-           if (created == true && mounted) _loadData();
-         },
-         backgroundColor: Colors.deepPurple,
-         foregroundColor: Colors.white,
-         child: const Icon(Icons.add),
-       ),
-     );
-   }
- }
+}

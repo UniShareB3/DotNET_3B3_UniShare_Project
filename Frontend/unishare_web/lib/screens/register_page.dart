@@ -18,8 +18,12 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordCtrl = TextEditingController();
   final _confirmPasswordCtrl = TextEditingController();
 
-  String? _selectedUniversityId; // stocăm ID-ul universității selectate
+  String? _selectedUniversityId;
   bool _loading = false;
+
+  // Variabile pentru vizibilitatea parolelor
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
   @override
   void initState() {
@@ -59,7 +63,8 @@ class _RegisterPageState extends State<RegisterPage> {
     if (universityName == null) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selected university could not be resolved.')),);
+        const SnackBar(content: Text('Selected university could not be resolved.')),
+      );
       return;
     }
 
@@ -80,7 +85,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (success != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registration successful!')),
-        );
+      );
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -171,31 +176,32 @@ class _RegisterPageState extends State<RegisterPage> {
                     ),
                     items: auth.isUniversitiesLoading
                         ? [
-                            const DropdownMenuItem<String>(
-                              value: null,
-                              child: Text('Loading universities...'),
-                            )
-                          ]
+                      const DropdownMenuItem<String>(
+                        value: null,
+                        child: Text('Loading universities...'),
+                      )
+                    ]
                         : auth.universities.isEmpty
-                            ? [
-                                const DropdownMenuItem<String>(
-                                  value: null,
-                                  child: Text('No universities available'),
-                                )
-                              ]
-                            : auth.universities
-                                .map<DropdownMenuItem<String>>(
-                                  (u) => DropdownMenuItem<String>(
-
-                                value: u.id, // ID-ul universității
-                                child: Text("${u.name} (${u.shortCode})"),
-                              ),
-                            ).toList(),
-                    onChanged: auth.isUniversitiesLoading || auth.universities.isEmpty
+                        ? [
+                      const DropdownMenuItem<String>(
+                        value: null,
+                        child: Text('No universities available'),
+                      )
+                    ]
+                        : auth.universities
+                        .map<DropdownMenuItem<String>>(
+                          (u) => DropdownMenuItem<String>(
+                        value: u.id,
+                        child: Text("${u.name} (${u.shortCode})"),
+                      ),
+                    )
+                        .toList(),
+                    onChanged: auth.isUniversitiesLoading ||
+                        auth.universities.isEmpty
                         ? null
                         : (value) {
-                            setState(() => _selectedUniversityId = value);
-                          },
+                      setState(() => _selectedUniversityId = value);
+                    },
                     validator: (v) => v == null ? 'Select a university' : null,
                   ),
                   const SizedBox(height: 15),
@@ -222,13 +228,27 @@ class _RegisterPageState extends State<RegisterPage> {
                   // Password
                   TextFormField(
                     controller: _passwordCtrl,
+                    // Dacă _isPasswordVisible e true, obscureText e false (vedem textul)
+                    obscureText: !_isPasswordVisible,
                     decoration: InputDecoration(
                       labelText: 'Password',
                       prefixIcon: const Icon(Icons.lock_outline),
+                      // Aici adăugăm iconița "ochișor"
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isPasswordVisible = !_isPasswordVisible;
+                          });
+                        },
+                      ),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
-                    obscureText: true,
                     validator: (v) {
                       final error = _validatePassword(v);
                       if (error != null) return error;
@@ -244,13 +264,28 @@ class _RegisterPageState extends State<RegisterPage> {
                   // Confirm Password
                   TextFormField(
                     controller: _confirmPasswordCtrl,
+                    // Dacă _isConfirmPasswordVisible e true, obscureText e false
+                    obscureText: !_isConfirmPasswordVisible,
                     decoration: InputDecoration(
                       labelText: 'Confirm Password',
                       prefixIcon: const Icon(Icons.lock_reset),
+                      // Aici adăugăm iconița "ochișor" pentru confirmare
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isConfirmPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isConfirmPasswordVisible =
+                            !_isConfirmPasswordVisible;
+                          });
+                        },
+                      ),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
-                    obscureText: true,
                     validator: (v) {
                       if (v == null || v.isEmpty) return 'Confirm your password';
                       if (v != _passwordCtrl.text) return 'Passwords do not match';
@@ -263,7 +298,11 @@ class _RegisterPageState extends State<RegisterPage> {
                   SizedBox(
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _loading || auth.isUniversitiesLoading || auth.universities.isEmpty ? null : _register,
+                      onPressed: _loading ||
+                          auth.isUniversitiesLoading ||
+                          auth.universities.isEmpty
+                          ? null
+                          : _register,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
                         foregroundColor: Colors.white,
