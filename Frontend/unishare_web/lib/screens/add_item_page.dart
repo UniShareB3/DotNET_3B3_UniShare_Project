@@ -1,5 +1,9 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
+import '../services/chat_service.dart';
+import '../services/secure_storage_service.dart'; // Necesar pentru a obține userId
 
 class AddItemPage extends StatefulWidget {
   const AddItemPage({super.key});
@@ -11,17 +15,21 @@ class AddItemPage extends StatefulWidget {
 class _AddItemPageState extends State<AddItemPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // ACTUALIZAT: Listele corespund acum cu valorile valide din backend
   final List<String> _categories = ['Others', 'Books', 'Electronics', 'Kitchen', 'Clothing', 'Accessories'];
-  final List<String> _conditions = ['Excellent', 'Good', 'Fair', 'Poor'];
+  final List<String> _conditions = ['New', 'Excellent', 'Good', 'Fair', 'Poor'];
 
   // Stare pentru a stoca datele formularului
   String _name = "";
   String _description = "";
-  String? _selectedCategory; // Nullable pentru Dropdown
-  String? _selectedCondition; // Nullable pentru Dropdown
-  String? _imageUrl; // NOU: Stare pentru URL imagine
+  String? _selectedCategory;
+  String? _selectedCondition;
+  String? _imageUrl; // URL-ul final al imaginii (după upload)
 
+  // Stare pentru imaginea selectată local
+  XFile? _pickedImage;
+  Uint8List? _pickedImageBytes;
+
+  bool _isUploading = false;
   bool _isLoading = false;
 
   // Funcție utilitară pentru a aplica stilul de input
@@ -39,26 +47,102 @@ class _AddItemPageState extends State<AddItemPage> {
     );
   }
 
-  // Funcție de validare opțională pentru URL
-  String? _validateImageUrl(String? v) {
-    if (v == null || v.isEmpty) return null; // Nu e obligatoriu
+  // 1. Selectare Imagine din Galerie
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    try {
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _pickedImage = image;
+          _pickedImageBytes = bytes;
+        });
 
-    // Regex simplu pentru URL
-    final urlRegex = RegExp(r'^https?:\/\/');
-    if (!urlRegex.hasMatch(v)) {
-      return "Please enter a valid URL (starts with http:// or https://)";
+        // Declanșăm upload-ul automat după selectare
+        _uploadImage(image, bytes);
+      }
+    } catch (e) {
+      print('Error picking image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to pick image')),
+      );
     }
-    return null;
+  }
+
+  // 2. Upload Imagine folosind ChatService.uploadDocument
+  // Această metodă gestionează SAS, Upload-ul propriu-zis și Confirmarea (care returnează URL-ul public)
+  Future<void> _uploadImage(XFile imageFile, Uint8List bytes) async {
+    setState(() => _isUploading = true);
+
+    try {
+      // Obținem ID-ul utilizatorului curent pentru a-l folosi ca "receiver" (self-upload)
+      // Acest lucru este necesar pentru a satisface cerințele backend-ului
+      final token = await SecureStorageService.getAccessToken();
+      final userId = ApiService.getUserIdFromToken(token ?? '');
+
+      if (userId == null) {
+        throw Exception("You must be logged in to upload images.");
+      }
+
+      // Folosim metoda completă din ChatService
+      // Aceasta va returna un Map care conține 'documentUrl' valid
+      final result = await ChatService.uploadDocument(
+          bytes.toList(), // Convertim la List<int>
+          imageFile.name,
+          userId // Trimitem ID-ul nostru pentru a confirma upload-ul
+      );
+
+      if (result != null && result['documentUrl'] != null) {
+        setState(() {
+          _imageUrl = result['documentUrl']; // Salvăm URL-ul public primit de la server
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Image uploaded successfully!')),
+          );
+        }
+      } else {
+        throw Exception("Upload succeeded but no URL was returned.");
+      }
+
+    } catch (e) {
+      print("Upload error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error uploading image: $e')),
+        );
+      }
+      // Resetăm starea imaginii în caz de eșec pentru a permite reîncercarea
+      setState(() {
+        _pickedImage = null;
+        _pickedImageBytes = null;
+        _imageUrl = null;
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
+    }
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
-    // Verificare suplimentară pentru Dropdown-uri
+    // Verificare Dropdown-uri
     if (_selectedCategory == null || _selectedCondition == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please select a Category and Condition")),
+      );
+      return;
+    }
+
+    // Nu permitem trimiterea dacă upload-ul e în curs
+    if (_isUploading) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please wait for image upload to finish.")),
       );
       return;
     }
@@ -68,25 +152,27 @@ class _AddItemPageState extends State<AddItemPage> {
     final result = await ApiService.postItem(
       name: _name,
       description: _description,
-      category: _selectedCategory!, // Acum nu mai este null
-      condition: _selectedCondition!, // Acum nu mai este null
-      imageUrl: _imageUrl, // NOU: Trimitem URL-ul
+      category: _selectedCategory!,
+      condition: _selectedCondition!,
+      imageUrl: _imageUrl, // Trimitem URL-ul obținut din procesul de upload
     );
 
     setState(() => _isLoading = false);
 
     if (result == true) {
-      Navigator.pop(context, true); // return success
+      if (mounted) Navigator.pop(context, true); // return success
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to create item")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to create item")),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final double maxFormWidth = 600.0; // Lățime mai mare pentru un formular lung
+    final double maxFormWidth = 600.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -106,7 +192,6 @@ class _AddItemPageState extends State<AddItemPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. Titlu
                   const Text(
                     'Item Details',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.deepPurple),
@@ -114,7 +199,54 @@ class _AddItemPageState extends State<AddItemPage> {
                   ),
                   const SizedBox(height: 30),
 
-                  // 2. Item Name
+                  // --- Image Picker Section ---
+                  Center(
+                    child: Column(
+                      children: [
+                        Container(
+                          height: 250,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              _buildImagePreview(),
+                              if (_isUploading)
+                                Container(
+                                  color: Colors.black45,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(color: Colors.white),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: _isUploading ? null : _pickImage,
+                              icon: const Icon(Icons.cloud_upload),
+                              label: const Text('Select & Upload Image'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.deepPurple.shade50,
+                                foregroundColor: Colors.deepPurple,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Name
                   TextFormField(
                     decoration: _getInputDecoration("Item Name", Icons.label_outline),
                     validator: (v) => v!.isEmpty ? "Item name is required" : null,
@@ -122,10 +254,10 @@ class _AddItemPageState extends State<AddItemPage> {
                   ),
                   const SizedBox(height: 15),
 
-                  // 3. Description
+                  // Description
                   TextFormField(
                     decoration: _getInputDecoration("Description", Icons.description_outlined).copyWith(
-                      alignLabelWithHint: true, // Pentru a alinia eticheta sus la multiline
+                      alignLabelWithHint: true,
                     ),
                     maxLines: 4,
                     validator: (v) => v!.isEmpty ? "Description is required" : null,
@@ -133,7 +265,7 @@ class _AddItemPageState extends State<AddItemPage> {
                   ),
                   const SizedBox(height: 15),
 
-                  // 4. Category (Dropdown)
+                  // Category
                   DropdownButtonFormField<String>(
                     value: _selectedCategory,
                     decoration: _getInputDecoration("Category", Icons.category_outlined),
@@ -154,7 +286,7 @@ class _AddItemPageState extends State<AddItemPage> {
                   ),
                   const SizedBox(height: 15),
 
-                  // 5. Condition (Dropdown)
+                  // Condition
                   DropdownButtonFormField<String>(
                     value: _selectedCondition,
                     decoration: _getInputDecoration("Condition", Icons.star_border),
@@ -173,23 +305,15 @@ class _AddItemPageState extends State<AddItemPage> {
                     validator: (v) => v == null || v.isEmpty ? "Condition is required" : null,
                     onSaved: (v) => _selectedCondition = v,
                   ),
-                  const SizedBox(height: 15),
-
-                  // NOU: 6. Image URL (Opțional)
-                  TextFormField(
-                    decoration: _getInputDecoration("Image URL (Optional)", Icons.link_outlined),
-                    validator: _validateImageUrl,
-                    onSaved: (v) => _imageUrl = v!.isEmpty ? null : v, // Setează null dacă este gol
-                  ),
                   const SizedBox(height: 30),
 
-                  // 7. Create Item Button
+                  // Submit Button
                   SizedBox(
                     height: 50,
                     child: _isLoading
                         ? const Center(child: CircularProgressIndicator(color: Colors.deepPurple))
                         : ElevatedButton(
-                      onPressed: _submit,
+                      onPressed: _isUploading ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepPurple,
                         foregroundColor: Colors.white,
@@ -206,5 +330,23 @@ class _AddItemPageState extends State<AddItemPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildImagePreview() {
+    if (_pickedImageBytes != null) {
+      // Imaginea selectată local
+      return Image.memory(_pickedImageBytes!, fit: BoxFit.cover);
+    } else {
+      // Placeholder
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.image, size: 80, color: Colors.grey),
+            Text("No image selected", style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
+    }
   }
 }
