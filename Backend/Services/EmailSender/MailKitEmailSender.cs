@@ -6,6 +6,7 @@ namespace Backend.Services.EmailSender;
 
 public class MailKitEmailSender(IConfiguration configuration) : IEmailSender
 {
+    private const string DefaultFrontendUrl = "http://localhost:3000";
     public async Task SendEmailAsync(string toEmail, string subject, string body)
     {
         var message = new MimeMessage();
@@ -53,7 +54,7 @@ UniShare Team";
     public async Task SendPasswordResetEmailAsync(string toEmail, string resetToken, Guid userId)
     {
         // Get frontend URL from configuration or use default
-        var frontendUrl = configuration["Frontend:BaseUrl"] ?? "http://localhost:3000";
+        var frontendUrl = configuration["Frontend:BaseUrl"] ?? DefaultFrontendUrl;
         
         // URL encode the token to ensure it's safe for URLs
         var encodedToken = Uri.EscapeDataString(resetToken);

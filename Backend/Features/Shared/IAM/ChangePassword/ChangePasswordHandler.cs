@@ -18,21 +18,21 @@ public class ChangePasswordHandler(
     public async Task<IResult> Handle(ChangePasswordRequest request, CancellationToken cancellationToken)
     {
         var dto = request.ChangePasswordDto;
-        _logger.Information("Attempting to change password for user {UserId}", dto.UserId);
+        _logger.Information("Processing password change request for user {UserId}", dto.UserId);
 
         var user = await userManager.FindByIdAsync(dto.UserId.ToString());
-        
+
         if (user == null)
         {
             _logger.Warning("Password change failed: User {UserId} not found.", dto.UserId);
             return Results.NotFound(new { error = "User not found" });
         }
-        
+
         var recentToken = await context.PasswordResetTokens
             .Where(t => t.UserId == user.Id && !t.IsUsed)
             .OrderByDescending(t => t.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
-        
+
         if (recentToken == null || recentToken.CreatedAt < DateTime.UtcNow.AddMinutes(-IamConstants.ResetPasswordTokenExpiryMinutes))
         {
             _logger.Warning("No valid password reset token found for user {UserId}", dto.UserId);
@@ -42,7 +42,6 @@ public class ChangePasswordHandler(
         recentToken.IsUsed = true;
 
         string resetToken = recentToken.Code;
-        _logger.Information("Using stored password reset token for user {UserId}", dto.UserId);
 
         var result = await userManager.ResetPasswordAsync(user, resetToken, dto.NewPassword);
         

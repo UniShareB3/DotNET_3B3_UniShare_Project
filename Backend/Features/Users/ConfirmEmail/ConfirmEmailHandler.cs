@@ -18,10 +18,10 @@ public class ConfirmEmailHandler(
     
     public async Task<IResult> Handle(ConfirmEmailRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Attempting to confirm email for user {UserId}", request.UserId);
-        
+        _logger.Information("Processing email confirmation for user {UserId}", request.UserId);
+
         var user = await userManager.FindByIdAsync(request.UserId.ToString());
-        
+
         if (user == null)
         {
             _logger.Warning("User not found for ID {UserId} during email confirmation", request.UserId);
@@ -37,10 +37,10 @@ public class ConfirmEmailHandler(
         var now = DateTime.UtcNow;
 
         var hashedCode = hashingService.HashCode(request.Code);
-        
+
         var token = await context.EmailConfirmationTokens
-            .Where(t => t.UserId == user.Id 
-                     && !t.IsUsed 
+            .Where(t => t.UserId == user.Id
+                     && !t.IsUsed
                      && t.Code == hashedCode
                      && t.ExpiresAt > now)
             .OrderByDescending(t => t.CreatedAt)
@@ -52,22 +52,20 @@ public class ConfirmEmailHandler(
             return Results.BadRequest(new { error = "Invalid or expired verification code" });
         }
 
-        _logger.Information("Confirming email for user {UserId}", request.UserId);
-        
         token.IsUsed = true;
         user.NewEmailConfirmed = true;
 
         var updateResult = await userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
         {
-            _logger.Error("Failed to update user {UserId} during email confirmation. Errors: {Errors}", 
-                request.UserId, 
+            _logger.Error("Failed to update user {UserId} during email confirmation. Errors: {Errors}",
+                request.UserId,
                 string.Join(", ", updateResult.Errors.Select(e => e.Description)));
             return Results.Problem("Failed to confirm email");
         }
-        
+
         await context.SaveChangesAsync(cancellationToken);
-        
+
         _logger.Information("Email confirmed successfully for user {UserId}", request.UserId);
         return Results.Ok(new { message = "Email confirmed successfully" });
     }

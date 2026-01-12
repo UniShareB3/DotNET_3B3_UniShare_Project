@@ -10,6 +10,7 @@ namespace Backend.Hubs;
 [Authorize]
 public class ChatHub(ApplicationContext context) : Hub
 {
+    private const string ReceiveMessageMethod = "ReceiveMessage";
     private readonly ApplicationContext _context = context;
 
     // Frontend calls this method to send a text message
@@ -44,10 +45,10 @@ public class ChatHub(ApplicationContext context) : Hub
         };
 
         // Broadcast to receiver (live update)
-        await Clients.User(receiverId).SendAsync("ReceiveMessage", messageData);
+        await Clients.User(receiverId).SendAsync(ReceiveMessageMethod, messageData);
 
         // Broadcast to sender (so their UI updates immediately)
-        await Clients.Caller.SendAsync("ReceiveMessage", messageData);
+        await Clients.Caller.SendAsync(ReceiveMessageMethod, messageData);
     }
 
     private async Task SendMessageInternal(string receiverId, string content, string? documentUrl, string contentType)
@@ -83,9 +84,9 @@ public class ChatHub(ApplicationContext context) : Hub
         };
 
         // 2. Send to Receiver (Live)
-        await Clients.User(receiverId).SendAsync("ReceiveMessage", messageData);
+        await Clients.User(receiverId).SendAsync(ReceiveMessageMethod, messageData);
 
         // 3. Send back to Sender (so their UI updates immediately with the server timestamp)
-        await Clients.Caller.SendAsync("ReceiveMessage", messageData);
+        await Clients.Caller.SendAsync(ReceiveMessageMethod, messageData);
     }
 }

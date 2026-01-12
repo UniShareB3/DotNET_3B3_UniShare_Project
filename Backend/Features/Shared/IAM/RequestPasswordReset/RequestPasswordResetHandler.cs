@@ -19,7 +19,7 @@ public class RequestPasswordResetHandler(
     
     public async Task<IResult> Handle(RequestPasswordResetRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Attempting to send password reset token to email {Email}", request.Email);
+        _logger.Information("Processing password reset request for email {Email}", request.Email);
 
         var user = await userManager.FindByEmailAsync(request.Email);
 
@@ -37,8 +37,6 @@ public class RequestPasswordResetHandler(
 
         // Generate password reset token using UserManager
         var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
-        
-        _logger.Information("Generated password reset token for user {UserId}", user.Id);
 
         // Store the token in the database with expiration
         var passwordResetToken = new PasswordResetToken
@@ -53,32 +51,27 @@ public class RequestPasswordResetHandler(
         var existingTokens = await context.PasswordResetTokens
             .Where(t => t.UserId == user.Id && !t.IsUsed)
             .ToListAsync(cancellationToken);
-        
+
         if (existingTokens.Count != 0)
         {
-            _logger.Information("Removing {TokenCount} existing unused password reset tokens for user {UserId}", 
-                existingTokens.Count, user.Id);
             context.PasswordResetTokens.RemoveRange(existingTokens);
         }
 
         context.PasswordResetTokens.Add(passwordResetToken);
         await context.SaveChangesAsync(cancellationToken);
-        
-        _logger.Information("Saved password reset token for user {UserId}, expires at {ExpiresAt}", 
-            user.Id, passwordResetToken.ExpiresAt);
 
         try
         {
             await emailSender.SendPasswordResetEmailAsync(user.Email, resetToken, user.Id);
-            _logger.Information("Password reset email sent successfully to {Email}", user.Email);
+            _logger.Information("Password reset email sent successfully to user {UserId}", user.Id);
         }
         catch (Exception ex)
         {
             _logger.Error(ex, "Failed to send password reset email to {Email}", user.Email);
             return Results.Problem("Failed to send password reset email");
         }
-        
-        return Results.Ok(new { 
+
+        return Results.Ok(new {
             message = "Password reset token sent successfully",
             expiresInMinutes = 15
         });

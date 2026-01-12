@@ -22,10 +22,10 @@ public class VerifyPasswordResetHandler(
     
     public async Task<IResult> Handle(VerifyPasswordResetRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Attempting to verify password reset token for user {UserId}", request.UserId);
-        
+        _logger.Information("Verifying password reset token for user {UserId}", request.UserId);
+
         var user = await userManager.FindByIdAsync(request.UserId.ToString());
-        
+
         if (user == null)
         {
             _logger.Warning("User {UserId} not found during password reset verification", request.UserId);
@@ -33,11 +33,11 @@ public class VerifyPasswordResetHandler(
         }
 
         var now = DateTime.UtcNow;
-        
+
         // Find the token in our database
         var storedToken = await context.PasswordResetTokens
-            .Where(t => t.UserId == user.Id 
-                     && !t.IsUsed 
+            .Where(t => t.UserId == user.Id
+                     && !t.IsUsed
                      && t.Code == request.Code
                      && t.ExpiresAt > now)
             .OrderByDescending(t => t.CreatedAt)
@@ -51,9 +51,9 @@ public class VerifyPasswordResetHandler(
 
         // Verify the token with UserManager to ensure it's valid
         var isValidToken = await userManager.VerifyUserTokenAsync(
-            user, 
-            userManager.Options.Tokens.PasswordResetTokenProvider, 
-            "ResetPassword", 
+            user,
+            userManager.Options.Tokens.PasswordResetTokenProvider,
+            "ResetPassword",
             request.Code);
 
         if (!isValidToken)
@@ -62,18 +62,16 @@ public class VerifyPasswordResetHandler(
             return Results.BadRequest(new { error = "Invalid password reset token" });
         }
 
-        _logger.Information("Password reset token verified for user {UserId}, generating temporary JWT", request.UserId);
-        
         // Mark token as used
         storedToken.IsUsed = true;
         await context.SaveChangesAsync(cancellationToken);
 
         // Generate a temporary short-lived JWT token for password change
         var tempToken = GenerateTemporaryToken(user);
-        
-        _logger.Information("Temporary password reset JWT generated for user {UserId}", request.UserId);
-        
-        return Results.Ok(new { 
+
+        _logger.Information("Password reset verified and temporary JWT generated for user {UserId}", request.UserId);
+
+        return Results.Ok(new {
             message = "Password reset token verified successfully",
             temporaryToken = tempToken,
             expiresInMinutes = IamConstants.ResetPasswordRightExpiryMinutes

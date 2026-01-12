@@ -7,13 +7,13 @@ namespace Backend.Services.AzureStorage;
 
 public class AzureStorageService : IAzureStorageService
 {
-    private readonly BlobServiceClient _blobServiceClient;
+    private readonly BlobServiceClient? _blobServiceClient;
     private readonly string _containerName;
     private readonly ILogger _logger = Log.ForContext<AzureStorageService>();
 
     public AzureStorageService(string connectionString, string containerName)
     {
-        if(!String.IsNullOrEmpty(connectionString))
+        if (!String.IsNullOrEmpty(connectionString))
             _blobServiceClient = new BlobServiceClient(connectionString);
         _containerName = containerName;
     }
@@ -52,8 +52,8 @@ public class AzureStorageService : IAzureStorageService
         catch (Exception ex)
         {
             _logger.Error(ex, "Error generating upload SAS URL for blob {BlobName}", blobName);
-            throw;
         }
+        return String.Empty;
     }
 
     public string GenerateReadSasUrl(string blobName, TimeSpan expiryTime)
@@ -90,7 +90,8 @@ public class AzureStorageService : IAzureStorageService
         catch (Exception ex)
         {
             _logger.Error(ex, "Error generating read SAS URL for blob {BlobName}", blobName);
-            throw;
         }
+        return string.Empty;
     }
+    
 }

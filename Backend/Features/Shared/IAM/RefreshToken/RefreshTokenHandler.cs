@@ -19,8 +19,6 @@ public class RefreshTokenHandler(
     
     public async Task<IResult> Handle(RefreshTokenRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Attempting to refresh token");
-        
         var storedRefreshToken = await context.RefreshTokens
             .FirstOrDefaultAsync(rt => rt.Token == request.RefreshToken, cancellationToken);
         
@@ -92,25 +90,26 @@ public class RefreshTokenHandler(
     
     private async Task RevokeTokenFamily(Guid tokenFamily, Guid userId, string reason, CancellationToken cancellationToken)
     {
-        _logger.Warning("Revoking entire token family {TokenFamily} for user {UserId}. Reason: {Reason}", 
+        _logger.Warning("Revoking entire token family {TokenFamily} for user {UserId}. Reason: {Reason}",
             tokenFamily, userId, reason);
-        
+
         var familyTokens = await context.RefreshTokens
             .Where(rt => rt.TokenFamily == tokenFamily && rt.UserId == userId)
             .ToListAsync(cancellationToken);
-        
-        _logger.Information("Found {TokenCount} tokens in family {TokenFamily} to revoke", familyTokens.Count, tokenFamily);
-        
-        foreach (var token in familyTokens) {
-            if (!token.IsRevoked) {
+
+        foreach (var token in familyTokens)
+        {
+            if (!token.IsRevoked)
+            {
                 token.IsRevoked = true;
                 token.RevokedAt = DateTime.UtcNow;
                 token.ReasonRevoked = reason;
             }
         }
-        
+
         await context.SaveChangesAsync(cancellationToken);
-        
-        _logger.Information("Successfully revoked token family {TokenFamily} for user {UserId}", tokenFamily, userId);
+
+        _logger.Information("Revoked {TokenCount} tokens in family {TokenFamily} for user {UserId}",
+            familyTokens.Count, tokenFamily, userId);
     }
 }
