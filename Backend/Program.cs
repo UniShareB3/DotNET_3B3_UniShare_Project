@@ -496,7 +496,7 @@ itemsGroup.MapGet("", async (IMediator mediator) =>
         await mediator.Send(new GetAllItemsRequest()))
     .AllowAnonymous();
 
-itemsGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
+itemsGroup.MapGet(RouteIdGuid, async (Guid id, IMediator mediator) =>
         await mediator.Send(new GetItemRequest(id)))
     .AllowAnonymous();
 
@@ -506,13 +506,13 @@ itemsGroup.MapPost("", async (PostItemRequest request, IMediator mediator) =>
     .AllowAdmin()
     .RequireEmailVerification();
 
-itemsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
+itemsGroup.MapDelete(RouteIdGuid, async (Guid id, IMediator mediator) =>
         await mediator.Send(new DeleteItemRequest(id)))
     .RequireAuthorization()
     .AllowAdmin()
     .RequireEmailVerification();
 
-itemsGroup.MapGet("/{id:guid}/bookings", async (Guid id, IMediator mediator) =>
+itemsGroup.MapGet($"{RouteIdGuid}/bookings", async (Guid id, IMediator mediator) =>
         await mediator.Send(new GetBookingsForItemRequest(id)))
     .AllowAnonymous();
 
@@ -547,7 +547,7 @@ var bookingVerifiedGroup = app.MapGroup("/bookings")
     .AllowAdmin()
     .RequireEmailVerification();
 
-bookingVerifiedGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
+bookingVerifiedGroup.MapGet(RouteIdGuid, async (Guid id, IMediator mediator) =>
         await mediator.Send(new GetBookingRequest(id)))
     .WithDescription("Get a specific booking by ID");
 
@@ -556,13 +556,13 @@ bookingVerifiedGroup.MapPost("", async (CreateBookingDto dto, IMediator mediator
     .WithDescription("Create a new booking")
     .RequireAuthorization();
 
-bookingVerifiedGroup.MapPatch("/{id:guid}",
+bookingVerifiedGroup.MapPatch(RouteIdGuid,
         async (Guid id, UpdateBookingStatusDto bookingStatusDto, IMediator mediator) =>
             await mediator.Send(new UpdateBookingStatusRequest(id, bookingStatusDto)))
     .WithDescription("Update the status of a booking")
     .RequireAuthorization();
 
-bookingVerifiedGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
+bookingVerifiedGroup.MapDelete(RouteIdGuid, async (Guid id, IMediator mediator) =>
         await mediator.Send(new DeleteBookingRequest(id)))
     .WithDescription("Delete a booking")
     .RequireAuthorization();
@@ -577,7 +577,7 @@ reviewsGroup.MapGet("", async (IMediator mediator) =>
     .WithDescription("Get all reviews")
     .AllowAnonymous();
 
-reviewsGroup.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
+reviewsGroup.MapGet(RouteIdGuid, async (Guid id, IMediator mediator) =>
         await mediator.Send(new GetReviewRequest(id)))
     .WithDescription("Get a specific review by ID")
     .AllowAnonymous();
@@ -587,17 +587,17 @@ reviewsGroup.MapPost("", async (CreateReviewDto dto, IMediator mediator) =>
     .WithDescription("Create a new review")
     .RequireEmailVerification();
 
-reviewsGroup.MapPatch("/{id:guid}", async (Guid id, UpdateReviewDto dto, IMediator mediator) =>
+reviewsGroup.MapPatch(RouteIdGuid, async (Guid id, UpdateReviewDto dto, IMediator mediator) =>
         await mediator.Send(new UpdateReviewRequest(id, dto)))
     .WithDescription("Update an existing review's rating and comment")
     .RequireEmailVerification();
 // Backwards-compatible PUT endpoint (some clients still send PUT instead of PATCH)
-reviewsGroup.MapPut("/{id:guid}", async (Guid id, UpdateReviewDto dto, IMediator mediator) =>
+reviewsGroup.MapPut(RouteIdGuid, async (Guid id, UpdateReviewDto dto, IMediator mediator) =>
         await mediator.Send(new UpdateReviewRequest(id, dto)))
     .WithDescription("(Compatibility) Update an existing review's rating and comment via PUT")
     .RequireEmailVerification();
 
-reviewsGroup.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
+reviewsGroup.MapDelete(RouteIdGuid, async (Guid id, IMediator mediator) =>
         await mediator.Send(new DeleteReviewRequest(id)))
     .WithDescription("Delete a review")
     .RequireEmailVerification();
@@ -724,4 +724,6 @@ await app.RunAsync();
 
 public partial class Program
 {
+    protected Program() {}
+    private const string RouteIdGuid = "/{id:guid}";
 }

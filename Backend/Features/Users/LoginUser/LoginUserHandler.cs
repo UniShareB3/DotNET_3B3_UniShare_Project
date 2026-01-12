@@ -19,10 +19,8 @@ public class LoginUserHandler(
 
     public async Task<IResult> Handle(LoginUserRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Attempting login for email: {Email}", request.Email);
-        
         var user = await userManager.FindByEmailAsync(request.Email);
-        
+
         if (user == null)
         {
             _logger.Warning("Login failed: User not found for email {Email}", request.Email);
@@ -34,29 +32,24 @@ public class LoginUserHandler(
             _logger.Warning("Login failed: Invalid password for user {UserId}", user.Id);
             return Results.Unauthorized();
         }
-        
-        _logger.Information("User {UserId} authenticated successfully, generating tokens", user.Id);
-        
+
         var existingTokens = await context.RefreshTokens
             .Where(rt => rt.UserId == user.Id)
             .ToListAsync(cancellationToken);
-        
+
         if (existingTokens.Count != 0)
         {
-            _logger.Information("Removing {TokenCount} existing refresh tokens for user {UserId}", 
-                existingTokens.Count, user.Id);
             context.RefreshTokens.RemoveRange(existingTokens);
         }
 
         // Get user roles
         var roles = await userManager.GetRolesAsync(user);
-        _logger.Information("User {UserId} has roles: {Roles}", user.Id, string.Join(", ", roles));
-        
+
         var accessToken = tokenService.GenerateToken(user, roles);
         var refreshTokenString = tokenService.GenerateRefreshToken();
-        
+
         var tokenFamily = Guid.NewGuid();
-        
+
         var refreshToken = new RefreshToken
         {
             Token = refreshTokenString,
@@ -66,13 +59,12 @@ public class LoginUserHandler(
             ParentTokenId = null,
             ReplacedByTokenId = null
         };
-        
+
         context.RefreshTokens.Add(refreshToken);
-        
+
         try
         {
             await context.SaveChangesAsync(cancellationToken);
-            _logger.Information("Refresh token created successfully for user {UserId}", user.Id);
         }
         catch (Exception ex)
         {
@@ -82,15 +74,16 @@ public class LoginUserHandler(
                 title: "Internal Server Error",
                 detail: "An error occurred while processing your request.");
         }
-        
+
         var response = new LoginUserResponseDto(
             AccessToken: accessToken,
             RefreshToken: refreshTokenString,
             ExpiresIn: tokenService.GetAccessTokenExpirationInSeconds()
         );
-        
-        _logger.Information("Login successful for user {UserId}", user.Id);
-        
+
+        _logger.Information("Login successful for user {UserId} with roles: {Roles}",
+            user.Id, string.Join(", ", roles));
+
         return Results.Ok(response);
     }
 }

@@ -491,6 +491,7 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
+.sonarqube
 # Ignore EF Core migrations folder
 Backend/Migrations/
 

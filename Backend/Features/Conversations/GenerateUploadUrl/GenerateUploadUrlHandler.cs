@@ -23,7 +23,7 @@ public class GenerateUploadUrlHandler(IAzureStorageService storageService) : IRe
 
             // Generate SAS URL for upload (valid for 15 minutes)
             var expiryTime = TimeSpan.FromMinutes(15);
-            var uploadUrl = storageService.GenerateUploadSasUrl(blobName, expiryTime);
+            var uploadUrl=  storageService.GenerateUploadSasUrl(blobName, expiryTime);
 
             var response = new GenerateUploadUrlResponse
             {

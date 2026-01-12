@@ -11,6 +11,12 @@ public static class DatabaseSeeder
 {
     private static readonly Serilog.ILogger Logger = Log.ForContext(typeof(DatabaseSeeder));
 
+    // Role name constants
+    private const string RoleAdmin = "Admin";
+    private const string RoleModerator = "Moderator";
+    private const string RoleUser = "User";
+    private const string RoleSeller = "Seller";
+
     public static async Task SeedAsync(
         ApplicationContext context,
         UserManager<User> userManager,
@@ -47,7 +53,7 @@ public static class DatabaseSeeder
     {
         Logger.Information("Seeding roles...");
 
-        var roles = new[] { "Admin", "Moderator", "User", "Seller" };
+        var roles = new[] { RoleAdmin, RoleModerator, RoleUser, RoleSeller };
 
         foreach (var roleName in roles)
         {
@@ -194,8 +200,8 @@ public static class DatabaseSeeder
         if (result.Succeeded)
         {
             // Assign both User and Admin roles
-            await userManager.AddToRoleAsync(adminUser, "User");
-            await userManager.AddToRoleAsync(adminUser, "Admin");
+            await userManager.AddToRoleAsync(adminUser, RoleUser);
+            await userManager.AddToRoleAsync(adminUser, RoleAdmin);
 
             Logger.Information("✅ Created admin account: {Email} with password: {Password}",
                 adminEmail, adminPassword);
@@ -239,7 +245,7 @@ public static class DatabaseSeeder
         foreach (var u in nonAdminUsers)
         {
             var roles = await userManager.GetRolesAsync(u);
-            if (roles.Contains("Moderator"))
+            if (roles.Contains(RoleModerator))
             {
                 hasModerator = true;
                 break;
@@ -281,7 +287,7 @@ public static class DatabaseSeeder
         foreach (var user in allUsers)
         {
             var roles = await userManager.GetRolesAsync(user);
-            if (!roles.Contains("Admin"))
+            if (!roles.Contains(RoleAdmin))
             {
                 nonAdminUsers.Add(user);
             }
@@ -348,11 +354,11 @@ public static class DatabaseSeeder
             return null;
         }
 
-        await userManager.AddToRoleAsync(user, "User");
+        await userManager.AddToRoleAsync(user, RoleUser);
 
         if (shouldBeModerator)
         {
-            await userManager.AddToRoleAsync(user, "Moderator");
+            await userManager.AddToRoleAsync(user, RoleModerator);
             Logger.Information("Created moderator user: {Email}", user.Email);
         }
         else
@@ -365,8 +371,6 @@ public static class DatabaseSeeder
 
     private static async Task SeedItems(ApplicationContext context, List<User> users)
     {
-        Logger.Information("Seeding items...");
-
         const int targetItemCount = 100;
         var existingItemCount = await context.Items.CountAsync();
 
@@ -379,8 +383,6 @@ public static class DatabaseSeeder
         }
 
         var itemsToCreate = targetItemCount - existingItemCount;
-        Logger.Information("Found {ExistingCount} items, creating {ToCreate} more to reach target of {TargetCount}",
-            existingItemCount, itemsToCreate, targetItemCount);
 
         var random = new Random(12345 + existingItemCount); // Different seed based on existing count
         Randomizer.Seed = new Random(12345 + existingItemCount);
@@ -473,12 +475,11 @@ public static class DatabaseSeeder
         context.Items.AddRange(items);
         await context.SaveChangesAsync();
 
-        Logger.Information("Seeded {Count} new items (Total: {Total})", items.Count, existingItemCount + items.Count);
-
-        // Log statistics
+        // Combined completion log with statistics
         var categoryCounts = items.GroupBy(i => i.Category)
             .Select(g => $"{g.Key}: {g.Count()}")
             .ToList();
-        Logger.Information("Items by category: {Stats}", string.Join(", ", categoryCounts));
+        Logger.Information("Seeded {Count} new items (Total: {Total}). By category: {Stats}",
+            items.Count, existingItemCount + items.Count, string.Join(", ", categoryCounts));
     }
 }

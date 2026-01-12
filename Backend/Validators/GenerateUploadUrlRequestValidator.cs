@@ -41,7 +41,7 @@ public class GenerateUploadUrlRequestValidator : AbstractValidator<GenerateUploa
             .WithMessage("Content type does not match file extension.");
     }
 
-    private bool HaveValidExtension(string fileName)
+    private static bool HaveValidExtension(string fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName))
             return false;
@@ -50,7 +50,7 @@ public class GenerateUploadUrlRequestValidator : AbstractValidator<GenerateUploa
         return !string.IsNullOrEmpty(extension) && AllowedExtensions.Contains(extension);
     }
 
-    private bool BeValidContentType(string contentType)
+    private static bool BeValidContentType(string contentType)
     {
         if (string.IsNullOrWhiteSpace(contentType))
             return false;
@@ -58,7 +58,7 @@ public class GenerateUploadUrlRequestValidator : AbstractValidator<GenerateUploa
         return AllowedContentTypes.Contains(contentType.ToLowerInvariant());
     }
 
-    private bool HaveMatchingContentTypeAndExtension(Backend.Features.Conversations.DTO.GenerateUploadUrlDto dto)
+    private static bool HaveMatchingContentTypeAndExtension(Backend.Features.Conversations.DTO.GenerateUploadUrlDto dto)
     {
         if (string.IsNullOrWhiteSpace(dto.FileName) || string.IsNullOrWhiteSpace(dto.ContentType))
             return true; // Let other validators handle null/empty checks

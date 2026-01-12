@@ -16,7 +16,7 @@ public class CreateReportHandler(ApplicationContext context, IMapper mapper)
 
     public async Task<IResult> Handle(CreateReportRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Creating report for item {ItemId} by user {UserId}", 
+        _logger.Information("Creating report for item {ItemId} by user {UserId}",
             request.Dto.ItemId, request.Dto.UserId);
 
         // Verify item exists
@@ -43,77 +43,73 @@ public class CreateReportHandler(ApplicationContext context, IMapper mapper)
         report.OwnerId = item.OwnerId;
         report.CreatedDate = DateTime.UtcNow;
         report.Status = ReportStatus.Pending;
-        
+
         // Select a Moderator (user in 'Moderator' role) with the least number of PENDING reports assigned.
         // This ensures we distribute new reports to moderators first. If there are no moderators, fallback to a random Admin.
 
         Guid? selectedModeratorId = null;
 
         // Find Moderator role id
-         var moderatorRoleId = await context.Roles
-             .Where(r => r.Name == "Moderator")
-             .Select(r => r.Id)
-             .FirstOrDefaultAsync(cancellationToken);
-        _logger.Information("Moderator role id resolved to: {RoleId}", moderatorRoleId);
+        var moderatorRoleId = await context.Roles
+            .Where(r => r.Name == "Moderator")
+            .Select(r => r.Id)
+            .FirstOrDefaultAsync(cancellationToken);
 
-         if (moderatorRoleId != Guid.Empty)
-         {
-             // Get moderator user ids
-             var moderatorUserIds = await context.UserRoles
-                 .Where(ur => ur.RoleId == moderatorRoleId)
-                 .Select(ur => ur.UserId)
-                 .ToListAsync(cancellationToken);
-            _logger.Information("Found {Count} moderator user ids", moderatorUserIds.Count);
+        if (moderatorRoleId != Guid.Empty)
+        {
+            // Get moderator user ids
+            var moderatorUserIds = await context.UserRoles
+                .Where(ur => ur.RoleId == moderatorRoleId)
+                .Select(ur => ur.UserId)
+                .ToListAsync(cancellationToken);
 
-             if (moderatorUserIds.Count != 0)
-             {
-                 // For each moderator, compute the count of Pending reports assigned to them (0 if none)
-                 var moderatorWithCounts = await context.Users
-                     .Where(u => moderatorUserIds.Contains(u.Id))
-                     .Select(u => new
-                     {
-                         u.Id,
-                         PendingCount = context.Reports.Count(r => r.Status == ReportStatus.Pending && r.ModeratorId == u.Id)
-                     })
-                     .OrderBy(x => x.PendingCount)
-                     .ThenBy(x => Guid.NewGuid()) // randomize ties
-                     .FirstOrDefaultAsync(cancellationToken);
+            if (moderatorUserIds.Count != 0)
+            {
+                // For each moderator, compute the count of Pending reports assigned to them (0 if none)
+                var moderatorWithCounts = await context.Users
+                    .Where(u => moderatorUserIds.Contains(u.Id))
+                    .Select(u => new
+                    {
+                        u.Id,
+                        PendingCount = context.Reports.Count(r => r.Status == ReportStatus.Pending && r.ModeratorId == u.Id)
+                    })
+                    .OrderBy(x => x.PendingCount)
+                    .ThenBy(x => Guid.NewGuid()) // randomize ties
+                    .FirstOrDefaultAsync(cancellationToken);
 
-                 if (moderatorWithCounts != null)
-                 {
-                     selectedModeratorId = moderatorWithCounts.Id;
-                 }
-             }
-         }
+                if (moderatorWithCounts != null)
+                {
+                    selectedModeratorId = moderatorWithCounts.Id;
+                }
+            }
+        }
 
-         // Fallback to random Admin if no moderators are available
-         if (selectedModeratorId == null)
-         {
-             var adminRoleId = await context.Roles
-                 .Where(r => r.Name == "Admin")
-                 .Select(r => r.Id)
-                 .FirstOrDefaultAsync(cancellationToken);
-            _logger.Information("Admin role id resolved to: {RoleId}", adminRoleId);
+        // Fallback to random Admin if no moderators are available
+        if (selectedModeratorId == null)
+        {
+            var adminRoleId = await context.Roles
+                .Where(r => r.Name == "Admin")
+                .Select(r => r.Id)
+                .FirstOrDefaultAsync(cancellationToken);
 
-             if (adminRoleId != Guid.Empty)
-             {
-                 selectedModeratorId = await context.UserRoles
-                     .Where(ur => ur.RoleId == adminRoleId)
-                     .Select(ur => ur.UserId)
-                     .OrderBy(u => Guid.NewGuid())
-                     .FirstOrDefaultAsync(cancellationToken);
-                _logger.Information("Fallback selected admin id: {AdminId}", selectedModeratorId.ToString() ?? "<none>");
-             }
-         }
+            if (adminRoleId != Guid.Empty)
+            {
+                selectedModeratorId = await context.UserRoles
+                    .Where(ur => ur.RoleId == adminRoleId)
+                    .Select(ur => ur.UserId)
+                    .OrderBy(u => Guid.NewGuid())
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+        }
 
         report.ModeratorId = selectedModeratorId;
-        _logger.Information("Selected moderator for new report: {ModeratorId}", selectedModeratorId?.ToString() ?? "<none>");
 
         context.Reports.Add(report);
         await context.SaveChangesAsync(cancellationToken);
 
         var reportDto = mapper.Map<ReportDto>(report);
-        _logger.Information("Report {ReportId} created successfully", report.Id);
+        _logger.Information("Report {ReportId} created successfully, assigned to moderator {ModeratorId}",
+            report.Id, selectedModeratorId?.ToString() ?? "<none>");
 
         return Results.Created($"/reports/{report.Id}", reportDto);
     }
