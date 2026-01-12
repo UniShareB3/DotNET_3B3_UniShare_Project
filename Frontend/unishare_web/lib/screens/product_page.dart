@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import 'package:unishare_web/services/secure_storage_service.dart';
 import 'package:unishare_web/screens/report_item_dialog.dart';
 import 'chat_page.dart';
+import 'edit_item_page.dart'; // <--- IMPORTANT: Asigură-te că ai acest import
 
 class ProductPage extends StatefulWidget {
   final String itemId;
@@ -69,8 +70,23 @@ class _ProductPageState extends State<ProductPage> {
     });
 
     try {
+      // 1. Fetch Item Data
       final it = await ApiService.getItemById(widget.itemId);
-      print('🔍 Item data received: $it'); // Debug log to see ownerId
+      print('DEBUG: Item fetched: $it');
+
+      // 2. Fetch User ID immediately to determine ownership
+      final token = await SecureStorageService.getAccessToken();
+
+      String? uid;
+      if (token != null && token.isNotEmpty) {
+        try {
+          uid = ApiService.getUserIdFromToken(token)?.toString();
+        } catch (e) {
+          uid = null;
+        }
+      }
+
+      // 3. Fetch bookings and reports
       final itemBookings = await ApiService.getBookingsForItem(widget.itemId);
       final reportsCount = await ApiService.getAcceptedReportsCount(
         itemId: widget.itemId,
@@ -82,6 +98,7 @@ class _ProductPageState extends State<ProductPage> {
         bookings = itemBookings.map((b) => Map<String, dynamic>.from(b)).toList();
         blockedDays = _computeBlockedDays(bookings);
         _acceptedReportsCount = reportsCount;
+        _currentUserId = uid;
         loading = false;
       });
     } catch (e) {
@@ -95,19 +112,16 @@ class _ProductPageState extends State<ProductPage> {
   Future<void> _loadReviews() async {
     try {
       final reviews = await ApiService.getReviewsForItem(widget.itemId);
-      // determine current user id from token
-      final token = await SecureStorageService.getAccessToken();
-      String? userId;
-      try {
-        userId = ApiService.getUserIdFromToken(token)?.toString();
-      } catch (_) { userId = null; }
 
       Map<String, dynamic>? myReview;
       bool hasReview = false;
-      if (userId != null) {
+
+      final normalizedUserId = _currentUserId?.trim().toLowerCase();
+
+      if (normalizedUserId != null) {
         for (var r in reviews) {
-          final reviewerId = r['reviewerId']?.toString();
-          if (reviewerId != null && reviewerId == userId) {
+          final reviewerId = r['reviewerId']?.toString().trim().toLowerCase();
+          if (reviewerId != null && reviewerId == normalizedUserId) {
             hasReview = true;
             myReview = r;
             break;
@@ -115,7 +129,6 @@ class _ProductPageState extends State<ProductPage> {
         }
       }
 
-      // Ensure we have keys for each review for direct scrolling
       for (var r in reviews) {
         final id = r['id']?.toString();
         if (id != null && !_reviewKeys.containsKey(id)) {
@@ -125,7 +138,6 @@ class _ProductPageState extends State<ProductPage> {
 
       setState(() {
         _reviews = reviews;
-        _currentUserId = userId;
         _hasUserReview = hasReview;
         _myReview = myReview;
       });
@@ -159,26 +171,17 @@ class _ProductPageState extends State<ProductPage> {
 
     for (var b in bookings) {
       try {
-        // Try multiple keys where backend might expose the status
         final dynStatus = b['bookingStatus'] ?? b['BookingStatus'] ?? b['status'] ?? b['Status'];
         final statusInt = _statusFromDynamic(dynStatus);
 
-        // Backend logic: exclude Rejected(2) and Canceled(4) from blocking
         if (statusInt == 2 || statusInt == 4) continue;
 
-        // Parse dates
         final s = DateTime.parse(b['startDate'].toString()).toUtc();
         final e = DateTime.parse(b['endDate'].toString()).toUtc();
 
-        // Compute day range to block.
-        // Important: backend overlap condition is (b.StartDate < dto.EndDate && dto.StartDate < b.EndDate)
-        // That means if existing.EndDate == new.StartDate it's NOT an overlap; original implementation excluded the end-day.
-        // User requested to also block the final day, so include the end date now.
-
         DateTime cur = DateTime.utc(s.year, s.month, s.day);
-        DateTime last = DateTime.utc(e.year, e.month, e.day); // include end day
+        DateTime last = DateTime.utc(e.year, e.month, e.day);
 
-        // If last is before cur, skip (e.g., zero-length negative interval)
         if (last.isBefore(cur)) continue;
 
         while (!cur.isAfter(last)) {
@@ -186,8 +189,7 @@ class _ProductPageState extends State<ProductPage> {
           cur = cur.add(const Duration(days: 1));
         }
       } catch (ex) {
-        // ignore parse errors but log to console for debugging
-        // print('computeBlockedDays error: $ex');
+        // ignore parse errors
       }
     }
     return out;
@@ -202,15 +204,13 @@ class _ProductPageState extends State<ProductPage> {
     return null;
   }
 
-  // Open chat with item owner
   void _openChatWithOwner() {
-    // Check both camelCase and PascalCase
     final ownerId = item!['ownerId']?.toString() ?? item!['OwnerId']?.toString();
     final ownerName = (item!['ownerName'] is String && (item!['ownerName'] as String).trim().isNotEmpty)
         ? item!['ownerName'] as String
         : (item!['OwnerName'] is String && (item!['OwnerName'] as String).trim().isNotEmpty)
-            ? item!['OwnerName'] as String
-            : 'Seller';
+        ? item!['OwnerName'] as String
+        : 'Seller';
 
     if (ownerId == null || ownerId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -230,9 +230,7 @@ class _ProductPageState extends State<ProductPage> {
     );
   }
 
-  // --- Dialogul Personalizat de Calendar ---
   Future<void> _showCalendarDialog() async {
-    // Use a custom dialog with table_calendar
     final result = await showDialog<DateTimeRange?>(
       context: context,
       builder: (ctx) {
@@ -271,13 +269,32 @@ class _ProductPageState extends State<ProductPage> {
     setState(() => _isBookingLoading = false);
 
     if (!mounted) return;
-    setState(() => _isBookingLoading = false);
 
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Booking request created successfully!')));
-      await _load(); // Reîncărcăm datele pentru a actualiza blockedDays
+      await _load();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to create booking. Check availability or try again.')));
+    }
+  }
+
+  // Logic to handle Edit Item Action - ACTUALIZAT PENTRU A DESCHIDE PAGINA
+  Future<void> _handleEditItem() async {
+    // Navigăm către pagina de editare
+    final bool? result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        // Trimitem obiectul 'item' curent către pagina de editare
+        builder: (_) => EditItemPage(item: item!),
+      ),
+    );
+
+    // Dacă editarea a avut succes (result == true), reîncărcăm datele
+    if (result == true) {
+      _load();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Item updated successfully')),
+      );
     }
   }
 
@@ -298,7 +315,6 @@ class _ProductPageState extends State<ProductPage> {
     return ratings.reduce((a, b) => a + b) / ratings.length;
   }
 
-  // Widget pentru cardul de review
   Widget _buildReviewCard(Map<String, dynamic> review) {
     final rating = review['rating'] ?? 0;
     final comment = review['comment'] ?? '';
@@ -320,7 +336,6 @@ class _ProductPageState extends State<ProductPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Reviewer info with FutureBuilder to fetch name
               FutureBuilder<Map<String, dynamic>>(
                 future: reviewerId.isNotEmpty
                     ? ApiService.getUserById(reviewerId)
@@ -415,8 +430,6 @@ class _ProductPageState extends State<ProductPage> {
               ),
 
               const SizedBox(height: 12),
-
-              // Rating (stelute)
               Row(
                 children: List.generate(5, (index) {
                   return Icon(
@@ -441,12 +454,10 @@ class _ProductPageState extends State<ProductPage> {
     );
   }
 
-  // Dialog pentru adăugarea unui review
   Future<void> _showAddReviewDialog() async {
     final TextEditingController commentController = TextEditingController();
     int selectedRating = 0;
 
-    // Arată un dialog pentru introducerea review-ului
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -457,7 +468,6 @@ class _ProductPageState extends State<ProductPage> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Selector pentru rating (stelute)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(5, (index) {
@@ -475,10 +485,7 @@ class _ProductPageState extends State<ProductPage> {
                       );
                     }),
                   ),
-
                   const SizedBox(height: 10),
-
-                  // TextField pentru introducerea textului review-ului
                   TextField(
                     controller: commentController,
                     decoration: const InputDecoration(
@@ -505,7 +512,6 @@ class _ProductPageState extends State<ProductPage> {
                       return;
                     }
 
-                    // Ensure user is authenticated
                     final token = await SecureStorageService.getAccessToken();
                     if (token == null || token.isEmpty) {
                       if (!context.mounted) return;
@@ -514,9 +520,6 @@ class _ProductPageState extends State<ProductPage> {
                       );
                       return;
                     }
-
-                    // Show loading state inside dialog
-                    setDialogState(() { /* no-op: we could show spinner by adding a local flag */ });
 
                     try {
                       final myBookings = await ApiService.getMyBookings();
@@ -548,7 +551,6 @@ class _ProductPageState extends State<ProductPage> {
                       final String body = resp['body']?.toString() ?? '';
 
                       if (ok) {
-                        // Parse created review from response body (backend returns created object)
                         Map<String, dynamic>? created;
                         try {
                           created = jsonDecode(body) as Map<String, dynamic>?;
@@ -556,54 +558,47 @@ class _ProductPageState extends State<ProductPage> {
                           created = null;
                         }
 
-                        // Optimistic update: insert created review into list and mark user as reviewed
                         if (created != null) {
                           final createdNonNull = created!;
                           setState(() {
                             _reviews.insert(0, createdNonNull);
                             _myReview = createdNonNull;
                             _hasUserReview = true;
-                            // Ensure the new review has a key for scrolling
                             _reviewKeys[createdNonNull['id']?.toString() ?? ''] = GlobalKey();
                           });
 
-                           // Close dialog and scroll to the reviews section
-                           Navigator.of(dialogContext).pop();
-                           if (_reviewsSectionKey.currentContext != null) {
-                             await Future.delayed(const Duration(milliseconds: 50));
-                             Scrollable.ensureVisible(
-                               _reviewsSectionKey.currentContext!,
-                               duration: const Duration(milliseconds: 300),
-                               curve: Curves.easeInOut,
-                             );
-                           }
-                         } else {
-                           // No body returned: reload reviews from server to pick up the newly created review
-                           await _loadReviews();
-                           setState(() { _hasUserReview = true; });
-                           Navigator.of(dialogContext).pop();
-                           if (_reviewsSectionKey.currentContext != null) {
-                             await Future.delayed(const Duration(milliseconds: 50));
-                             Scrollable.ensureVisible(
-                               _reviewsSectionKey.currentContext!,
-                               duration: const Duration(milliseconds: 300),
-                               curve: Curves.easeInOut,
-                             );
-                           }
-                         }
+                          Navigator.of(dialogContext).pop();
+                          if (_reviewsSectionKey.currentContext != null) {
+                            await Future.delayed(const Duration(milliseconds: 50));
+                            Scrollable.ensureVisible(
+                              _reviewsSectionKey.currentContext!,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        } else {
+                          await _loadReviews();
+                          setState(() { _hasUserReview = true; });
+                          Navigator.of(dialogContext).pop();
+                          if (_reviewsSectionKey.currentContext != null) {
+                            await Future.delayed(const Duration(milliseconds: 50));
+                            Scrollable.ensureVisible(
+                              _reviewsSectionKey.currentContext!,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        }
                       } else {
-                         // provide useful messages depending on status
-                         String message = 'Failed to add review. (${status})';
-                         if (status == 401) message = 'You must be logged in to perform this action.';
-                         if (status == 403) message = 'You are not allowed to add a review (verify email or permissions).';
-                         if (body.isNotEmpty) message += '\nServer: ${body}';
-                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-                       }
+                        String message = 'Failed to add review. (${status})';
+                        if (status == 401) message = 'You must be logged in to perform this action.';
+                        if (status == 403) message = 'You are not allowed to add a review (verify email or permissions).';
+                        if (body.isNotEmpty) message += '\nServer: ${body}';
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+                      }
                     } catch (e) {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error while adding review: $e')));
-                    } finally {
-                      setDialogState(() { /* stop spinner if any */ });
                     }
                   },
                   child: const Text('Submit'),
@@ -616,12 +611,10 @@ class _ProductPageState extends State<ProductPage> {
     );
   }
 
-  // Dialog pentru editarea unui review existent
   Future<void> _showEditReviewDialog(Map<String, dynamic> review) async {
     final TextEditingController commentController = TextEditingController(text: review['comment']);
     int selectedRating = review['rating'] ?? 0;
 
-    // Arată un dialog pentru editarea review-ului
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -632,7 +625,6 @@ class _ProductPageState extends State<ProductPage> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Selector pentru rating (stelute)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(5, (index) {
@@ -650,10 +642,7 @@ class _ProductPageState extends State<ProductPage> {
                       );
                     }),
                   ),
-
                   const SizedBox(height: 10),
-
-                  // TextField pentru editarea textului review-ului
                   TextField(
                     controller: commentController,
                     decoration: const InputDecoration(
@@ -680,7 +669,6 @@ class _ProductPageState extends State<ProductPage> {
                       return;
                     }
 
-                    // Ensure user is authenticated
                     final token = await SecureStorageService.getAccessToken();
                     if (token == null || token.isEmpty) {
                       if (!context.mounted) return;
@@ -689,9 +677,6 @@ class _ProductPageState extends State<ProductPage> {
                       );
                       return;
                     }
-
-                    // Show loading state inside dialog
-                    setDialogState(() { /* no-op: we could show spinner by adding a local flag */ });
 
                     try {
                       final resp = await ApiService.updateReview(
@@ -710,7 +695,6 @@ class _ProductPageState extends State<ProductPage> {
                       final String body = resp['body']?.toString() ?? '';
 
                       if (ok) {
-                        // Update local review data
                         setState(() {
                           review['rating'] = selectedRating;
                           review['comment'] = commentController.text.trim();
@@ -719,18 +703,15 @@ class _ProductPageState extends State<ProductPage> {
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Review updated successfully!')));
                         Navigator.of(dialogContext).pop();
                       } else {
-                         // provide useful messages depending on status
-                         String message = 'Failed to update review. (${status})';
-                         if (status == 401) message = 'You must be logged in to perform this action.';
-                         if (status == 403) message = 'You are not allowed to update this review (verify email or permissions).';
-                         if (body.isNotEmpty) message += '\nServer: ${body}';
-                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-                       }
+                        String message = 'Failed to update review. (${status})';
+                        if (status == 401) message = 'You must be logged in to perform this action.';
+                        if (status == 403) message = 'You are not allowed to update this review (verify email or permissions).';
+                        if (body.isNotEmpty) message += '\nServer: ${body}';
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+                      }
                     } catch (e) {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error while updating review: $e')));
-                    } finally {
-                      setDialogState(() { /* stop spinner if any */ });
                     }
                   },
                   child: const Text('Update'),
@@ -755,12 +736,31 @@ class _ProductPageState extends State<ProductPage> {
     final category = _mapIntOrStringToName(item!['category'], _categoryMap, 'N/A');
     final condition = _mapIntOrStringToName(item!['condition'], _conditionMap, 'N/A');
     final isAvailableOverall = !(item!['isAvailable'] == false);
-    // Backend ItemDto exposes OwnerName (mapped in ItemMapper). OwnerId is not present
-    // in the ItemDto returned by the /items endpoint, so prefer ownerName and fallback
-    // to ownerId if some endpoints include it.
+
     final ownerName = (item!['ownerName'] is String && (item!['ownerName'] as String).trim().isNotEmpty)
         ? item!['ownerName'] as String
         : (item!['ownerId'] != null ? (item!['ownerId'].toString()) : 'Unknown');
+
+    // Logic to determine if current user is owner
+    final rawOwnerId = item!['ownerId']?.toString() ?? item!['OwnerId']?.toString();
+
+    // Normalize logic (trim and lowerCase) for robust comparison
+    final normalizedOwnerId = rawOwnerId?.trim().toLowerCase();
+    final normalizedUserId = _currentUserId?.trim().toLowerCase();
+
+    // Print for debugging why it might fail
+    print('--------------------------------------------------');
+    print('DEBUG: Ownership Check');
+    print('DEBUG: Raw Item Owner ID: "$rawOwnerId"');
+    print('DEBUG: Raw Current User ID: "$_currentUserId"');
+    print('DEBUG: Normalized Owner: "$normalizedOwnerId"');
+    print('DEBUG: Normalized User:  "$normalizedUserId"');
+    print('DEBUG: Match? ${normalizedOwnerId == normalizedUserId}');
+    print('--------------------------------------------------');
+
+    final bool isOwner = normalizedOwnerId != null &&
+        normalizedUserId != null &&
+        normalizedOwnerId == normalizedUserId;
 
     final recommended = _findFirstAvailable();
     final recommendedText = recommended != null ? DateFormat.yMMMd().format(recommended.toLocal()) : 'No availability soon';
@@ -769,18 +769,14 @@ class _ProductPageState extends State<ProductPage> {
         ? '${DateFormat.yMMMd().format(_selectedStartDate!.toLocal())} → ${DateFormat.yMMMd().format(_selectedEndDate!.toLocal())}'
         : 'Tap to select range';
 
-    // Determină dacă suntem pe un ecran mare (pentru layout split)
     final bool isLargeScreen = MediaQuery.of(context).size.width > 800;
 
-    // --- Widget pentru Detaliile Itemului (coloana din dreapta) ---
     final Widget detailsColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Titlu, Categorie & Condiție
         Text(name, style: TextStyle(fontSize: isLargeScreen ? 32 : 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
 
-        // Warning banner for accepted reports
         if (_acceptedReportsCount > 0)
           Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -834,22 +830,15 @@ class _ProductPageState extends State<ProductPage> {
         ),
         const SizedBox(height: 15),
 
-        // Owner ID
         Row(
           children: [
             const Icon(Icons.person, size: 20, color: Colors.deepPurple),
             const SizedBox(width: 5),
-            Text('Owner: $ownerName', style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600)),
+            Text('Owner: $ownerName ${isOwner ? "(You)" : ""}', style: const TextStyle(color: Colors.deepPurple, fontWeight: FontWeight.w600)),
             const SizedBox(width: 16),
-            // Contact Seller button - don't show if user is the owner
             Builder(
               builder: (context) {
-                // Check both camelCase and PascalCase since backend might serialize differently
-                final ownerId = item!['ownerId']?.toString() ?? item!['OwnerId']?.toString();
-                final isOwner = ownerId != null && ownerId == _currentUserId;
-
-                // If ownerId is null, show a disabled button with explanation (for debugging)
-                if (ownerId == null) {
+                if (rawOwnerId == null) {
                   return Tooltip(
                     message: 'ownerId not available from API',
                     child: ElevatedButton.icon(
@@ -860,7 +849,6 @@ class _ProductPageState extends State<ProductPage> {
                   );
                 }
 
-                // Show button if we have ownerId and user is not the owner
                 if (!isOwner) {
                   return ElevatedButton.icon(
                     onPressed: () => _openChatWithOwner(),
@@ -890,7 +878,6 @@ class _ProductPageState extends State<ProductPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Prima dată disponibilă
               Row(
                 children: [
                   const Icon(Icons.check_circle_outline, size: 20, color: Colors.green),
@@ -900,7 +887,6 @@ class _ProductPageState extends State<ProductPage> {
               ),
               const Divider(height: 20),
 
-              // Selectorul de Date (Activarea Dialogului Custom)
               OutlinedButton.icon(
                 onPressed: _showCalendarDialog,
                 icon: const Icon(Icons.date_range_outlined),
@@ -912,7 +898,6 @@ class _ProductPageState extends State<ProductPage> {
                     minimumSize: const Size(double.infinity, 45)
                 ),
               ),
-              // Afisare avertisment dacă nu e disponibil
               if (!isAvailableOverall)
                 const Padding(
                   padding: EdgeInsets.only(top: 8.0),
@@ -924,7 +909,6 @@ class _ProductPageState extends State<ProductPage> {
 
         const SizedBox(height: 30),
 
-        // --- Reviews Section ---
         Container(
           key: _reviewsSectionKey,
           child: Column(
@@ -974,8 +958,7 @@ class _ProductPageState extends State<ProductPage> {
         ),
         const SizedBox(height: 20),
 
-        // Add Review Button
-        if (!_hasUserReview)
+        if (!_hasUserReview && !isOwner)
           OutlinedButton.icon(
             onPressed: _showAddReviewDialog,
             icon: const Icon(Icons.rate_review),
@@ -987,7 +970,7 @@ class _ProductPageState extends State<ProductPage> {
               minimumSize: const Size(double.infinity, 45),
             ),
           )
-        else
+        else if (_hasUserReview)
           ElevatedButton.icon(
             onPressed: () async {
               if (_myReview != null) {
@@ -1017,12 +1000,10 @@ class _ProductPageState extends State<ProductPage> {
             ),
           ),
 
-         // Spațiu pentru FloatingActionButton
-         const SizedBox(height: 80),
+        const SizedBox(height: 80),
       ],
     );
 
-    // --- Widget pentru Imagine (coloana din stanga) ---
     final Widget imageWidget = Padding(
       padding: EdgeInsets.only(right: isLargeScreen ? 20.0 : 0, bottom: isLargeScreen ? 0 : 20),
       child: ClipRRect(
@@ -1056,22 +1037,40 @@ class _ProductPageState extends State<ProductPage> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.flag),
-            tooltip: 'Report Item',
-            onPressed: () => _showReportDialog(name),
-          ),
+          // Don't report your own item
+          if (!isOwner)
+            IconButton(
+              icon: const Icon(Icons.flag),
+              tooltip: 'Report Item',
+              onPressed: () => _showReportDialog(name),
+            ),
         ],
       ),
 
-      // Buton de Booking fix la bază
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SizedBox(
           width: double.infinity,
           height: 50,
-          child: ElevatedButton.icon(
+          child: isOwner
+          // Button for Owner: EDIT ITEM
+              ? ElevatedButton.icon(
+            onPressed: _handleEditItem,
+            icon: const Icon(Icons.edit),
+            label: const Text(
+              'Edit Item',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent, // Distinct color for owner action
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 8,
+            ),
+          )
+          // Button for Others: REQUEST BORROWING
+              : ElevatedButton.icon(
             onPressed: isAvailableOverall && !_isBookingLoading ? _requestBooking : null,
             icon: _isBookingLoading
                 ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3))
@@ -1090,7 +1089,6 @@ class _ProductPageState extends State<ProductPage> {
         ),
       ),
 
-      // 3. Conținut Scrollabil (Layout Split)
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -1098,12 +1096,10 @@ class _ProductPageState extends State<ProductPage> {
               ? Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Stânga: Imaginea Produsului
               Flexible(
                 flex: 4,
                 child: imageWidget,
               ),
-              // Dreapta: Detaliile Produsului și Logica de Booking
               Flexible(
                 flex: 6,
                 child: detailsColumn,
@@ -1113,10 +1109,8 @@ class _ProductPageState extends State<ProductPage> {
               : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Sus: Imagine (pe ecrane mici)
               imageWidget,
               const SizedBox(height: 20),
-              // Jos: Detalii și Booking (pe ecrane mici)
               detailsColumn,
             ],
           ),
@@ -1126,7 +1120,6 @@ class _ProductPageState extends State<ProductPage> {
   }
 }
 
-// Custom dialog widget using table_calendar to pick a date range while greying out blocked days
 class _CalendarRangeDialog extends StatefulWidget {
   final Set<DateTime> blockedDays;
   final DateTime? initialStart;
@@ -1139,7 +1132,7 @@ class _CalendarRangeDialog extends StatefulWidget {
 }
 
 class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
-  late DateTime _firstMonth; // luna stanga
+  late DateTime _firstMonth;
   DateTime? _rangeStart;
   DateTime? _rangeEnd;
 
@@ -1148,7 +1141,6 @@ class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
     super.initState();
     _rangeStart = widget.initialStart;
     _rangeEnd = widget.initialEnd;
-    // Start showing current month or the month of initialStart
     _firstMonth = widget.initialStart ?? DateTime.now();
   }
 
@@ -1180,7 +1172,7 @@ class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
   }
 
   void _onDaySelected(DateTime selected) {
-    if (_isBlocked(selected)) return; // nu permite selectarea zilelor blocate
+    if (_isBlocked(selected)) return;
     setState(() {
       if (_rangeStart == null || (_rangeStart != null && _rangeEnd != null)) {
         _rangeStart = selected;
@@ -1200,24 +1192,22 @@ class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
     });
   }
 
-  // Helper to build a single month calendar
   Widget _buildMonthCalendar(DateTime monthToShow) {
     return TableCalendar(
       firstDay: DateTime.now().subtract(const Duration(days: 365)),
       lastDay: DateTime.now().add(const Duration(days: 365)),
       focusedDay: monthToShow,
       calendarFormat: CalendarFormat.month,
-      headerVisible: false, // hide default header, we'll create custom
+      headerVisible: false,
       selectedDayPredicate: (day) =>
-        (_rangeStart != null && isSameDay(day, _rangeStart!)) ||
-        (_rangeEnd != null && isSameDay(day, _rangeEnd!)),
+      (_rangeStart != null && isSameDay(day, _rangeStart!)) ||
+          (_rangeEnd != null && isSameDay(day, _rangeEnd!)),
       rangeSelectionMode: RangeSelectionMode.toggledOn,
       rangeStartDay: _rangeStart,
       rangeEndDay: _rangeEnd,
       onDaySelected: (selected, focused) => _onDaySelected(selected),
       availableCalendarFormats: const {CalendarFormat.month: 'Month'},
       calendarStyle: CalendarStyle(
-        // Custom styling to match theme
         todayDecoration: BoxDecoration(
           border: Border.all(color: Colors.deepPurple, width: 2),
           shape: BoxShape.rectangle,
@@ -1340,7 +1330,6 @@ class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
     final firstMonthName = DateFormat.yMMMM().format(_firstMonth);
     final secondMonthName = DateFormat.yMMMM().format(secondMonth);
 
-    // Ajustare pentru a arăta 394px pe ecrane mici, sau 900px pe cele mari
     final double dialogWidth = MediaQuery.of(context).size.width > 950 ? 900 : 700;
 
     return Dialog(
@@ -1352,7 +1341,6 @@ class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Navigation header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -1376,7 +1364,6 @@ class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
               ],
             ),
             const SizedBox(height: 16),
-            // Two calendars side by side
             Expanded(
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1388,7 +1375,6 @@ class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
               ),
             ),
             const SizedBox(height: 16),
-            // Selected range info
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -1408,7 +1394,6 @@ class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
               ],
             ),
             const SizedBox(height: 20),
-            // Actions
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -1425,7 +1410,7 @@ class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
                     backgroundColor: Colors.deepPurple,
                     foregroundColor: Colors.white,
                   ),
-                  child: const Text('Confirm Selection'), // Text nou
+                  child: const Text('Confirm Selection'),
                 ),
               ],
             ),
@@ -1434,4 +1419,4 @@ class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
       ),
     );
   }
- }
+}
