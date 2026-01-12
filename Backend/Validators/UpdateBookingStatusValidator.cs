@@ -68,11 +68,15 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
                 return;
             }
 
-            // Opțional: Ar trebui să verificăm și dacă statusul nou cerut este "Cancelled"
-            // (ca să nu poată Borrower-ul să-și dea singur "Approved")
-            // if (dto.BookingStatus != BookingStatus.Cancelled && dto.BookingStatus != BookingStatus.Canceled) ...
+            // Borrower is allowed only to request a Canceled status when booking is Pending.
+            if (dto.BookingStatus != BookingStatus.Canceled)
+            {
+                context.AddFailure("Borrower can only cancel a booking; they cannot change it to other statuses.");
+                _logger.LogError("Borrower attempted to change booking status to a non-cancel value.");
+                return;
+            }
 
-            // Dacă e Pending și e Borrower, e valid (pentru Cancel).
+            // Dacă e Pending și e Borrower, e valid pentru Cancel.
             return;
         }
 
