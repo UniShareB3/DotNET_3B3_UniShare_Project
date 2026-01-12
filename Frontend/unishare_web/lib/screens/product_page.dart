@@ -278,7 +278,7 @@ class _ProductPageState extends State<ProductPage> {
     }
   }
 
-  // Logic to handle Edit Item Action - ACTUALIZAT PENTRU A DESCHIDE PAGINA
+  // Logic to handle Edit Item Action
   Future<void> _handleEditItem() async {
     // Navigăm către pagina de editare
     final bool? result = await Navigator.push(
@@ -1240,7 +1240,10 @@ class _CalendarRangeDialogState extends State<_CalendarRangeDialog> {
       calendarBuilders: CalendarBuilders(
         defaultBuilder: (context, day, focusedDay) {
           final blocked = _isBlocked(day);
-          final bool isPast = day.isBefore(DateTime.now().add(const Duration(days: 1)));
+          // Modificat pentru a bloca doar zilele strict înainte de ziua curentă (ora 00:00)
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          final bool isPast = day.isBefore(today);
           return Center(
             child: Container(
               decoration: BoxDecoration(

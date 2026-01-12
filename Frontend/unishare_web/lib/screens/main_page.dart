@@ -24,11 +24,13 @@ class _MainPageState extends State<MainPage> {
   bool _isAdminOrModerator = false;
   bool _isAdmin = false;
   bool _hasUnreadMessages = false;
+  String _userName = "UniShare User"; // State variable for the user's name
 
   @override
   void initState() {
     super.initState();
     _checkUserRole();
+    _fetchUserName(); // Fetch name on init
     _setupMessageListener();
     _checkForUnreadMessages();
   }
@@ -57,7 +59,6 @@ class _MainPageState extends State<MainPage> {
       final conversations = await ChatService.getConversations();
       if (mounted && conversations.isNotEmpty) {
         // Logică simplificată: dacă există conversații, presupunem că pot fi mesaje
-        // Într-o implementare reală, backend-ul ar trebui să returneze un flag 'unreadCount'
       }
     } catch (e) {
       print('Error checking unread messages: $e');
@@ -72,10 +73,33 @@ class _MainPageState extends State<MainPage> {
     });
   }
 
+  // Fetch user details to display real name
+  Future<void> _fetchUserName() async {
+    try {
+      final token = await SecureStorageService.getAccessToken();
+      if (token != null) {
+        final userId = ApiService.getUserIdFromToken(token);
+        if (userId != null) {
+          final userData = await ApiService.getUser(userId);
+          // FIX: Added null check for userData
+          if (mounted && userData != null) {
+            setState(() {
+              final firstName = userData['firstName'] ?? '';
+              final lastName = userData['lastName'] ?? '';
+              if (firstName.toString().isNotEmpty || lastName.toString().isNotEmpty) {
+                _userName = '$firstName $lastName'.trim();
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print('Error fetching user name: $e');
+    }
+  }
+
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
-    // Dacă utilizatorul merge pe profil (unde poate accesa mesaje), putem ascunde badge-ul
-    // sau îl lăsăm până intră efectiv în mesaje.
   }
 
   void _logout() {
@@ -92,16 +116,14 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     final userEmail = context.watch<AuthProvider>().currentUserEmail ?? "Guest";
 
-    // Paginile care vor fi afișate. Fiecare își gestionează acum propriul AppBar.
+    // Paginile care vor fi afișate.
     final pages = [
       const HomePage(),
       const DashboardPage(),
-      const ProfilePage(), // Asigură-te că ProfilePage are acum un Scaffold
+      const ProfilePage(),
     ];
 
     return Scaffold(
-      // --- AM SCOS APPBAR-UL DE AICI PENTRU A EVITA DUPLICAREA ---
-
       body: pages[_selectedIndex],
 
       bottomNavigationBar: BottomNavigationBar(
@@ -140,18 +162,25 @@ class _MainPageState extends State<MainPage> {
         ],
       ),
 
-      // Drawer-ul rămâne aici. Poate fi deschis prin swipe de la stânga
-      // sau adăugând un buton dedicat în AppBar-ul paginilor copil.
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             UserAccountsDrawerHeader(
-              accountName: const Text("UniShare User"),
+              accountName: Text(
+                _userName, // Displays the fetched name
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
               accountEmail: Text(userEmail),
-              currentAccountPicture: const CircleAvatar(
+              currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Icon(Icons.person, size: 40, color: Colors.blue),
+                child: Text(
+                  _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
+                  style: const TextStyle(fontSize: 24, color: Colors.blue, fontWeight: FontWeight.bold),
+                ),
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.deepPurple,
               ),
             ),
             ListTile(
