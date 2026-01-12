@@ -41,11 +41,47 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
         var item = await GetItemByBookingAsync(booking!, cancellationToken);
         if (!ValidateItemExists(item, context)) return;
 
-        if (!ValidateOwnerIsDifferentFromBorrower(booking!, item!, dto, context)) return;
+        // 1. Verificăm dacă user-ul are vreo legătură cu booking-ul (Owner sau Borrower)
+        if (dto.UserId != booking!.BorrowerId && dto.UserId != item!.OwnerId)
+        {
+            context.AddFailure("User must be either the borrower or the owner of the item to update booking status");
+            _logger.LogError("User is neither borrower nor owner during validation.");
+            return;
+        }
 
-        if (!ValidateOwnerAndBorrowerCancelStatus(booking!, item!, dto,context)) return;
+        // 2. Logica pentru OWNER
+        if (dto.UserId == item!.OwnerId)
+        {
+            // Owner-ul are permisiuni depline de a schimba statusul (în limitele logicii de business, ex: nu poate aproba ceva deja completat, dar asta e validare de flux, nu de ownership)
+            // Dacă a trecut de check-ul de ID, e valid din punct de vedere al permisiunilor.
+            return;
+        }
 
-        ValidateOwnerOnly(item!, dto, context);
+        // 3. Logica pentru BORROWER
+        if (dto.UserId == booking.BorrowerId)
+        {
+            // Borrower-ul poate da cancel DOAR dacă statusul curent este Pending
+            if (booking.BookingStatus != BookingStatus.Pending)
+            {
+                context.AddFailure("Borrower can only cancel a booking when it is still Pending.");
+                _logger.LogError("Borrower can only cancel a booking when it is still Pending.");
+                return;
+            }
+
+            // Borrower is allowed only to request a Canceled status when booking is Pending.
+            if (dto.BookingStatus != BookingStatus.Canceled)
+            {
+                context.AddFailure("Borrower can only cancel a booking; they cannot change it to other statuses.");
+                _logger.LogError("Borrower attempted to change booking status to a non-cancel value.");
+                return;
+            }
+
+            // Dacă e Pending și e Borrower, e valid pentru Cancel.
+            return;
+        }
+
+        // Nu ar trebui să ajungă aici datorită check-ului 1, dar ca siguranță:
+        context.AddFailure("Unauthorized action.");
     }
 
     private async Task<Booking?> GetBookingWithItemAsync(Guid bookingId, CancellationToken cancellationToken)
@@ -76,52 +112,4 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
         _logger.LogError( "Item not found during validation.");
         return false;
     }
-
-    private bool ValidateOwnerIsDifferentFromBorrower(
-        Booking booking,
-        Item item,
-        UpdateBookingStatusDto dto,
-        ValidationContext<UpdateBookingStatusRequest> context)
-    {
-        if (dto.UserId == booking.BorrowerId || dto.UserId == item.OwnerId) return true;
-        context.AddFailure("User must be either the borrower or the owner of the item to update booking status");
-        _logger.LogError(" User is neither borrower nor owner during validation.");
-        return false;
-    }
-
-    private bool ValidateOwnerAndBorrowerCancelStatus(
-        Booking booking,
-        Item item,
-        UpdateBookingStatusDto dto,
-        ValidationContext<UpdateBookingStatusRequest> context)
-    {
-        if (dto.UserId == item.OwnerId) return true;
-        
-        if (dto.UserId == booking.BorrowerId)
-        {
-            if (booking.BookingStatus == BookingStatus.Pending)
-            {
-                return true;
-            }
-
-            context.AddFailure("Borrower can only cancel a booking when it is still Pending.");
-            _logger.LogError("Borrower can only cancel a booking when it is still Pending.");
-            return false;
-        }
-
-        context.AddFailure("Only the owner or borrower can cancel a booking (borrower only when Pending).");
-        _logger.LogError(" Only the owner or borrower during validation.");
-        return false;
-    }
-    
-    private void ValidateOwnerOnly(
-        Item item,
-        UpdateBookingStatusDto dto,
-        ValidationContext<UpdateBookingStatusRequest> context)
-    {
-        if (item.OwnerId == dto.UserId) return;
-        context.AddFailure("Only the owner of the item can change booking status.");
-        _logger.LogError(" Only the owner of the item can change booking status."); 
-    }
-
 }

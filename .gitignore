@@ -493,3 +493,8 @@ $RECYCLE.BIN/
 
 # Ignore EF Core migrations folder
 Backend/Migrations/
+
+# Ignore Flutter build artifacts in frontend
+Frontend/unishare_web/build/
+# Ignore Dart/Flutter cache/dill files
+**/*.cache.dill*
