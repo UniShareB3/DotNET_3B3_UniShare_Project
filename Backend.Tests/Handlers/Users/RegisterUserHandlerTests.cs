@@ -75,7 +75,7 @@ public class RegisterUserHandlerTests
         
         ApplicationContext context = CreateInMemoryDbContext(Guid.NewGuid().ToString());
 
-        var handler = new RegisterUserHandler(userManagerMock.Object, mediatorMock.Object, mapperMock.Object, context);
+        var handler = new RegisterUserHandler(userManagerMock.Object, mapperMock.Object, context);
 
         // Act
         var result = await handler.Handle(new RegisterUserRequest(userDto), CancellationToken.None);
@@ -117,7 +117,7 @@ public class RegisterUserHandlerTests
             });
         await context.SaveChangesAsync();
         
-        var handler = new RegisterUserHandler(userManagerMock.Object, mediatorMock.Object, mapperMock.Object, context);
+        var handler = new RegisterUserHandler(userManagerMock.Object, mapperMock.Object, context);
 
         // Act
         var result = await handler.Handle(new RegisterUserRequest(userDto), CancellationToken.None);
@@ -154,7 +154,7 @@ public class RegisterUserHandlerTests
         
         ApplicationContext context = CreateInMemoryDbContext(Guid.NewGuid().ToString());
 
-        var handler = new RegisterUserHandler(userManagerMock.Object, mediatorMock.Object, mapperMock.Object, context);
+        var handler = new RegisterUserHandler(userManagerMock.Object, mapperMock.Object, context);
 
         // Act
         var result = await handler.Handle(new RegisterUserRequest(userDto), CancellationToken.None);

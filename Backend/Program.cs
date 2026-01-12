@@ -722,7 +722,8 @@ Log.Information("UniShare API started successfully");
 
 await app.RunAsync();
 
-public static partial class Program
+public partial class Program
 {
+    protected Program() {}
     private const string RouteIdGuid = "/{id:guid}";
 }
