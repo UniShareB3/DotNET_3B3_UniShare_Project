@@ -855,6 +855,66 @@ class ApiService {
     return {};
   }
 
+  // ----------------- Update Item -----------------
+  static Future<Map<String, dynamic>> patchItem({
+    required String itemId,
+    String? itemName,
+    String? description,
+    String? category,
+    String? condition,
+    String? blobName,
+  }) async {
+    final token = await SecureStorageService.getAccessToken();
+
+    if (token == null) {
+      print('API patch-item: No token available');
+      return {
+        'success': false,
+        'errors': {'general': ['Session expired. Please log in again.']},
+      };
+    }
+
+    final url = Uri.parse('$baseUrl/items/$itemId');
+
+    final payload = <String, dynamic>{};
+    if (itemName != null) payload['itemName'] = itemName;
+    if (description != null) payload['description'] = description;
+    if (category != null) payload['category'] = category;
+    if (condition != null) payload['condition'] = condition;
+    if (blobName != null) payload['blobName'] = blobName;
+
+    final response = await _authenticatedPatch(
+      url,
+      body: jsonEncode(payload),
+    );
+
+    print('API patch-item status: ${response.statusCode}');
+    print('API patch-item body: ${response.body}');
+
+    if (response.statusCode == 200 || response.statusCode == 204) {
+      return {'success': true};
+    } else if (response.statusCode == 400) {
+      // Parse validation errors from response
+      try {
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        return {
+          'success': false,
+          'errors': errorData,
+        };
+      } catch (e) {
+        return {
+          'success': false,
+          'errors': {'general': ['Failed to update item']},
+        };
+      }
+    } else {
+      return {
+        'success': false,
+        'errors': {'general': ['An unexpected error occurred']},
+      };
+    }
+  }
+
 // ----------------- Get Single User -----------------
   static Future<Map<String, dynamic>> getUserById(String userId) async {
     final token = await SecureStorageService.getAccessToken();

@@ -112,7 +112,7 @@ class ChatService {
     }
   }
 
-  /// Send a document message to another user via SignalR
+    /// Send a document message to another user via SignalR
   /// This expects the blobPath (path in blob storage) and the resolved documentUrl (SAS URL)
   static Future<bool> sendDocumentMessage(String receiverId, String blobName, String documentUrl, {String? caption}) async {
     try {
@@ -163,10 +163,10 @@ class ChatService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // Expected response: { "sasUrl": "...", "blobPath": "..." }
+        // Expected response: { "uploadUrl": "...", "blobName": "..." }
         return {
-          'sasUrl': data['uploadUrl'] as String,
-          'blobPath': data['blobName'] as String,
+          'uploadUrl': data['uploadUrl'] as String,
+          'blobName': data['blobName'] as String,
         };
       }
 
@@ -385,15 +385,15 @@ class ChatService {
         return null;
       }
 
-      final sasUrl = sasData['sasUrl'] as String;
-      final blobPath = sasData['blobPath'] as String;
+      final uploadUrl = sasData['uploadUrl'] as String;
+      final blobName = sasData['blobName'] as String;
 
       // Step 2: Upload directly to blob storage using SAS URL
       // Determine content type from file extension
       
-      final uploadUrl = Uri.parse(sasUrl);
+      final uploadUri = Uri.parse(uploadUrl);
       final uploadResponse = await http.put(
-        uploadUrl,
+        uploadUri,
         headers: {
           'x-ms-blob-type': 'BlockBlob',
           'Content-Type': mimeType,
@@ -405,9 +405,9 @@ class ChatService {
 
       if (uploadResponse.statusCode == 201 || uploadResponse.statusCode == 200) {
         // Step 3: Confirm upload with backend
-        final confirmationData = await sendConfirmationUploadRequest(blobPath, receiverId);
+        final confirmationData = await sendConfirmationUploadRequest(blobName, receiverId);
         if (confirmationData != null) {
-          print('✅ ChatService: Document uploaded successfully: $blobPath');
+          print('✅ ChatService: Document uploaded successfully: $blobName');
           return confirmationData;
         } else {
           print('❌ ChatService: Upload succeeded but confirmation failed');

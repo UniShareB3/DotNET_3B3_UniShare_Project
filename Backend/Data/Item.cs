@@ -72,6 +72,8 @@ public class Item
     [MaxLength(500)]
     [Column(TypeName = "varchar(500)")]
     public string? ImageUrl { get; set; }
+    
+    public string? BlobName { get; set; }
 
     // Navigation properties
     public User? Owner { get; set; }
