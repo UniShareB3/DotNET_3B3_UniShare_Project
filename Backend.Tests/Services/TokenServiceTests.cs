@@ -16,7 +16,7 @@ public class TokenServiceTests
             {"JwtSettings:Key", "ThisIsASecretKeyForJwtTokenGeneration12345"},
             {"JwtSettings:Issuer", "MyAppIssuer"},
             {"JwtSettings:Audience", "MyAppAudience"},
-            {"JwtSettings:ExpiryMinutes", "60"}
+            {"JwtSettings:ExpiryMinutes", "15"}
         };
 
         return new ConfigurationBuilder()
