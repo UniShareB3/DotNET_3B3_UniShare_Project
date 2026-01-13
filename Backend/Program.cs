@@ -198,6 +198,7 @@ builder.Services.AddAuthentication(options =>
                      throw new InvalidOperationException("Configuration value 'JwtSettings:Key' is missing.");
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            ClockSkew = TimeSpan.Zero,
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
