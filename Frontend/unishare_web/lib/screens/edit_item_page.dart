@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // Necesită pachetul image_picker în pubspec.yaml
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import '../services/api_service.dart';
+import '../services/chat_service.dart';
 
 class EditItemPage extends StatefulWidget {
-  final Map<String, dynamic> item; // Primim item-ul pe care vrem să îl edităm
+  final Map<String, dynamic> item;
 
   const EditItemPage({super.key, required this.item});
 
@@ -16,7 +18,6 @@ class EditItemPage extends StatefulWidget {
 class _EditItemPageState extends State<EditItemPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Listele de valori
   final List<String> _categories = ['Others', 'Books', 'Electronics', 'Kitchen', 'Clothing', 'Accessories'];
   final List<String> _conditions = ['New', 'Excellent', 'Good', 'Fair', 'Poor'];
 
@@ -35,9 +36,8 @@ class _EditItemPageState extends State<EditItemPage> {
   String? _selectedCondition;
   String? _imageUrl;
 
-  // Stare pentru imaginea selectată local
   XFile? _pickedImage;
-  Uint8List? _webImageBytes; // Pentru afișare pe Web
+  Uint8List? _webImageBytes;
 
   bool _isLoading = false;
 
@@ -138,43 +138,118 @@ class _EditItemPageState extends State<EditItemPage> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Upload Image logic (Simulat)
+      String? blobName;
+
+      // 1. Upload document if a new image was selected
       if (_pickedImage != null) {
-        // Aici ar trebui apelat serviciul de upload (ex: ChatService.uploadDocument sau ApiService.uploadImage)
-        // await ChatService.uploadDocument(await _pickedImage!.readAsBytes(), _pickedImage!.name, 'admin_id');
+        print('📤 Uploading new document...');
+        
+        // Get file bytes
+        final fileBytes = await _pickedImage!.readAsBytes();
+        final fileName = _pickedImage!.name;
+        
+        // Determine MIME type
+        final extension = fileName.toLowerCase().split('.').last;
+        String mimeType;
+        switch (extension) {
+          case 'jpg':
+          case 'jpeg':
+            mimeType = 'image/jpeg';
+            break;
+          case 'png':
+            mimeType = 'image/png';
+            break;
+          case 'gif':
+            mimeType = 'image/gif';
+            break;
+          case 'webp':
+            mimeType = 'image/webp';
+            break;
+          default:
+            mimeType = 'image/jpeg';
+        }
 
-        // Simulăm un upload
-        await Future.delayed(const Duration(milliseconds: 800));
-        // După upload, am primi un URL nou:
-        // _imageUrl = "https://example.com/new_uploaded_image.jpg";
-      }
+        // Step 1a: Get SAS URL and blobName from backend
+        final sasData = await ChatService.retrieveSasUrl(fileName, mimeType);
+        if (sasData == null) {
+          throw Exception('Failed to retrieve upload URL from server');
+        }
 
-      // 2. Update Item Logic (Simulat)
-      // await ApiService.updateItem(...)
+        final uploadUrl = sasData['uploadUrl'] as String;
+        blobName = sasData['blobName'] as String;
 
-      await Future.delayed(const Duration(milliseconds: 500));
-      const result = true;
+        print('📤 Uploading to blob storage: $blobName');
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Update Mocked (Imaginea a fost selectată dar nu s-a trimis la server)")),
+        // Step 1b: Upload directly to blob storage
+        final uploadUri = Uri.parse(uploadUrl);
+        final uploadResponse = await http.put(
+          uploadUri,
+          headers: {
+            'x-ms-blob-type': 'BlockBlob',
+            'Content-Type': mimeType,
+          },
+          body: fileBytes,
         );
+
+        if (uploadResponse.statusCode != 201 && uploadResponse.statusCode != 200) {
+          throw Exception('Failed to upload document to blob storage: ${uploadResponse.statusCode}');
+        }
+
+        print('✅ Document uploaded successfully to blob storage');
       }
+
+      // 2. Update item using PATCH endpoint
+      print('📝 Updating item...');
+      final itemId = widget.item['id']?.toString();
+      if (itemId == null) {
+        throw Exception('Item ID not found');
+      }
+
+      final result = await ApiService.patchItem(
+        itemId: itemId,
+        itemName: _name,
+        description: _description,
+        category: _selectedCategory,
+        condition: _selectedCondition,
+        blobName: blobName, // Pass blobName (can be null if no new image)
+      );
 
       setState(() => _isLoading = false);
 
-      if (result == true) {
-        if (mounted) {
+      if (mounted) {
+        if (result['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Item updated successfully!"),
+              backgroundColor: Colors.green,
+            ),
+          );
           Navigator.pop(context, true);
+        } else {
+          final errors = result['errors'] as Map<String, dynamic>?;
+          String errorMessage = 'Failed to update item';
+          if (errors != null) {
+            errorMessage = errors.values.join(', ');
+          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
+          SnackBar(
+            content: Text("Error: $e"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
+      print('❌ Error updating item: $e');
     }
   }
 
@@ -207,7 +282,7 @@ class _EditItemPageState extends State<EditItemPage> {
                   ),
                   const SizedBox(height: 30),
 
-                  // --- Image Picker Section ---
+                  // Image Picker Section
                   Center(
                     child: Column(
                       children: [
@@ -300,7 +375,7 @@ class _EditItemPageState extends State<EditItemPage> {
                   ),
                   const SizedBox(height: 30),
 
-                  // Buton Update
+                  // Update Button
                   SizedBox(
                     height: 50,
                     child: _isLoading
@@ -327,20 +402,16 @@ class _EditItemPageState extends State<EditItemPage> {
 
   Widget _buildImagePreview() {
     if (_webImageBytes != null) {
-      // Caz: Web - Imagine nouă selectată
       return Image.memory(_webImageBytes!, fit: BoxFit.cover);
     } else if (_pickedImage != null && !kIsWeb) {
-      // Caz: Mobile - Imagine nouă selectată
       return Image.file(File(_pickedImage!.path), fit: BoxFit.cover);
     } else if (_imageUrl != null && _imageUrl!.isNotEmpty) {
-      // Caz: Imagine existentă de la server
       return Image.network(
         _imageUrl!,
         fit: BoxFit.cover,
         errorBuilder: (ctx, err, stack) => const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey)),
       );
     } else {
-      // Caz: Nicio imagine
       return const Center(child: Icon(Icons.image, size: 80, color: Colors.grey));
     }
   }

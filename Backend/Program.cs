@@ -22,6 +22,8 @@ using Backend.Features.Items.GetBookingForItem;
 using Backend.Features.Items.GetItem;
 using Backend.Features.Items.GetUserItem;
 using Backend.Features.Items.PostItem;
+using Backend.Features.Items.PatchItem;
+using Backend.Features.Items.DTO;
 using Backend.Features.ModeratorAssignment.CreateModeratorAssignment;
 using Backend.Features.ModeratorAssignment.DTO;
 using Backend.Features.ModeratorAssignment.GetAllModeratorAssignments;
@@ -277,9 +279,12 @@ else
 
 builder.Services.AddAutoMapper(cfg =>
     {
+        var serviceProvider = builder.Services.BuildServiceProvider();
+        var azureStorageService = serviceProvider.GetRequiredService<IAzureStorageService>();
+        
         cfg.AddProfile<UserMapper>();
         cfg.AddProfile<UniversityMapper>();
-        cfg.AddProfile<ItemMapper>();
+        cfg.AddProfile(new ItemMapper(azureStorageService));
         cfg.AddProfile<BookingMapper>();
         cfg.AddProfile<ReviewMapper>();
         cfg.AddProfile<Backend.Mappers.Report.ReportMapper>();
@@ -502,6 +507,12 @@ itemsGroup.MapGet(RouteIdGuid, async (Guid id, IMediator mediator) =>
 
 itemsGroup.MapPost("", async (PostItemRequest request, IMediator mediator) =>
         await mediator.Send(request))
+    .RequireAuthorization()
+    .AllowAdmin()
+    .RequireEmailVerification();
+
+itemsGroup.MapPatch(RouteIdGuid, async (Guid id, PatchItemDto dto, IMediator mediator) =>
+        await mediator.Send(new PatchItemRequest(id, dto)))
     .RequireAuthorization()
     .AllowAdmin()
     .RequireEmailVerification();
