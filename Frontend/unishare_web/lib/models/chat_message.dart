@@ -58,6 +58,10 @@ class ChatMessage {
       if (contentType.startsWith('image/')) {
         type = MessageType.image;
         print('📥 ChatMessage: Detected as IMAGE (contentType: $contentType)');
+      } else if (contentType.startsWith('text/')) {
+        // Text content types (text/plain, text/html, etc.) are plain text messages
+        type = MessageType.text;
+        print('📥 ChatMessage: Detected as TEXT (contentType: $contentType)');
       } else if (contentType.isNotEmpty && contentType != '') {
         // Any other content type means it's a document
         type = MessageType.document;
