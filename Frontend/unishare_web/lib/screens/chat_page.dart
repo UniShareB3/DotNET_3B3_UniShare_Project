@@ -185,8 +185,9 @@ class _ChatPageState extends State<ChatPage> {
 
         final blobName = uploadResult['blobName'] as String;
         final documentUrl = uploadResult['documentUrl'] as String;
+        final imageName = uploadResult['imageName'] as String?;
 
-        final success = await ChatService.sendDocumentMessage(widget.otherUserId, blobName, documentUrl);
+        final success = await ChatService.sendDocumentMessage(widget.otherUserId, blobName, documentUrl, imageName: imageName);
         if (!success && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to send file'), backgroundColor: Colors.red));
         }
@@ -522,7 +523,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildDocumentMessage(ChatMessage message, bool isMe) {
     final documentUrl = message.documentUrl;
-    final documentName = message.documentName ?? 'Document';
+    final documentName = message.displayName ?? 'Document';
 
     // If no URL is available (not yet resolved), show with blob name for lazy fetch
     if (documentUrl == null || documentUrl.isEmpty) {

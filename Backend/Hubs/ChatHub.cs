@@ -22,7 +22,7 @@ public class ChatHub(ApplicationContext context) : Hub
     // Frontend calls this method to broadcast an image/document message
     // Note: The message is already saved to DB by ConfirmDocumentUploadHandler
     // This method only broadcasts the message to clients in real-time
-    public async Task SendImageMessage(string receiverId, string blobName, string documentUrl, string? caption = null)
+    public async Task SendImageMessage(string receiverId, string blobName, string documentUrl, string? caption = null, string? imageName = null)
     {
         var senderId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -41,6 +41,7 @@ public class ChatHub(ApplicationContext context) : Hub
             BlobName = blobName,
             DocumentUrl = documentUrl,
             ContentType = contentType,
+            ImageName = imageName,
             Timestamp = DateTime.UtcNow
         };
 

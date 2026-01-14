@@ -51,6 +51,7 @@ public class ConfirmDocumentUploadHandler(
                 Content = request.Caption ?? string.Empty,
                 BlobName = request.BlobName,
                 ContentType = contentType,
+                ImageName = request.FileName,
                 Timestamp = DateTime.UtcNow
             };
 
@@ -67,6 +68,7 @@ public class ConfirmDocumentUploadHandler(
                 MessageId = chatMessage.Id,
                 DocumentUrl = readUrl,
                 BlobName = request.BlobName,
+                ImageName = request.FileName,
                 Timestamp = chatMessage.Timestamp,
                 ExpiresAt = DateTime.UtcNow.Add(BlobStorageConstants.ReadSasUrlExpiryTime)
             });
