@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Backend.Features.Items.Enums;
 using Backend.Persistence;
 using Bogus;
@@ -161,10 +162,22 @@ public static class DatabaseSeeder
     {
         Logger.Information("Seeding admin account...");
 
-        const string adminEmail = "admin@student.uaic.ro";
-        const string adminPassword = "Admin@1234";
+        var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL");
+        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
         const string adminFirstName = "Admin";
         const string adminLastName = "UniShare";
+        
+        if (string.IsNullOrWhiteSpace(adminEmail))
+        {
+            throw new InvalidOperationException(
+                "Admin email environment variable (ADMIN_EMAIL) must be configured before seeding.");
+        }
+
+        if (string.IsNullOrWhiteSpace(adminPassword))
+        {
+            throw new InvalidOperationException(
+                "Admin password environment variable (ADMIN_PASSWORD) must be configured before seeding.");
+        }
 
         // Check if admin already exists
         var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
@@ -203,8 +216,7 @@ public static class DatabaseSeeder
             await userManager.AddToRoleAsync(adminUser, RoleUser);
             await userManager.AddToRoleAsync(adminUser, RoleAdmin);
 
-            Logger.Information("✅ Created admin account: {Email} with password: {Password}",
-                adminEmail, adminPassword);
+            Logger.Information("✅ Created admin account: {Email}", adminEmail);
         }
         else
         {
@@ -234,7 +246,11 @@ public static class DatabaseSeeder
 
         var usersToCreate = targetUserCount - existingUserCount;
         var newUsers = new List<User>();
-        var random = new Random(12345 + existingUserCount);
+        var randomGenerator = RandomNumberGenerator.Create();
+        var data = new byte[16];
+        randomGenerator.GetBytes(data);
+        var seed = BitConverter.ToInt32(data, 0);
+        var random = new Random(seed + existingUserCount);
 
         // 2. Setup Faker once
         var userFaker = CreateUserFaker();
@@ -300,14 +316,14 @@ public static class DatabaseSeeder
     private static Faker<User> CreateUserFaker()
     {
         return new Faker<User>()
-            .RuleFor(u => u.Id, f => Guid.NewGuid())
+            .RuleFor(u => u.Id, _ => Guid.NewGuid())
             .RuleFor(u => u.FirstName, f => f.Name.FirstName())
             .RuleFor(u => u.LastName, f => f.Name.LastName())
             .RuleFor(u => u.CreatedAt, f => f.Date.Past(1, DateTime.UtcNow))
             .RuleFor(u => u.NewEmailConfirmed, f => f.Random.Bool(0.7f))
-            .RuleFor(u => u.PhoneNumberConfirmed, f => false)
-            .RuleFor(u => u.TwoFactorEnabled, f => false)
-            .RuleFor(u => u.LockoutEnabled, f => false);
+            .RuleFor(u => u.PhoneNumberConfirmed, _ => false)
+            .RuleFor(u => u.TwoFactorEnabled, _ => false)
+            .RuleFor(u => u.LockoutEnabled, _ => false);
     }
 
 // Helper 3: Complex Email Logic
@@ -383,9 +399,13 @@ public static class DatabaseSeeder
         }
 
         var itemsToCreate = targetItemCount - existingItemCount;
-
-        var random = new Random(12345 + existingItemCount); // Different seed based on existing count
-        Randomizer.Seed = new Random(12345 + existingItemCount);
+        
+        var randomGenerator = RandomNumberGenerator.Create();
+        var data = new byte[16];
+        randomGenerator.GetBytes(data);
+        var seed = BitConverter.ToInt32(data, 0);
+        var random = new Random(seed + existingItemCount); // Different seed based on existing count
+        Randomizer.Seed = new Random(seed + existingItemCount);
 
         // Item name templates by category
         var bookTitles = new[]
@@ -420,7 +440,7 @@ public static class DatabaseSeeder
         };
 
         var itemFaker = new Faker<Item>()
-            .RuleFor(i => i.Id, f => Guid.NewGuid())
+            .RuleFor(i => i.Id, _ => Guid.NewGuid())
             .RuleFor(i => i.CreatedAt, f => f.Date.Past(6, DateTime.UtcNow.AddMonths(-1)))
             .RuleFor(i => i.IsAvailable, f => f.Random.Bool(0.8f)) // 80% available
             .RuleFor(i => i.ImageUrl, f => f.Random.Bool(0.5f) ? f.Image.PicsumUrl() : null);
@@ -483,3 +503,4 @@ public static class DatabaseSeeder
             items.Count, existingItemCount + items.Count, string.Join(", ", categoryCounts));
     }
 }
+

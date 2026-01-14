@@ -494,7 +494,7 @@ $RECYCLE.BIN/
 *.swp
 
 .sonarqube
-# Ignore EF Core migrations folder
+# Ignore EF Core s folder
 Backend/Migrations/
 
 # Ignore Flutter build artifacts in frontend

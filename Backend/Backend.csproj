@@ -5,10 +5,9 @@
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-      <UserSecretsId>a13c765d-5bd9-479a-ae2d-d520e37d0e6b</UserSecretsId>
-      <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-  <SonarQubeTestProject>false</SonarQubeTestProject>
-
+        <UserSecretsId>a13c765d-5bd9-479a-ae2d-d520e37d0e6b</UserSecretsId>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <SonarQubeTestProject>false</SonarQubeTestProject>
   </PropertyGroup>
 
     <ItemGroup>
@@ -39,7 +38,6 @@
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Stripe" Version="1.12.0" />
         <PackageReference Include="Stripe.net" Version="50.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
         <PackageReference Include="coverlet.collector" Version="6.0.0" />
@@ -54,6 +52,12 @@
     <ItemGroup>
       <Folder Include="Migrations\" />
       <Folder Include="wwwroot\" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <SonarQubeSetting Include="sonar.exclusions">
+            <Value>**/Migrations/**/*,**/Dockerfile*</Value>
+        </SonarQubeSetting>
     </ItemGroup>
 
     <ItemGroup>

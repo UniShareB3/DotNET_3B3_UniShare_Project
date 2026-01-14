@@ -1,4 +1,5 @@
-﻿using Backend.Persistence;
+﻿using System.Text.RegularExpressions;
+using Backend.Persistence;
 using Backend.Data;
 using Microsoft.AspNetCore.Identity;
 
@@ -37,9 +38,11 @@ public class EmailValidator(ApplicationContext dbContext) : IUserValidator<User>
             }));
         var domainParts = university.EmailDomain.Split('@');
         var domain = domainParts[^1];
-        var isValid = System.Text.RegularExpressions.Regex.IsMatch(user.Email,
+        var isValid = Regex.IsMatch(user.Email,
             $@"^[^@\s]+@(?:student\.)?{domain}$",
-            System.Text.RegularExpressions.RegexOptions.None);
+            RegexOptions.None,
+            TimeSpan.FromSeconds(1));
+        
             
         if (isValid) 
             return Task.FromResult(IdentityResult.Success);
