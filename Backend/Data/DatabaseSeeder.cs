@@ -162,14 +162,21 @@ public static class DatabaseSeeder
     {
         Logger.Information("Seeding admin account...");
 
-        var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL")!;
-        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD")!;
+        var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL");
+        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
         const string adminFirstName = "Admin";
         const string adminLastName = "UniShare";
         
-        if (string.IsNullOrEmpty(adminEmail) || string.IsNullOrEmpty(adminPassword))
+        if (string.IsNullOrWhiteSpace(adminEmail))
         {
-            throw new ArgumentNullException("Missing .env variables for Admin credentials!");
+            throw new Exception(
+                "Admin email environment variable (ADMIN_EMAIL) must be configured before seeding.");
+        }
+
+        if (string.IsNullOrWhiteSpace(adminPassword))
+        {
+            throw new Exception(
+                "Admin password environment variable (ADMIN_PASSWORD) must be configured before seeding.");
         }
 
         // Check if admin already exists
@@ -496,3 +503,4 @@ public static class DatabaseSeeder
             items.Count, existingItemCount + items.Count, string.Join(", ", categoryCounts));
     }
 }
+
