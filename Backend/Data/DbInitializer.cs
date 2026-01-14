@@ -6,8 +6,6 @@ namespace Backend.Data
 {
     public static class DbInitializer
     {
-        private const string DefaultPlaceholderImageBaseUrl = "https://picsum.photos/200";
-        
         /// <summary>
         /// Initializes the database with seed data.
         /// </summary>
@@ -15,9 +13,9 @@ namespace Backend.Data
         /// <param name="placeholderImageBaseUrl">Optional: Base URL for placeholder images. If null, uses default value.</param>
         public static void Initialize(ApplicationContext context, string? placeholderImageBaseUrl = null)
         {
-            // Use provided URL or fallback to default
-            var imageBaseUrl = placeholderImageBaseUrl ?? DefaultPlaceholderImageBaseUrl;
-            
+            var imageBaseUrl = placeholderImageBaseUrl
+                               ?? Environment.GetEnvironmentVariable("PLACEHOLDER_IMAGE_BASE_URL");
+
             // Asigură-te că baza de date este creată
             context.Database.Migrate();
 

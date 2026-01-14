@@ -169,13 +169,13 @@ public static class DatabaseSeeder
         
         if (string.IsNullOrWhiteSpace(adminEmail))
         {
-            throw new Exception(
+            throw new InvalidOperationException(
                 "Admin email environment variable (ADMIN_EMAIL) must be configured before seeding.");
         }
 
         if (string.IsNullOrWhiteSpace(adminPassword))
         {
-            throw new Exception(
+            throw new InvalidOperationException(
                 "Admin password environment variable (ADMIN_PASSWORD) must be configured before seeding.");
         }
 
