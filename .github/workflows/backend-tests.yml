@@ -46,7 +46,13 @@ jobs:
         JwtSettings__Key: ${{ secrets.JWT_SECRET }}
         JwtSettings__Issuer: ${{ secrets.JWTSETTINGS_ISSUER }}
         JwtSettings__Audience: ${{ secrets.JWTSETTINGS_AUDIENCE }}
-
+        ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+        ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+        DB_HOST: ${{secrets.DB_HOST}}
+        DB_NAME: ${{secrets.DB_NAME}}
+        DB_USERNAME: ${{secrets.DB_USERNAME}}
+        DB_PASSWORD: ${{secrets.DB_PASSWORD}}
+  
     - name: Publish Test Report
       uses: dorny/test-reporter@v1
       if: success() || failure()

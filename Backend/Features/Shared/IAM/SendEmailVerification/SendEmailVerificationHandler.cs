@@ -2,7 +2,6 @@
 using Backend.Data;
 using Backend.Features.Shared.IAM.Constants;
 using Backend.Persistence;
-using Backend.Services;
 using Backend.Services.EmailSender;
 using Backend.Services.Hashing;
 using MediatR;
@@ -50,11 +49,9 @@ public class SendEmailVerificationHandler(
             context.EmailConfirmationTokens.RemoveRange(existingTokens);
         }
         
-        var randomGenerator = RandomNumberGenerator.Create();
-        var data = new byte[16];
-        randomGenerator.GetBytes(data);
-        var seed = BitConverter.ToInt32(data, 0);
-        var code = new Random(seed).Next(100000, 999999).ToString();
+        // SECURITY: Use RandomNumberGenerator for cryptographically secure 6-digit code generation
+        // Range: 100000-999999 (6 digits)
+        var code = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
         var hashedCode = hashingService.HashCode(code);
         var verificationToken = new EmailConfirmationToken
         {

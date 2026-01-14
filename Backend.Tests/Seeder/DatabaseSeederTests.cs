@@ -5,6 +5,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using DotNetEnv;
 
 #pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type
 
@@ -18,6 +19,8 @@ public class DatabaseSeederTests
 
     public DatabaseSeederTests()
     {
+        Env.Load();
+        
         // Setup in-memory database
         var options = new DbContextOptionsBuilder<ApplicationContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())

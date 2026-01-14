@@ -309,14 +309,14 @@ public static class DatabaseSeeder
     private static Faker<User> CreateUserFaker()
     {
         return new Faker<User>()
-            .RuleFor(u => u.Id, f => Guid.NewGuid())
+            .RuleFor(u => u.Id, _ => Guid.NewGuid())
             .RuleFor(u => u.FirstName, f => f.Name.FirstName())
             .RuleFor(u => u.LastName, f => f.Name.LastName())
             .RuleFor(u => u.CreatedAt, f => f.Date.Past(1, DateTime.UtcNow))
             .RuleFor(u => u.NewEmailConfirmed, f => f.Random.Bool(0.7f))
-            .RuleFor(u => u.PhoneNumberConfirmed, f => false)
-            .RuleFor(u => u.TwoFactorEnabled, f => false)
-            .RuleFor(u => u.LockoutEnabled, f => false);
+            .RuleFor(u => u.PhoneNumberConfirmed, _ => false)
+            .RuleFor(u => u.TwoFactorEnabled, _ => false)
+            .RuleFor(u => u.LockoutEnabled, _ => false);
     }
 
 // Helper 3: Complex Email Logic
@@ -393,6 +393,8 @@ public static class DatabaseSeeder
 
         var itemsToCreate = targetItemCount - existingItemCount;
 
+        // SECURITY NOTE: Random is safe here because this is only for test data generation (database seeding).
+        // For security-sensitive operations (tokens, passwords), use RandomNumberGenerator directly.
         var randomGenerator = RandomNumberGenerator.Create();
         var data = new byte[16];
         randomGenerator.GetBytes(data);
@@ -433,7 +435,7 @@ public static class DatabaseSeeder
         };
 
         var itemFaker = new Faker<Item>()
-            .RuleFor(i => i.Id, f => Guid.NewGuid())
+            .RuleFor(i => i.Id, _ => Guid.NewGuid())
             .RuleFor(i => i.CreatedAt, f => f.Date.Past(6, DateTime.UtcNow.AddMonths(-1)))
             .RuleFor(i => i.IsAvailable, f => f.Random.Bool(0.8f)) // 80% available
             .RuleFor(i => i.ImageUrl, f => f.Random.Bool(0.5f) ? f.Image.PicsumUrl() : null);
