@@ -259,9 +259,8 @@ builder.Services.AddScoped<IHashingService, HashingService>();
 // Register Azure Storage Service
 RegisterAzureStorageService(builder);
 
-builder.Services.AddAutoMapper(cfg =>
+builder.Services.AddAutoMapper((serviceProvider, cfg) =>
     {
-        var serviceProvider = builder.Services.BuildServiceProvider();
         var azureStorageService = serviceProvider.GetRequiredService<IAzureStorageService>();
         
         cfg.AddProfile<UserMapper>();
