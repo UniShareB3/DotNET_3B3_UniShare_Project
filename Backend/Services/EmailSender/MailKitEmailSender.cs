@@ -6,7 +6,6 @@ namespace Backend.Services.EmailSender;
 
 public class MailKitEmailSender(IConfiguration configuration) : IEmailSender
 {
-    private const string DefaultFrontendUrl = "http://localhost:3000";
     public async Task SendEmailAsync(string toEmail, string subject, string body)
     {
         var message = new MimeMessage();
@@ -53,13 +52,15 @@ UniShare Team";
 
     public async Task SendPasswordResetEmailAsync(string toEmail, string resetToken, Guid userId)
     {
-        // Get frontend URL from configuration or use default
-        var frontendUrl = configuration["Frontend:BaseUrl"] ?? DefaultFrontendUrl;
+        var frontendUrl = Environment.GetEnvironmentVariable("API_FRONTEND_URL")
+                          ?? configuration["Frontend:BaseUrl"];
+        if (string.IsNullOrWhiteSpace(frontendUrl))
+        {
+            throw new InvalidOperationException(
+                "Missing frontend base URL. Set API_FRONTEND_URL env variable or Frontend:BaseUrl configuration to enable password reset emails.");
+        }
         
-        // URL encode the token to ensure it's safe for URLs
         var encodedToken = Uri.EscapeDataString(resetToken);
-        
-        // Build the reset password URL with token and userId as query parameters
         var resetUrl = $"{frontendUrl}/reset-password?token={encodedToken}&userId={userId}";
         
         var message = new MimeMessage();

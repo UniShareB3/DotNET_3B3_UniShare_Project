@@ -169,7 +169,7 @@ public static class DatabaseSeeder
         
         if (string.IsNullOrEmpty(adminEmail) || string.IsNullOrEmpty(adminPassword))
         {
-            throw new Exception("Missing .env variables for Admin credentials!");
+            throw new ArgumentNullException("Missing .env variables for Admin credentials!");
         }
 
         // Check if admin already exists
