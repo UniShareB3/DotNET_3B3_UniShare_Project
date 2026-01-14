@@ -55,6 +55,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <SonarQubeSetting Include="sonar.exclusions">
+            <Value>**/Migrations/**/*,**/Dockerfile*</Value>
+        </SonarQubeSetting>
+    </ItemGroup>
+
+    <ItemGroup>
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>

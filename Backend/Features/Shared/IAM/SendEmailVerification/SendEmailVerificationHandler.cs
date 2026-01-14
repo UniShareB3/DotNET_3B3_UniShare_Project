@@ -1,4 +1,5 @@
-﻿using Backend.Data;
+﻿using System.Security.Cryptography;
+using Backend.Data;
 using Backend.Features.Shared.IAM.Constants;
 using Backend.Persistence;
 using Backend.Services;
@@ -49,7 +50,11 @@ public class SendEmailVerificationHandler(
             context.EmailConfirmationTokens.RemoveRange(existingTokens);
         }
         
-        var code = new Random().Next(100000, 999999).ToString();
+        var randomGenerator = RandomNumberGenerator.Create();
+        var data = new byte[16];
+        randomGenerator.GetBytes(data);
+        var seed = BitConverter.ToInt32(data, 0);
+        var code = new Random(seed).Next(100000, 999999).ToString();
         var hashedCode = hashingService.HashCode(code);
         var verificationToken = new EmailConfirmationToken
         {

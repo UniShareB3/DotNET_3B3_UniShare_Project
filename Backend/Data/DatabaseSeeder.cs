@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Backend.Features.Items.Enums;
 using Backend.Persistence;
 using Bogus;
@@ -161,10 +162,15 @@ public static class DatabaseSeeder
     {
         Logger.Information("Seeding admin account...");
 
-        const string adminEmail = "admin@student.uaic.ro";
-        const string adminPassword = "Admin@1234";
+        var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL")!;
+        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD")!;
         const string adminFirstName = "Admin";
         const string adminLastName = "UniShare";
+        
+        if (string.IsNullOrEmpty(adminEmail) || string.IsNullOrEmpty(adminPassword))
+        {
+            throw new Exception("Missing .env variables for Admin credentials!");
+        }
 
         // Check if admin already exists
         var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
@@ -203,8 +209,7 @@ public static class DatabaseSeeder
             await userManager.AddToRoleAsync(adminUser, RoleUser);
             await userManager.AddToRoleAsync(adminUser, RoleAdmin);
 
-            Logger.Information("✅ Created admin account: {Email} with password: {Password}",
-                adminEmail, adminPassword);
+            Logger.Information("✅ Created admin account: {Email}", adminEmail);
         }
         else
         {
@@ -234,7 +239,11 @@ public static class DatabaseSeeder
 
         var usersToCreate = targetUserCount - existingUserCount;
         var newUsers = new List<User>();
-        var random = new Random(12345 + existingUserCount);
+        var randomGenerator = RandomNumberGenerator.Create();
+        var data = new byte[16];
+        randomGenerator.GetBytes(data);
+        var seed = BitConverter.ToInt32(data, 0);
+        var random = new Random(seed + existingUserCount);
 
         // 2. Setup Faker once
         var userFaker = CreateUserFaker();
@@ -384,8 +393,12 @@ public static class DatabaseSeeder
 
         var itemsToCreate = targetItemCount - existingItemCount;
 
-        var random = new Random(12345 + existingItemCount); // Different seed based on existing count
-        Randomizer.Seed = new Random(12345 + existingItemCount);
+        var randomGenerator = RandomNumberGenerator.Create();
+        var data = new byte[16];
+        randomGenerator.GetBytes(data);
+        var seed = BitConverter.ToInt32(data, 0);
+        var random = new Random(seed + existingItemCount); // Different seed based on existing count
+        Randomizer.Seed = new Random(seed + existingItemCount);
 
         // Item name templates by category
         var bookTitles = new[]
