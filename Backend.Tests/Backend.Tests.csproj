@@ -13,7 +13,6 @@
 
     <ItemGroup>
         <PackageReference Include="coverlet.collector" Version="6.0.2" />
-        <PackageReference Include="DotNetEnv" Version="3.1.1" />
         <PackageReference Include="FluentAssertions" Version="8.8.0" />
         <PackageReference Include="FluentValidation" Version="12.1.0" />
         <PackageReference Include="Kralizek.AutoFixture.Extensions.AspNetCore.WebApplicationFactory" Version="2.2.1" />

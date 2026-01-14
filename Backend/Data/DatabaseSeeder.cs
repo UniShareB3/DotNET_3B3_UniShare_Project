@@ -392,9 +392,7 @@ public static class DatabaseSeeder
         }
 
         var itemsToCreate = targetItemCount - existingItemCount;
-
-        // SECURITY NOTE: Random is safe here because this is only for test data generation (database seeding).
-        // For security-sensitive operations (tokens, passwords), use RandomNumberGenerator directly.
+        
         var randomGenerator = RandomNumberGenerator.Create();
         var data = new byte[16];
         randomGenerator.GetBytes(data);
