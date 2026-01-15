@@ -12,34 +12,37 @@ public class GenerateUploadUrlHandler(IAzureStorageService storageService) : IRe
 
     public async Task<IResult> Handle(GenerateUploadUrlRequest request, CancellationToken cancellationToken)
     {
-        _logger.Information("Generating upload URL for file: {FileName}", request.Dto.FileName);
-
-        try
+        var result = await Task.Run(() =>
         {
-            var fileExtension = Path.GetExtension(request.Dto.FileName)?.ToLowerInvariant() ?? string.Empty;
-
-            // Generate unique blob name
-            var blobName = $"{Guid.NewGuid()}{fileExtension}";
-
-            // Generate SAS URL for upload (valid for 15 minutes)
-            var expiryTime = TimeSpan.FromMinutes(15);
-            var uploadUrl=  storageService.GenerateUploadSasUrl(blobName, expiryTime);
-
-            var response = new GenerateUploadUrlResponse
+            _logger.Information("Generating upload URL for file: {FileName}", request.Dto.FileName);
+            try
             {
-                UploadUrl = uploadUrl,
-                BlobName = blobName,
-                ExpiresAt = DateTime.UtcNow.Add(expiryTime)
-            };
+                var fileExtension = Path.GetExtension(request.Dto.FileName)?.ToLowerInvariant() ?? string.Empty;
 
-            _logger.Information("Generated upload URL for blob {BlobName}, expires at {ExpiresAt}", blobName, response.ExpiresAt);
+                // Generate unique blob name
+                var blobName = $"{Guid.NewGuid()}{fileExtension}";
 
-            return Results.Ok(response);
-        }
-        catch (Exception ex)
-        {
-            _logger.Error(ex, "Error generating upload URL for file {FileName}", request.Dto.FileName);
-            return Results.Problem("An unexpected error occurred while generating upload URL.");
-        }
+                // Generate SAS URL for upload (valid for 15 minutes)
+                var expiryTime = TimeSpan.FromMinutes(15);
+                var uploadUrl=  storageService.GenerateUploadSasUrl(blobName, expiryTime);
+
+                var response = new GenerateUploadUrlResponse
+                {
+                    UploadUrl = uploadUrl,
+                    BlobName = blobName,
+                    ExpiresAt = DateTime.UtcNow.Add(expiryTime)
+                };
+
+                _logger.Information("Generated upload URL for blob {BlobName}, expires at {ExpiresAt}", blobName, response.ExpiresAt);
+
+                return Results.Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error generating upload URL for file {FileName}", request.Dto.FileName);
+                return Results.Problem("An unexpected error occurred while generating upload URL.");
+            }
+        }, cancellationToken); // To satisfy async signature
+        return result;
     }
 }

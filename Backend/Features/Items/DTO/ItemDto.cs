@@ -7,7 +7,7 @@ public record ItemDto
     public required string Category { get; init; }
     public required string Condition { get; init; }
     public bool IsAvailable { get; init; }
-    public string? ImageUrl { get; init; }
+    public string? ImageUrl { get; set; }
     public Guid OwnerId { get; init; }
     public required string OwnerName { get; init; }
     
