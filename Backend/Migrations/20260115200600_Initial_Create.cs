@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class AddBlobNameField : Migration
+    public partial class Initial_Create : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -108,6 +108,7 @@ namespace Backend.Migrations
                     Content = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     BlobName = table.Column<string>(type: "text", nullable: true),
                     ContentType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    ImageName = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
