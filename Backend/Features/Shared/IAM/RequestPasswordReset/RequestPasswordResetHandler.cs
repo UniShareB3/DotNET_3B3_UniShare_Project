@@ -49,6 +49,11 @@ public class RequestPasswordResetHandler(
         // Update security stamp to ensure a new token is generated
         await userManager.UpdateSecurityStampAsync(user);
 
+        // Reload user from database to ensure we have the updated security stamp
+        // This is necessary because the in-memory user object may not reflect the new stamp
+        user = await userManager.FindByIdAsync(user.Id.ToString())
+               ?? throw new InvalidOperationException("User not found after security stamp update");
+
         // Generate password reset token using UserManager
         var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
 
