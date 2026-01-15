@@ -93,7 +93,7 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
 - **Dev 1:** Auth + Setup + Unit Tests
 - **Dev 2:** Items + Bookings + Validation + Unit Tests
 - **Dev 3:** Reviews + EF Core + Integration Tests
-- **Dev 4:** Blazor UI + End-to-End Tests + Docs
+- **Dev 4:** Flutter UI + End-to-End Tests + Docs
 
 
 ## 📦 Deployment
