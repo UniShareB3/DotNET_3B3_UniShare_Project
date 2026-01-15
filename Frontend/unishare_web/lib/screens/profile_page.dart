@@ -290,13 +290,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     ? () => _showModeratorRequestDialog(userId)
                     : null,
                 icon: _isSubmittingModeratorRequest
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
                     : const Icon(Icons.how_to_reg),
                 label: const Text("Request Moderator"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
+                  backgroundColor: Colors.purple,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  foregroundColor: Colors.white,
                 ),
               ),
           ],
