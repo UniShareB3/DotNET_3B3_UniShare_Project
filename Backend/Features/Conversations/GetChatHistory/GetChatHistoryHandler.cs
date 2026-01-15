@@ -28,6 +28,7 @@ public class GetChatHistoryHandler(ApplicationContext dbContext) : IRequestHandl
                     Content = m.Content,
                     BlobName = m.BlobName,
                     ContentType = m.ContentType,
+                    ImageName = m.ImageName,
                     Timestamp = m.Timestamp
                 })
                 .ToListAsync(cancellationToken);

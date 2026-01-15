@@ -6,5 +6,6 @@ public class ChatMessageDto
     public string Content { get; set; } = string.Empty;
     public string? BlobName { get; set; }
     public string ContentType { get; set; } = "text/plain";
+    public string? ImageName { get; set; }
     public DateTime Timestamp { get; set; }
 }

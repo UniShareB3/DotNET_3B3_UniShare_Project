@@ -163,7 +163,7 @@ class _HomePageState extends State<HomePage> {
       onChanged: onChanged,
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      activeColor: Colors.blue,
+      activeColor: Colors.purple,
       controlAffinity: ListTileControlAffinity.leading,
     );
   }
@@ -175,7 +175,7 @@ class _HomePageState extends State<HomePage> {
       onChanged: onChanged,
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      activeColor: Colors.blue,
+      activeColor: Colors.purple,
       controlAffinity: ListTileControlAffinity.leading,
     );
   }
