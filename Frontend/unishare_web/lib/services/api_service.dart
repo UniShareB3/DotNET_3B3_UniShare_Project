@@ -107,6 +107,7 @@ class ApiService {
       );
 
       print('API refresh-token status: ${response.statusCode}');
+      print('API refresh-token body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -121,6 +122,14 @@ class ApiService {
           print('✅ Access token refreshed successfully');
           return true;
         }
+      } else {
+        // If refresh failed, clear tokens so UI can force login flow
+        print('❌ Refresh token request failed (status ${response.statusCode}). Clearing stored tokens.');
+        try {
+          await SecureStorageService.clear();
+        } catch (e) {
+          print('Failed to clear secure storage after refresh failure: $e');
+        }
       }
 
       print('❌ Failed to refresh token: ${response.statusCode}');
@@ -132,7 +141,7 @@ class ApiService {
   }
 
   /// Helper to make authenticated GET request with automatic token refresh on 401
-  static Future<http.Response> _authenticatedGet(Uri url, {Map<String, String>? extraHeaders}) async {
+  static Future<http.Response> authenticatedGet(Uri url, {Map<String, String>? extraHeaders}) async {
     var token = await SecureStorageService.getAccessToken();
     var headers = {
       'Content-Type': 'application/json',
@@ -144,13 +153,15 @@ class ApiService {
 
     // If 401, try refreshing token once and retry
     if (response.statusCode == 401) {
-      print('🔄 Got 401, attempting token refresh...');
+      print('🔄 Got 401 for GET $url, attempting token refresh...');
       final refreshed = await refreshAccessToken();
       if (refreshed) {
         token = await SecureStorageService.getAccessToken();
         headers['Authorization'] = 'Bearer $token';
         response = await http.get(url, headers: headers);
         print('🔄 Retry after refresh: ${response.statusCode}');
+      } else {
+        print('🔒 Token refresh failed; returning 401.');
       }
     }
 
@@ -158,7 +169,7 @@ class ApiService {
   }
 
   /// Helper to make authenticated POST request with automatic token refresh on 401
-  static Future<http.Response> _authenticatedPost(Uri url, {Map<String, String>? extraHeaders, String? body}) async {
+  static Future<http.Response> authenticatedPost(Uri url, {Map<String, String>? extraHeaders, String? body}) async {
     var token = await SecureStorageService.getAccessToken();
     var headers = {
       'Content-Type': 'application/json',
@@ -169,13 +180,15 @@ class ApiService {
     var response = await http.post(url, headers: headers, body: body);
 
     if (response.statusCode == 401) {
-      print('🔄 Got 401, attempting token refresh...');
+      print('🔄 Got 401 for POST $url, attempting token refresh...');
       final refreshed = await refreshAccessToken();
       if (refreshed) {
         token = await SecureStorageService.getAccessToken();
         headers['Authorization'] = 'Bearer $token';
         response = await http.post(url, headers: headers, body: body);
         print('🔄 Retry after refresh: ${response.statusCode}');
+      } else {
+        print('🔒 Token refresh failed; returning 401.');
       }
     }
 
@@ -183,7 +196,7 @@ class ApiService {
   }
 
   /// Helper to make authenticated PATCH request with automatic token refresh on 401
-  static Future<http.Response> _authenticatedPatch(Uri url, {Map<String, String>? extraHeaders, String? body}) async {
+  static Future<http.Response> authenticatedPatch(Uri url, {Map<String, String>? extraHeaders, String? body}) async {
     var token = await SecureStorageService.getAccessToken();
     var headers = {
       'Content-Type': 'application/json',
@@ -194,13 +207,72 @@ class ApiService {
     var response = await http.patch(url, headers: headers, body: body);
 
     if (response.statusCode == 401) {
-      print('🔄 Got 401, attempting token refresh...');
+      print('🔄 Got 401 for PATCH $url, attempting token refresh...');
       final refreshed = await refreshAccessToken();
       if (refreshed) {
         token = await SecureStorageService.getAccessToken();
         headers['Authorization'] = 'Bearer $token';
         response = await http.patch(url, headers: headers, body: body);
         print('🔄 Retry after refresh: ${response.statusCode}');
+      } else {
+        print('🔒 Token refresh failed; returning 401.');
+      }
+    }
+
+    return response;
+  }
+
+  /// Helper to make authenticated PUT request with automatic token refresh on 401
+  static Future<http.Response> authenticatedPut(Uri url, {Map<String, String>? extraHeaders, dynamic body}) async {
+    var token = await SecureStorageService.getAccessToken();
+    var headers = {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      ...?extraHeaders,
+    };
+
+    // If body is already a string, send as-is; otherwise json-encode
+    final payload = body is String ? body : (body != null ? jsonEncode(body) : null);
+
+    var response = await http.put(url, headers: headers, body: payload);
+
+    if (response.statusCode == 401) {
+      print('🔄 Got 401 for PUT $url, attempting token refresh...');
+      final refreshed = await refreshAccessToken();
+      if (refreshed) {
+        token = await SecureStorageService.getAccessToken();
+        headers['Authorization'] = 'Bearer $token';
+        response = await http.put(url, headers: headers, body: payload);
+        print('🔄 Retry after refresh: ${response.statusCode}');
+      } else {
+        print('🔒 Token refresh failed; returning 401.');
+      }
+    }
+
+    return response;
+  }
+
+  /// Helper to make authenticated DELETE request with automatic token refresh on 401
+  static Future<http.Response> authenticatedDelete(Uri url, {Map<String, String>? extraHeaders}) async {
+    var token = await SecureStorageService.getAccessToken();
+    var headers = {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      ...?extraHeaders,
+    };
+
+    var response = await http.delete(url, headers: headers);
+
+    if (response.statusCode == 401) {
+      print('🔄 Got 401 for DELETE $url, attempting token refresh...');
+      final refreshed = await refreshAccessToken();
+      if (refreshed) {
+        token = await SecureStorageService.getAccessToken();
+        headers['Authorization'] = 'Bearer $token';
+        response = await http.delete(url, headers: headers);
+        print('🔄 Retry after refresh: ${response.statusCode}');
+      } else {
+        print('🔒 Token refresh failed; returning 401.');
       }
     }
 
@@ -359,24 +431,56 @@ class ApiService {
     }
   }
 
+  /// Debug helper: print whether tokens exist and decoded expiry (if any)
+  static Future<void> debugAuthStatus() async {
+    try {
+      final access = await SecureStorageService.getAccessToken();
+      final refresh = await SecureStorageService.getRefreshToken();
+      print('🔎 Auth debug - access token present: ${access != null && access.isNotEmpty}, refresh token present: ${refresh != null && refresh.isNotEmpty}');
+
+      if (access != null && access.isNotEmpty) {
+        try {
+          final parts = access.split('.');
+          if (parts.length >= 2) {
+            final payload = jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))));
+            final exp = payload['exp'];
+            final sub = payload['sub'] ?? payload['nameid'] ?? payload['sub'];
+            if (exp != null) {
+              final dt = DateTime.fromMillisecondsSinceEpoch(exp is int ? exp * 1000 : (int.parse(exp.toString()) * 1000), isUtc: true);
+              print('🔎 Access token sub: $sub, exp: $exp -> $dt (UTC)');
+            } else {
+              print('🔎 Access token payload: $payload');
+            }
+          } else {
+            print('🔎 Access token format invalid (no payload)');
+          }
+        } catch (e) {
+          print('🔎 Failed to decode access token payload: $e');
+        }
+      }
+
+      if (refresh != null && refresh.isNotEmpty) {
+        // Do not decode refresh token (usually opaque) but log presence
+        print('🔎 Refresh token present (length ${refresh.length})');
+      }
+    } catch (e) {
+      print('🔎 debugAuthStatus error: $e');
+    }
+  }
+
+  /// Force a refresh and log outcome (useful for debugging)
+  static Future<bool> forceRefreshAndLog() async {
+    print('🔁 Forcing refresh token flow...');
+    final ok = await refreshAccessToken();
+    print('🔁 Force refresh result: $ok');
+    return ok;
+  }
+
   // ----------------- Get User -----------------
   static Future<Map<String, dynamic>?> getUser(String userId) async {
-    final token = await SecureStorageService.getAccessToken();
-
-    if (token == null) {
-      print('API get-user: No token available');
-      return null;
-    }
-
     final url = Uri.parse('$baseUrl/users/$userId');
 
-    final response = await http.get(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final response = await authenticatedGet(url);
 
     print('API get-user status: ${response.statusCode}');
     print('API get-user body: ${response.body}');
@@ -384,7 +488,8 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else if (response.statusCode == 401) {
-      print('API get-user: Unauthorized - token may be expired');
+      print('API get-user: Unauthorized - token may be expired or invalid');
+      await debugAuthStatus();
     }
     return null;
   }
@@ -883,8 +988,12 @@ class ApiService {
     if (condition != null) payload['condition'] = condition;
     if (blobName != null) payload['blobName'] = blobName;
 
-    final response = await _authenticatedPatch(
+    final response = await http.patch(
       url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
       body: jsonEncode(payload),
     );
 
@@ -1436,7 +1545,7 @@ class ApiService {
   /// Get reports assigned to a specific moderator (Admin/Moderator only)
   static Future<List<Map<String, dynamic>>> getReportsByModerator(String moderatorId) async {
     final url = Uri.parse('$baseUrl/reports/moderator/$moderatorId');
-    final response = await _authenticatedGet(url);
+    final response = await authenticatedGet(url);
 
     print('API get-reports-by-moderator status: ${response.statusCode}');
 

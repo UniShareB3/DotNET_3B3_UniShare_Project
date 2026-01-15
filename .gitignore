@@ -500,8 +500,6 @@ $RECYCLE.BIN/
 *.swp
 
 .sonarqube
-# Ignore EF Core s folder
-Backend/Migrations/
 
 # Ignore Flutter build artifacts in frontend
 Frontend/unishare_web/build/
