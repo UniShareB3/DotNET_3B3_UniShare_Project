@@ -35,19 +35,7 @@ public class RequestPasswordResetHandler(
             return Results.BadRequest(new { error = "User has no email address" });
         }
 
-        // Generate password reset token using UserManager
-        var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
-
-        // Store the token in the database with expiration
-        var passwordResetToken = new PasswordResetToken
-        {
-            UserId = user.Id,
-            Code = resetToken, // Store the actual token
-            ExpiresAt = DateTime.UtcNow.AddMinutes(IamConstants.ResetPasswordTokenExpiryMinutes),
-            CreatedAt = DateTime.UtcNow
-        };
-
-        // Remove any existing unused tokens for this user
+        // Remove any existing unused tokens for this user BEFORE generating new token
         var existingTokens = await context.PasswordResetTokens
             .Where(t => t.UserId == user.Id && !t.IsUsed)
             .ToListAsync(cancellationToken);
@@ -55,7 +43,23 @@ public class RequestPasswordResetHandler(
         if (existingTokens.Count != 0)
         {
             context.PasswordResetTokens.RemoveRange(existingTokens);
+            await context.SaveChangesAsync(cancellationToken);
         }
+
+        // Update security stamp to ensure a new token is generated
+        await userManager.UpdateSecurityStampAsync(user);
+
+        // Generate password reset token using UserManager
+        var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
+
+        // Store the token in the database with expiration
+        var passwordResetToken = new PasswordResetToken
+        {
+            UserId = user.Id,
+            Code = resetToken,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(IamConstants.ResetPasswordTokenExpiryMinutes),
+            CreatedAt = DateTime.UtcNow
+        };
 
         context.PasswordResetTokens.Add(passwordResetToken);
         await context.SaveChangesAsync(cancellationToken);
