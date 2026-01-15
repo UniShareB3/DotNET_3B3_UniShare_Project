@@ -240,9 +240,11 @@ if (builder.Environment.EnvironmentName != "Testing" && !string.IsNullOrEmpty(co
     builder.Services.AddDbContext<ApplicationContext>(options =>
         options.UseNpgsql(connectionString));
 }
-else
+else if (builder.Environment.EnvironmentName != "Testing")
 {
-    Log.Warning("No database connection string configured. Database features will not be available.");
+    Log.Warning("No database connection string configured. Using in-memory database.");
+    builder.Services.AddDbContext<ApplicationContext>(options =>
+        options.UseInMemoryDatabase("UniShareInMemory"));
 }
 
 builder.Services.AddScoped<ITokenService, TokenService>();
