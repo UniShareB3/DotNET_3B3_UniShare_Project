@@ -51,6 +51,8 @@ bld/
 # Visual Studio 2017 auto generated files
 Generated\ Files/
 
+Frontend/.claude/settings.local.json
+
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
@@ -245,6 +247,9 @@ _pkginfo.txt
 # but keep track of directories ending in .cache
 !?*.[Cc]ache/
 
+tmpclaude-*
+Frontend/tmpclaude-*
+
 # Others
 ClientBin/
 ~$*
@@ -418,6 +423,7 @@ FodyWeavers.xsd
 ## Visual studio for Mac
 ##
 
+Frontend/.claude*
 
 # globs
 Makefile.in
