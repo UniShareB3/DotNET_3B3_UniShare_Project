@@ -2,14 +2,12 @@
 using Backend.Data;
 using Backend.Features.Items.DTO;
 using Backend.Features.Items.Enums;
-using Backend.Services.AzureStorage;
 
 namespace Backend.Mapping;
 
 public class ItemMapper : Profile
 {
-    public ItemMapper() {}
-    public ItemMapper(IAzureStorageService azureStorageService)
+    public ItemMapper()
     {
         CreateMap<PostItemDto, Item>()
             .ForMember(
@@ -49,10 +47,7 @@ public class ItemMapper : Profile
                     ? (src.Owner.FirstName + " " + src.Owner.LastName).Trim() 
                     : "Unknown Owner") 
             )
-            .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => 
-                !string.IsNullOrEmpty(src.BlobName) 
-                    ? azureStorageService.GenerateReadSasUrl(src.BlobName, TimeSpan.FromHours(1))
-                    : src.ImageUrl))
-            .MaxDepth(1);
+            .MaxDepth(1)
+            .AfterMap<ItemUrlResolver>();
     }
 }

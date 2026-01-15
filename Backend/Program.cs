@@ -117,8 +117,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
 
 var frontendOrigin = Environment.GetEnvironmentVariable("API_FRONTEND_URL");
-if (string.IsNullOrEmpty(frontendOrigin))
-{
+if (string.IsNullOrEmpty(frontendOrigin)) {
     throw new InvalidOperationException("Configuration value 'FrontendOrigin' is missing.");
 }
 
@@ -241,15 +240,14 @@ builder.Services.AddMediatR(cfg =>
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-if (builder.Environment.EnvironmentName != "Testing")
+if (builder.Environment.EnvironmentName != "Testing" && !string.IsNullOrEmpty(connectionString))
 {
-    if (string.IsNullOrEmpty(connectionString))
-    {
-        Log.Warning("No database connection string configured. Database features will not be available.");
-    }
-
     builder.Services.AddDbContext<ApplicationContext>(options =>
-        options.UseNpgsql(connectionString ?? ""));
+        options.UseNpgsql(connectionString));
+}
+else
+{
+    Log.Warning("No database connection string configured. Database features will not be available.");
 }
 
 builder.Services.AddScoped<ITokenService, TokenService>();
@@ -257,35 +255,16 @@ builder.Services.AddScoped<IEmailSender, MailKitEmailSender>();
 builder.Services.AddScoped<IHashingService, HashingService>();
 
 // Register Azure Storage Service
-var azureStorageConnectionString = builder.Configuration.GetConnectionString("AzureStorageAccount");
-var containerName = builder.Configuration["BlobStorage:ContainerName"];
+var azureStorageConnectionString = builder.Configuration.GetConnectionString("AzureStorageAccount") ?? "";
+var containerName = builder.Configuration["BlobStorage:ContainerName"] ?? "";
+InitializeAzureServiceStorage(azureStorageConnectionString, containerName, builder);
 
-if (!string.IsNullOrEmpty(azureStorageConnectionString) && !string.IsNullOrEmpty(containerName))
-{
-    builder.Services.AddSingleton<IAzureStorageService>(new AzureStorageService(azureStorageConnectionString, containerName));
-    Log.Information("Azure Storage Service registered successfully with container: {ContainerName}", containerName);
-}
-else
-{
-    if (string.IsNullOrEmpty(azureStorageConnectionString))
-    {
-        Log.Warning("Azure Storage Account connection string is missing. Image upload to blob storage will not be available.");
-    }
-    if (string.IsNullOrEmpty(containerName))
-    {
-        Log.Warning("Azure Storage Container name is missing. Image upload to blob storage will not be available.");
-    }
-    builder.Services.AddSingleton<IAzureStorageService>(new AzureStorageService("", ""));
-}
 
 builder.Services.AddAutoMapper(cfg =>
     {
-        var serviceProvider = builder.Services.BuildServiceProvider();
-        var azureStorageService = serviceProvider.GetRequiredService<IAzureStorageService>();
-        
         cfg.AddProfile<UserMapper>();
         cfg.AddProfile<UniversityMapper>();
-        cfg.AddProfile(new ItemMapper(azureStorageService));
+        cfg.AddProfile<ItemMapper>();
         cfg.AddProfile<BookingMapper>();
         cfg.AddProfile<ReviewMapper>();
         cfg.AddProfile<Backend.Mappers.Report.ReportMapper>();
@@ -315,37 +294,8 @@ builder.Services.AddSignalR(options =>
 var app = builder.Build();
 
 // Initialize roles and seed database
-var dbConnectionString = app.Configuration.GetConnectionString("DefaultConnection");
-if (!string.IsNullOrEmpty(dbConnectionString))
-{
-    using (var scope = app.Services.CreateScope())
-    {
-        var services = scope.ServiceProvider;
-        var context = services.GetRequiredService<ApplicationContext>();
-
-        if (app.Environment.EnvironmentName != "Testing")
-        {
-            // Apply pending migrations
-            if (context.Database.IsRelational())
-            {
-                var userManager = services.GetRequiredService<UserManager<User>>();
-                var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
-                // If we run the app normally, apply migrations
-                await context.Database.MigrateAsync();
-                await DatabaseSeeder.SeedAsync(context, userManager, roleManager);
-            }
-            else
-            {
-                // If we run the tests with InMemory database, ensure created
-                await context.Database.EnsureCreatedAsync();
-            }
-        }
-    }
-}
-else
-{
-    Log.Warning("Skipping database initialization - no connection string configured");
-}
+var dbConnectionString = app.Configuration.GetConnectionString("DefaultConnection") ?? "";
+await InitializeDatabaseConnection(dbConnectionString, app);
 
 // Enable Swagger middleware
 app.UseSwagger();
@@ -736,6 +686,66 @@ await app.RunAsync();
 
 public partial class Program
 {
-    protected Program() {}
+    protected Program()
+    {
+    }
+
     private const string RouteIdGuid = "/{id:guid}";
+
+    public static void InitializeAzureServiceStorage(string azureStorageConnectionString, string containerName, WebApplicationBuilder builder)
+    {
+        builder.Services.AddSingleton<IAzureStorageService>(sp =>
+        {
+            if (!string.IsNullOrEmpty(azureStorageConnectionString) && !string.IsNullOrEmpty(containerName))
+            {
+                Log.Information("Azure Storage Service initialized with container: {ContainerName}", containerName);
+                return new AzureStorageService(azureStorageConnectionString, containerName);
+            }
+
+            // Handle missing configuration
+            if (string.IsNullOrEmpty(azureStorageConnectionString))
+                Log.Warning("Azure Storage connection string missing.");
+            
+            if (string.IsNullOrEmpty(containerName))
+                Log.Warning("Azure Storage Container name missing.");
+
+            return new AzureStorageService("", "");
+        });
+
+    }
+
+    public async static Task InitializeDatabaseConnection(string dbConnectionString, WebApplication app)
+    {
+        if (!string.IsNullOrEmpty(dbConnectionString))
+        {
+            using (var scope = app.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                var context = services.GetRequiredService<ApplicationContext>();
+
+                if (app.Environment.EnvironmentName != "Testing")
+                {
+                    // Apply pending migrations
+                    if (context.Database.IsRelational())
+                    {
+                        var userManager = services.GetRequiredService<UserManager<User>>();
+                        var roleManager = services.GetRequiredService<RoleManager<IdentityRole<Guid>>>();
+                        // If we run the app normally, apply migrations
+                        await context.Database.MigrateAsync();
+                        await DatabaseSeeder.SeedAsync(context, userManager, roleManager);
+                    }
+                    else
+                    {
+                        // If we run the tests with InMemory database, ensure created
+                        await context.Database.EnsureCreatedAsync();
+                    }
+                }
+            }
+        }
+        else
+        {
+            Log.Warning("Skipping database initialization - no connection string configured");
+        }
+    }
+
 }

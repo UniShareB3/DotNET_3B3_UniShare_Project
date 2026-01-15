@@ -246,11 +246,6 @@ public static class DatabaseSeeder
 
         var usersToCreate = targetUserCount - existingUserCount;
         var newUsers = new List<User>();
-        var randomGenerator = RandomNumberGenerator.Create();
-        var data = new byte[16];
-        randomGenerator.GetBytes(data);
-        var seed = BitConverter.ToInt32(data, 0);
-        var random = new Random(seed + existingUserCount);
 
         // 2. Setup Faker once
         var userFaker = CreateUserFaker();
@@ -277,7 +272,6 @@ public static class DatabaseSeeder
                 userManager,
                 universities,
                 userFaker,
-                random,
                 shouldBeModerator
             );
 
@@ -329,11 +323,10 @@ public static class DatabaseSeeder
 // Helper 3: Complex Email Logic
     private static string GenerateUniversityEmail(
         User user,
-        University university,
-        Random random)
+        University university)
     {
-        var emailPrefix = $"{user.FirstName.ToLower()}.{user.LastName.ToLower()}{random.Next(1, 999)}";
-        var isStudent = random.Next(0, 2) == 0;
+        var emailPrefix = $"{user.FirstName.ToLower()}.{user.LastName.ToLower()}{RandomNumberGenerator.GetInt32(1, 999)}";
+        var isStudent = RandomNumberGenerator.GetInt32(2) == 0;
 
         if (isStudent && university.EmailDomain.Contains('@'))
         {
@@ -349,14 +342,13 @@ public static class DatabaseSeeder
         UserManager<User> userManager,
         List<University> universities,
         Faker<User> userFaker,
-        Random random,
         bool shouldBeModerator)
     {
-        var university = universities[random.Next(universities.Count)];
+        var university = universities[RandomNumberGenerator.GetInt32(0, universities.Count)];
         var user = userFaker.Generate();
 
         user.UniversityId = university.Id;
-        user.Email = GenerateUniversityEmail(user, university, random);
+        user.Email = GenerateUniversityEmail(user, university);
         user.UserName = user.Email;
         user.NormalizedEmail = user.Email.ToUpper();
         user.NormalizedUserName = user.Email.ToUpper();
@@ -399,13 +391,6 @@ public static class DatabaseSeeder
         }
 
         var itemsToCreate = targetItemCount - existingItemCount;
-        
-        var randomGenerator = RandomNumberGenerator.Create();
-        var data = new byte[16];
-        randomGenerator.GetBytes(data);
-        var seed = BitConverter.ToInt32(data, 0);
-        var random = new Random(seed + existingItemCount); // Different seed based on existing count
-        Randomizer.Seed = new Random(seed + existingItemCount);
 
         // Item name templates by category
         var bookTitles = new[]
@@ -452,22 +437,22 @@ public static class DatabaseSeeder
             var item = itemFaker.Generate();
 
             // Assign random owner
-            var owner = users[random.Next(users.Count)];
+            var owner = users[RandomNumberGenerator.GetInt32(0, users.Count)];
             item.OwnerId = owner.Id;
 
             // Assign category
-            var category = (ItemCategory)random.Next(0, 6);
+            var category = (ItemCategory)RandomNumberGenerator.GetInt32(0, 6);
             item.Category = category;
 
             // Set name based on category
             item.Name = category switch
             {
-                ItemCategory.Books => bookTitles[random.Next(bookTitles.Length)] + $" (Edition {random.Next(1, 6)})",
-                ItemCategory.Electronics => electronicItems[random.Next(electronicItems.Length)],
-                ItemCategory.Kitchen => kitchenItems[random.Next(kitchenItems.Length)],
-                ItemCategory.Clothing => clothingItems[random.Next(clothingItems.Length)] +
-                                         $" Size {new[] { "S", "M", "L", "XL" }[random.Next(4)]}",
-                ItemCategory.Accessories => accessories[random.Next(accessories.Length)],
+                ItemCategory.Books => bookTitles[RandomNumberGenerator.GetInt32(0, bookTitles.Length - 1)] + $" (Edition {RandomNumberGenerator.GetInt32(1, 6)})",
+                ItemCategory.Electronics => electronicItems[RandomNumberGenerator.GetInt32(0, electronicItems.Length - 1)],
+                ItemCategory.Kitchen => kitchenItems[RandomNumberGenerator.GetInt32(0, kitchenItems.Length - 1)],
+                ItemCategory.Clothing => clothingItems[RandomNumberGenerator.GetInt32(0, clothingItems.Length - 1)] +
+                                         $" Size {new[] { "S", "M", "L", "XL" }[RandomNumberGenerator.GetInt32(0, 3)]}",
+                ItemCategory.Accessories => accessories[RandomNumberGenerator.GetInt32(0, accessories.Length - 1)],
                 _ => $"Miscellaneous Item {existingItemCount + i + 1}"
             };
 
@@ -476,18 +461,18 @@ public static class DatabaseSeeder
             item.Description = category switch
             {
                 ItemCategory.Books =>
-                    $"Academic textbook in {new[] { "good", "excellent", "fair" }[random.Next(3)]} condition. {faker.Lorem.Sentence(10)}",
+                    $"Academic textbook in {new[] { "good", "excellent", "fair" }[RandomNumberGenerator.GetInt32(3)]} condition. {faker.Lorem.Sentence(10)}",
                 ItemCategory.Electronics => $"Electronic device in working condition. {faker.Lorem.Sentence(8)}",
                 ItemCategory.Kitchen =>
-                    $"Kitchen item, {new[] { "lightly used", "like new", "well-maintained" }[random.Next(3)]}. {faker.Lorem.Sentence(7)}",
+                    $"Kitchen item, {new[] { "lightly used", "like new", "well-maintained" }[RandomNumberGenerator.GetInt32(3)]}. {faker.Lorem.Sentence(7)}",
                 ItemCategory.Clothing =>
-                    $"Clothing item, {new[] { "barely worn", "gently used", "in good shape" }[random.Next(3)]}. {faker.Lorem.Sentence(6)}",
+                    $"Clothing item, {new[] { "barely worn", "gently used", "in good shape" }[RandomNumberGenerator.GetInt32(3)]}. {faker.Lorem.Sentence(6)}",
                 ItemCategory.Accessories => $"Useful accessory for daily use. {faker.Lorem.Sentence(8)}",
                 _ => faker.Lorem.Sentences(2)
             };
 
             // Assign condition
-            item.Condition = (ItemCondition)random.Next(0, 5);
+            item.Condition = (ItemCondition)RandomNumberGenerator.GetInt32(0, 5);
 
             items.Add(item);
         }
