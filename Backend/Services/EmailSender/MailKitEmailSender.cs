@@ -59,7 +59,10 @@ UniShare Team";
             throw new InvalidOperationException(
                 "Missing frontend base URL. Set API_FRONTEND_URL env variable or Frontend:BaseUrl configuration to enable password reset emails.");
         }
-        
+
+        // Remove trailing slash to avoid double slashes in URL
+        frontendUrl = frontendUrl.TrimEnd('/');
+
         var encodedToken = Uri.EscapeDataString(resetToken);
         var resetUrl = $"{frontendUrl}/reset-password?token={encodedToken}&userId={userId}";
         
