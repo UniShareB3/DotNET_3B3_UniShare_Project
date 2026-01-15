@@ -269,7 +269,7 @@ class _ChatPageState extends State<ChatPage> {
                   Text(
                     widget.otherUserName,
                     style: const TextStyle(fontSize: 16),
-                  ),
+                  )
                 ],
               ),
             ),
