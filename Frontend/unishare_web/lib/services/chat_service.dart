@@ -5,6 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'secure_storage_service.dart';
+import 'package:unishare_web/services/api_service.dart'; // use authenticated helpers
 
 /// Service for managing chat functionality including SignalR real-time connection
 /// and REST API calls for chat history
@@ -140,19 +141,9 @@ class ChatService {
   /// Retrieve SAS URL for uploading a document to blob storage
   static Future<Map<String, dynamic>?> retrieveSasUrl(String fileName, String mimeType) async {
     try {
-      final token = await SecureStorageService.getAccessToken();
-      if (token == null || token.isEmpty) {
-        print('❌ ChatService: No token for retrieving SAS URL');
-        return null;
-      }
-
       final url = Uri.parse('$baseUrl/chat/documents/upload-url');
-      final response = await http.post(
+      final response = await ApiService.authenticatedPost(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
         body: jsonEncode({
           'fileName': fileName,
           'contentType': mimeType,
@@ -182,19 +173,9 @@ class ChatService {
   /// Uses POST endpoint with blobName in request body
   static Future<Map<String, dynamic>?> getDocumentViewUrl(String blobName) async {
     try {
-      final token = await SecureStorageService.getAccessToken();
-      if (token == null || token.isEmpty) {
-        print('❌ ChatService: No token for retrieving view URL');
-        return null;
-      }
-
       final url = Uri.parse('$baseUrl/chat/documents/view-url');
-      final response = await http.post(
+      final response = await ApiService.authenticatedPost(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
         body: jsonEncode({
           'blobName': blobName,
         }),
@@ -225,19 +206,9 @@ class ChatService {
   /// Uses POST endpoint with list of blobNames in request body
   static Future<List<Map<String, dynamic>>?> getBulkDocumentViewUrls(List<String> blobNames) async {
     try {
-      final token = await SecureStorageService.getAccessToken();
-      if (token == null || token.isEmpty) {
-        print('❌ ChatService: No token for retrieving bulk view URLs');
-        return null;
-      }
-
       final url = Uri.parse('$baseUrl/chat/bulk/documents/url');
-      final response = await http.post(
+      final response = await ApiService.authenticatedPost(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
         body: jsonEncode({
           'blobNames': blobNames,
         }),
@@ -268,19 +239,9 @@ class ChatService {
   /// Returns the response data including DocumentUrl on success, null on failure
   static Future<Map<String, dynamic>?> sendConfirmationUploadRequest(String blobName, String receiverId) async {
     try {
-      final token = await SecureStorageService.getAccessToken();
-      if (token == null || token.isEmpty) {
-        print('❌ ChatService: No token for confirming upload');
-        return null;
-      }
-
       final url = Uri.parse('$baseUrl/chat/documents/confirm-upload');
-      final response = await http.post(
+      final response = await ApiService.authenticatedPost(
         url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
         body: jsonEncode({
           'blobName': blobName,
           'receiverId': receiverId,
@@ -329,13 +290,9 @@ class ChatService {
         mimeType = 'image/jpeg';
         break;
       case 'png':
-        mimeType = 'image/png';
-        break;
       case 'gif':
-        mimeType = 'image/gif';
-        break;
       case 'webp':
-        mimeType = 'image/webp';
+        mimeType = 'image/png';
         break;
     // Document types
       case 'pdf':
@@ -440,20 +397,8 @@ class ChatService {
   /// Get chat history with a specific user via REST API
   static Future<List<Map<String, dynamic>>> getChatHistory(String otherUserId) async {
     try {
-      final token = await SecureStorageService.getAccessToken();
-      if (token == null || token.isEmpty) {
-        print('❌ ChatService: No token for chat history');
-        return [];
-      }
-
       final url = Uri.parse('$baseUrl/chat/history/$otherUserId');
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+      final response = await ApiService.authenticatedGet(url);
 
       print('📜 ChatService: Get history status: ${response.statusCode}');
 
@@ -473,20 +418,8 @@ class ChatService {
   /// This endpoint needs to be added to backend, for now we'll use a workaround
   static Future<List<Map<String, dynamic>>> getConversations() async {
     try {
-      final token = await SecureStorageService.getAccessToken();
-      if (token == null || token.isEmpty) {
-        print('❌ ChatService: No token for conversations');
-        return [];
-      }
-
       final url = Uri.parse('$baseUrl/chat/conversations');
-      final response = await http.get(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
+      final response = await ApiService.authenticatedGet(url);
 
       print('📜 ChatService: Get conversations status: ${response.statusCode}');
 
