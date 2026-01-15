@@ -89,12 +89,6 @@ public class CreateBookingValidator : AbstractValidator<CreateBookingRequest>
 - **Authentication:** Register, Login, Email Verification, Password Reset (Identity + JWT).
 - **Universities:** Management of university domains/data.
 
-## 👥 Team Responsibilities
-- **Dev 1:** Auth + Setup + Unit Tests
-- **Dev 2:** Items + Bookings + Validation + Unit Tests
-- **Dev 3:** Reviews + EF Core + Integration Tests
-- **Dev 4:** Flutter UI + End-to-End Tests + Docs
-
 
 ## 📦 Deployment
 - **Docker:** Containerized application (Dockerfile included).
