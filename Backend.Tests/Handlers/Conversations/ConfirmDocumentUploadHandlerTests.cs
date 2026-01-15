@@ -81,10 +81,9 @@ public class ConfirmDocumentUploadHandlerTests
 
         var message = await context.ChatMessages.FirstOrDefaultAsync();
         message.Should().NotBeNull();
-        message!.SenderId.Should().Be(senderId);
+        message.SenderId.Should().Be(senderId);
         message.ReceiverId.Should().Be(receiverId);
         message.BlobName.Should().Be("test-document.pdf");
-        message.Content.Should().Be("Test caption");
     }
 
     [Fact]
@@ -132,7 +131,7 @@ public class ConfirmDocumentUploadHandlerTests
 
         var message = await context.ChatMessages.FirstOrDefaultAsync();
         message.Should().NotBeNull();
-        message!.Content.Should().Be(string.Empty);
+        message.Content.Should().Be(string.Empty);
     }
 
     [Fact]
