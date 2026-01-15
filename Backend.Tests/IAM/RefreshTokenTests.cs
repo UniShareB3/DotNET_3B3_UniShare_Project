@@ -1,6 +1,5 @@
 ﻿using Backend.Data;
 using Backend.Features.Shared.IAM.RefreshToken;
-using Backend.Features.Users.DTO;
 using Backend.Persistence;
 using Backend.Services.Token;
 using FluentAssertions;

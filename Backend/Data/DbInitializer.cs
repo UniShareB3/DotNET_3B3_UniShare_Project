@@ -17,7 +17,14 @@ namespace Backend.Data
                                ?? Environment.GetEnvironmentVariable("PLACEHOLDER_IMAGE_BASE_URL");
 
             // Asigură-te că baza de date este creată
-            context.Database.Migrate();
+            if (context.Database.IsRelational())
+            {
+                context.Database.Migrate();
+            }
+            else
+            {
+                context.Database.EnsureCreated();
+            }
 
             // Verificăm dacă există deja iteme
             if (context.Items.Any()) return;
