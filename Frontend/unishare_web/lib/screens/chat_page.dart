@@ -269,14 +269,7 @@ class _ChatPageState extends State<ChatPage> {
                   Text(
                     widget.otherUserName,
                     style: const TextStyle(fontSize: 16),
-                  ),
-                  Text(
-                    _isConnected ? 'Online' : 'Connecting...',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: _isConnected ? Colors.green[300] : Colors.grey[400],
-                    ),
-                  ),
+                  )
                 ],
               ),
             ),
