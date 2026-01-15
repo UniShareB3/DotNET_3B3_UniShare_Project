@@ -1645,7 +1645,7 @@ class ApiService {
     final token = await SecureStorageService.getAccessToken();
     if (token == null) return {'success': false, 'message': 'No authentication token available'};
 
-    final url = Uri.parse('$baseUrl/moderator-requests');
+    final url = Uri.parse('$baseUrl/moderator-assignments');
 
     final response = await http.post(
       url,
@@ -1687,7 +1687,7 @@ class ApiService {
     final token = await SecureStorageService.getAccessToken();
     if (token == null) return [];
 
-    final url = Uri.parse('$baseUrl/moderator-requests');
+    final url = Uri.parse('$baseUrl/moderator-assignments');
     final response = await http.get(
       url,
       headers: {
@@ -1713,7 +1713,7 @@ class ApiService {
     final token = await SecureStorageService.getAccessToken();
     if (token == null) return {'success': false, 'message': 'No authentication token available'};
 
-    final url = Uri.parse('$baseUrl/moderator-requests/$requestId');
+    final url = Uri.parse('$baseUrl/moderator-assignments/$requestId');
     final response = await http.patch(
       url,
       headers: {
