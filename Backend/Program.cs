@@ -73,11 +73,6 @@ using Backend.Features.Users.GetUserBookings;
 using Backend.Features.Users.LoginUser;
 using Backend.Features.Users.RegisterUser;
 using Backend.Features.Users.UpdateUser;
-using Backend.Mappers.Booking;
-using Backend.Mappers.Review;
-using Backend.Mappers.University;
-using Backend.Mappers.User;
-using Backend.Mapping;
 using Backend.Services.EmailSender;
 using Backend.Services.Hashing;
 using Backend.Services.Token;
@@ -260,17 +255,7 @@ var containerName = builder.Configuration["BlobStorage:ContainerName"] ?? "";
 InitializeAzureServiceStorage(azureStorageConnectionString, containerName, builder);
 
 
-builder.Services.AddAutoMapper(cfg =>
-    {
-        cfg.AddProfile<UserMapper>();
-        cfg.AddProfile<UniversityMapper>();
-        cfg.AddProfile<ItemMapper>();
-        cfg.AddProfile<BookingMapper>();
-        cfg.AddProfile<ReviewMapper>();
-        cfg.AddProfile<Backend.Mappers.Report.ReportMapper>();
-        cfg.AddProfile<Backend.Mappers.ModeratorAssignment.ModeratorAssignmentMapper>();
-    },
-    typeof(Backend.Mappers.Report.ReportMapper), typeof(Backend.Mappers.ModeratorAssignment.ModeratorAssignmentMapper));
+builder.Services.AddAutoMapper(cfg => { }, typeof(Program).Assembly);
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 builder.Services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
