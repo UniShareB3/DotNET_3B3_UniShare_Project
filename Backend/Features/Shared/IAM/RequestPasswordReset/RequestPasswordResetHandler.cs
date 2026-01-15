@@ -1,4 +1,5 @@
-﻿using Backend.Data;
+﻿using System.Security.Cryptography;
+using Backend.Data;
 using Backend.Features.Shared.IAM.Constants;
 using Backend.Persistence;
 using Backend.Services.EmailSender;
@@ -16,7 +17,7 @@ public class RequestPasswordResetHandler(
     IEmailSender emailSender) : IRequestHandler<RequestPasswordResetRequest, IResult>
 {
     private readonly ILogger _logger = Log.ForContext<RequestPasswordResetHandler>();
-    
+
     public async Task<IResult> Handle(RequestPasswordResetRequest request, CancellationToken cancellationToken)
     {
         _logger.Information("Processing password reset request for email {Email}", request.Email);
@@ -46,16 +47,10 @@ public class RequestPasswordResetHandler(
             await context.SaveChangesAsync(cancellationToken);
         }
 
-        // Update security stamp to ensure a new token is generated
-        await userManager.UpdateSecurityStampAsync(user);
-
-        // Reload user from database to ensure we have the updated security stamp
-        // This is necessary because the in-memory user object may not reflect the new stamp
-        user = await userManager.FindByIdAsync(user.Id.ToString())
-               ?? throw new InvalidOperationException("User not found after security stamp update");
-
-        // Generate password reset token using UserManager
-        var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
+        // Generate a cryptographically secure random token
+        // This bypasses ASP.NET Identity's DataProtectorTokenProvider which can have issues
+        // with token uniqueness due to Data Protection key management and security stamp synchronization
+        var resetToken = GenerateSecureRandomToken();
 
         // Store the token in the database with expiration
         var passwordResetToken = new PasswordResetToken
@@ -84,5 +79,20 @@ public class RequestPasswordResetHandler(
             message = "Password reset token sent successfully",
             expiresInMinutes = 15
         });
+    }
+
+    /// <summary>
+    /// Generates a cryptographically secure random token for password reset.
+    /// Uses 32 bytes (256 bits) of randomness, encoded as URL-safe Base64.
+    /// </summary>
+    private static string GenerateSecureRandomToken()
+    {
+        var tokenBytes = new byte[32];
+        RandomNumberGenerator.Fill(tokenBytes);
+        // Use URL-safe Base64 encoding (replace + with -, / with _, remove padding =)
+        return Convert.ToBase64String(tokenBytes)
+            .Replace("+", "-")
+            .Replace("/", "_")
+            .TrimEnd('=');
     }
 }

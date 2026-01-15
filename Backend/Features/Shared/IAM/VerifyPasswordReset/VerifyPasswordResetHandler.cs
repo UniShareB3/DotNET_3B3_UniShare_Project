@@ -49,18 +49,8 @@ public class VerifyPasswordResetHandler(
             return Results.BadRequest(new { error = "Invalid or expired password reset token" });
         }
 
-        // Verify the token with UserManager to ensure it's valid
-        var isValidToken = await userManager.VerifyUserTokenAsync(
-            user,
-            userManager.Options.Tokens.PasswordResetTokenProvider,
-            "ResetPassword",
-            request.Code);
-
-        if (!isValidToken)
-        {
-            _logger.Warning("Token validation failed for user {UserId}", request.UserId);
-            return Results.BadRequest(new { error = "Invalid password reset token" });
-        }
+        // Token is validated by checking it exists in the database, is not used, and hasn't expired
+        // No need for additional UserManager verification since we use cryptographically secure random tokens
 
         // Mark token as used
         storedToken.IsUsed = true;
