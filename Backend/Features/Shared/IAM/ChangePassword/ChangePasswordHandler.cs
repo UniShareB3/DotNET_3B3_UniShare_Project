@@ -39,35 +39,63 @@ public class ChangePasswordHandler(
             return Results.BadRequest(new { error = "Password reset token expired or not found. Please request a new password reset." });
         }
 
-        recentToken.IsUsed = true;
-
-        string resetToken = recentToken.Code;
-
-        var result = await userManager.ResetPasswordAsync(user, resetToken, dto.NewPassword);
-        
-        if (!result.Succeeded)
+        // Validate the new password against Identity's password requirements
+        var passwordValidators = userManager.PasswordValidators;
+        foreach (var validator in passwordValidators)
         {
-            _logger.Error("Password change failed for {UserId}. Errors: {Errors}", 
-                dto.UserId, 
-                string.Join(", ", result.Errors.Select(e => e.Description)));
+            var validationResult = await validator.ValidateAsync(userManager, user, dto.NewPassword);
+            if (!validationResult.Succeeded)
+            {
+                _logger.Error("Password validation failed for {UserId}. Errors: {Errors}",
+                    dto.UserId,
+                    string.Join(", ", validationResult.Errors.Select(e => e.Description)));
 
-            // Return validation errors in a format that frontend can use
+                var errors = new Dictionary<string, List<string>>();
+                foreach (var error in validationResult.Errors)
+                {
+                    if (!errors.TryGetValue(error.Code, out List<string>? value))
+                    {
+                        value = [];
+                        errors[error.Code] = value;
+                    }
+                    value.Add(error.Description);
+                }
+                return Results.BadRequest(errors);
+            }
+        }
+
+        // Remove the old password and set the new one
+        // This bypasses the need for an Identity reset token since we've already validated
+        // the user's identity through our custom token system
+        var removeResult = await userManager.RemovePasswordAsync(user);
+        if (!removeResult.Succeeded)
+        {
+            _logger.Error("Failed to remove old password for {UserId}", dto.UserId);
+            return Results.Problem("Failed to update password");
+        }
+
+        var addResult = await userManager.AddPasswordAsync(user, dto.NewPassword);
+        if (!addResult.Succeeded)
+        {
+            _logger.Error("Password change failed for {UserId}. Errors: {Errors}",
+                dto.UserId,
+                string.Join(", ", addResult.Errors.Select(e => e.Description)));
+
             var errors = new Dictionary<string, List<string>>();
-            foreach (var error in result.Errors)
+            foreach (var error in addResult.Errors)
             {
                 if (!errors.TryGetValue(error.Code, out List<string>? value))
                 {
                     value = [];
                     errors[error.Code] = value;
                 }
-
                 value.Add(error.Description);
             }
-
             return Results.BadRequest(errors);
         }
 
-        // Clean up used token
+        // Mark token as used and clean up
+        recentToken.IsUsed = true;
         context.PasswordResetTokens.Remove(recentToken);
         await context.SaveChangesAsync(cancellationToken);
 

@@ -51,10 +51,8 @@ public class VerifyPasswordResetHandler(
 
         // Token is validated by checking it exists in the database, is not used, and hasn't expired
         // No need for additional UserManager verification since we use cryptographically secure random tokens
-
-        // Mark token as used
-        storedToken.IsUsed = true;
-        await context.SaveChangesAsync(cancellationToken);
+        // NOTE: Do NOT mark the token as used here - that happens in ChangePasswordHandler
+        // after the password is actually changed successfully
 
         // Generate a temporary short-lived JWT token for password change
         var tempToken = GenerateTemporaryToken(user);
