@@ -114,7 +114,7 @@ class ChatService {
 
     /// Send a document message to another user via SignalR
   /// This expects the blobPath (path in blob storage) and the resolved documentUrl (SAS URL)
-  static Future<bool> sendDocumentMessage(String receiverId, String blobName, String documentUrl, {String? caption}) async {
+  static Future<bool> sendDocumentMessage(String receiverId, String blobName, String documentUrl, {String? caption, String? imageName}) async {
     try {
       final connection = await getConnection();
       if (connection == null) {
@@ -122,7 +122,7 @@ class ChatService {
         return false;
       }
 
-      await connection.invoke('SendImageMessage', args: [receiverId, blobName, documentUrl, caption ?? '']);
+      await connection.invoke('SendImageMessage', args: [receiverId, blobName, documentUrl, caption ?? '', imageName ?? '']);
       print('✅ ChatService: Document sent to $receiverId');
       return true;
     } catch (e) {
@@ -266,7 +266,7 @@ class ChatService {
 
   /// Send confirmation to backend after successful upload to blob storage
   /// Returns the response data including DocumentUrl on success, null on failure
-  static Future<Map<String, dynamic>?> sendConfirmationUploadRequest(String blobName, String receiverId) async {
+  static Future<Map<String, dynamic>?> sendConfirmationUploadRequest(String blobName, String receiverId, {String? fileName}) async {
     try {
       final token = await SecureStorageService.getAccessToken();
       if (token == null || token.isEmpty) {
@@ -284,6 +284,7 @@ class ChatService {
         body: jsonEncode({
           'blobName': blobName,
           'receiverId': receiverId,
+          'fileName': fileName,
         }),
       );
 
@@ -296,6 +297,7 @@ class ChatService {
           'messageId': data['messageId'],
           'documentUrl': data['documentUrl'],
           'blobName': data['blobName'],
+          'imageName': data['imageName'],
           'timestamp': data['timestamp'],
           'expiresAt': data['expiresAt'],
         };
@@ -404,8 +406,8 @@ class ChatService {
       print('📁 ChatService: Upload to blob status: ${uploadResponse.statusCode}');
 
       if (uploadResponse.statusCode == 201 || uploadResponse.statusCode == 200) {
-        // Step 3: Confirm upload with backend
-        final confirmationData = await sendConfirmationUploadRequest(blobName, receiverId);
+        // Step 3: Confirm upload with backend (pass original fileName for display purposes)
+        final confirmationData = await sendConfirmationUploadRequest(blobName, receiverId, fileName: fileName);
         if (confirmationData != null) {
           print('✅ ChatService: Document uploaded successfully: $blobName');
           return confirmationData;

@@ -7,6 +7,7 @@ class ChatMessage {
   String? documentUrl; // SAS URL for viewing (mutable to allow updating after bulk fetch)
   final String? blobName; // Original blob name from backend
   final String? documentName; // Original file name
+  final String? imageName; // Original filename for images/documents (for display purposes)
   final MessageType messageType;
   final DateTime timestamp;
 
@@ -17,6 +18,7 @@ class ChatMessage {
     this.documentUrl,
     this.blobName,
     this.documentName,
+    this.imageName,
     this.messageType = MessageType.text,
     required this.timestamp,
   });
@@ -45,6 +47,9 @@ class ChatMessage {
     return parts.length > 1 ? parts.last.toLowerCase() : null;
   }
 
+  // Get the display name for images/documents (prefers imageName over documentName)
+  String? get displayName => imageName ?? documentName;
+
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     print('📥 ChatMessage.fromJson: Parsing message: $json');
     
@@ -58,6 +63,10 @@ class ChatMessage {
       if (contentType.startsWith('image/')) {
         type = MessageType.image;
         print('📥 ChatMessage: Detected as IMAGE (contentType: $contentType)');
+      } else if (contentType.startsWith('text/')) {
+        // Text content types (text/plain, text/html, etc.) are plain text messages
+        type = MessageType.text;
+        print('📥 ChatMessage: Detected as TEXT (contentType: $contentType)');
       } else if (contentType.isNotEmpty && contentType != '') {
         // Any other content type means it's a document
         type = MessageType.document;
@@ -99,6 +108,12 @@ class ChatMessage {
       print('📥 ChatMessage: Found documentUrl in JSON: $documentUrlValue');
     }
 
+    // Get imageName from JSON (original filename for display)
+    final imageNameValue = json['imageName']?.toString();
+    if (imageNameValue != null && imageNameValue.isNotEmpty) {
+      print('📥 ChatMessage: Found imageName in JSON: $imageNameValue');
+    }
+
     final message = ChatMessage(
       senderId: json['senderId']?.toString() ?? '',
       content: json['content'] ?? '',
@@ -106,6 +121,7 @@ class ChatMessage {
       documentUrl: documentUrlValue, // Use provided URL if available
       blobName: blobNameValue,
       documentName: documentName,
+      imageName: imageNameValue,
       messageType: type,
       timestamp: json['timestamp'] != null
           ? DateTime.parse(json['timestamp'])
@@ -125,6 +141,7 @@ class ChatMessage {
       'documentUrl': documentUrl,
       'blobName': blobName,
       'documentName': documentName,
+      'imageName': imageName,
       'messageType': messageType == MessageType.image
           ? 'Image'
           : messageType == MessageType.document

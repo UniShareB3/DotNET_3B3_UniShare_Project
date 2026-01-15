@@ -651,7 +651,8 @@ chatGroup.MapPost("/documents/upload-url", async (Backend.Features.Conversations
 chatGroup.MapPost("/documents/confirm-upload", async (Backend.Features.Conversations.DTO.ConfirmDocumentUploadDto dto, ClaimsPrincipal user, IMediator mediator) =>
 {
     var currentUserId = Guid.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-    return await mediator.Send(new ConfirmDocumentUploadRequest(currentUserId, Guid.Parse(dto.ReceiverId), dto.BlobName, dto.FileName, dto.Caption));
+
+    return await mediator.Send(new ConfirmDocumentUploadRequest(currentUserId, Guid.Parse(dto.ReceiverId), dto.BlobName, dto.Caption, dto.FileName));
 })
 .WithDescription("Confirm document upload and save chat message with document URL");
 

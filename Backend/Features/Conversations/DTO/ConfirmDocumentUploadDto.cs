@@ -6,5 +6,6 @@ public class ConfirmDocumentUploadDto
     public string? FileName { get; set; }
     public required String ReceiverId { get; set; }
     public string? Caption { get; set; }
+    public string? FileName { get; set; }
 }
 

@@ -71,6 +71,7 @@ public class ConfirmDocumentUploadHandlerTests
         var handler = new ConfirmDocumentUploadHandler(context, userManagerMock.Object, storageServiceMock.Object);
         var request = new ConfirmDocumentUploadRequest(senderId, receiverId, "test-document.pdf", "test-document.pdf", "Test caption");
 
+
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
 
@@ -119,7 +120,8 @@ public class ConfirmDocumentUploadHandlerTests
             .ReturnsAsync(receiver);
 
         var handler = new ConfirmDocumentUploadHandler(context, userManagerMock.Object, storageServiceMock.Object);
-        var request = new ConfirmDocumentUploadRequest(senderId, receiverId, "image.jpg", "image.jpg", null);
+        var request = new ConfirmDocumentUploadRequest(senderId, receiverId, "image.jpg", null, "fileName1");
+
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -148,7 +150,8 @@ public class ConfirmDocumentUploadHandlerTests
             .ReturnsAsync((User?)null);
 
         var handler = new ConfirmDocumentUploadHandler(context, userManagerMock.Object, storageServiceMock.Object);
-        var request = new ConfirmDocumentUploadRequest(senderId, receiverId, "test-document.pdf", "test-document.pdf", "Caption");
+        var request = new ConfirmDocumentUploadRequest(senderId, receiverId, "test-document.pdf", "Caption", "fileName1");
+
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -183,7 +186,7 @@ public class ConfirmDocumentUploadHandlerTests
             .ReturnsAsync((User?)null);
 
         var handler = new ConfirmDocumentUploadHandler(context, userManagerMock.Object, storageServiceMock.Object);
-        var request = new ConfirmDocumentUploadRequest(senderId, receiverId, "test-document.pdf", "test-document.pdf", "Caption");
+        var request = new ConfirmDocumentUploadRequest(senderId, receiverId, "test-document.pdf", "Caption", "fileName1");
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -230,7 +233,8 @@ public class ConfirmDocumentUploadHandlerTests
             .ReturnsAsync(receiver);
 
         var handler = new ConfirmDocumentUploadHandler(context, userManagerMock.Object, storageServiceMock.Object);
-        var request = new ConfirmDocumentUploadRequest(senderId, receiverId, "test-document.pdf", "test-document.pdf", "Caption");
+        var request = new ConfirmDocumentUploadRequest(senderId, receiverId, "test-document.pdf", "Caption", "fileName1");
+
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);

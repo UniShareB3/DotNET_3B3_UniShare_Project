@@ -31,5 +31,11 @@ public class ChatMessage
     [MaxLength(100)]
     public string ContentType { get; set; } = "text/plain";
 
+    /// <summary>
+    /// Original filename for images/documents (for display purposes only)
+    /// </summary>
+    [MaxLength(255)]
+    public string? ImageName { get; set; }
+
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 }
