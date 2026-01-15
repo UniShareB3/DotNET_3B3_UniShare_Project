@@ -140,6 +140,36 @@ class ApiService {
     }
   }
 
+  /// Helper to check if a 403 response is due to email not being verified
+  /// Shows a snackbar message if so and returns true
+  static bool _handleEmailVerificationError(http.Response response) {
+    if (response.statusCode == 403) {
+      try {
+        final data = jsonDecode(response.body);
+        // Backend returns: { "title": "Email not verified", "detail": "Please verify your email address to access this resource" }
+        final title = data['title']?.toString().toLowerCase() ?? '';
+        final detail = data['detail']?.toString() ?? '';
+
+        if (title.contains('email') && title.contains('verified')) {
+          final context = navigatorKey.currentContext;
+          if (context != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(detail.isNotEmpty ? detail : 'Please verify your email to access this feature.'),
+                backgroundColor: Colors.orange,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+          return true;
+        }
+      } catch (e) {
+        // JSON parsing failed, not an email verification error
+      }
+    }
+    return false;
+  }
+
   /// Helper to make authenticated GET request with automatic token refresh on 401
   static Future<http.Response> authenticatedGet(Uri url, {Map<String, String>? extraHeaders}) async {
     var token = await SecureStorageService.getAccessToken();
@@ -164,6 +194,9 @@ class ApiService {
         print('🔒 Token refresh failed; returning 401.');
       }
     }
+
+    // Check for email verification 403 error
+    _handleEmailVerificationError(response);
 
     return response;
   }
@@ -192,6 +225,9 @@ class ApiService {
       }
     }
 
+    // Check for email verification 403 error
+    _handleEmailVerificationError(response);
+
     return response;
   }
 
@@ -218,6 +254,9 @@ class ApiService {
         print('🔒 Token refresh failed; returning 401.');
       }
     }
+
+    // Check for email verification 403 error
+    _handleEmailVerificationError(response);
 
     return response;
   }
@@ -249,6 +288,9 @@ class ApiService {
       }
     }
 
+    // Check for email verification 403 error
+    _handleEmailVerificationError(response);
+
     return response;
   }
 
@@ -275,6 +317,9 @@ class ApiService {
         print('🔒 Token refresh failed; returning 401.');
       }
     }
+
+    // Check for email verification 403 error
+    _handleEmailVerificationError(response);
 
     return response;
   }
@@ -792,6 +837,9 @@ class ApiService {
       print('Response status: ${response.statusCode}');
       print('Response body: ${response.body}');
 
+      // Check for email verification 403 error
+      _handleEmailVerificationError(response);
+
       if (response.statusCode == 201 || response.statusCode == 200) {
         return true;
       } else {
@@ -1191,6 +1239,9 @@ class ApiService {
     print('Create booking status: ${response.statusCode}');
     print('Create booking body: ${response.body}');
 
+    // Check for email verification 403 error
+    _handleEmailVerificationError(response);
+
     return response.statusCode == 201 || response.statusCode == 200;
   }
 
@@ -1258,6 +1309,9 @@ class ApiService {
     print('🔍 [CREATE REVIEW] Body length: ${response.body.length}');
     print('🔍 [CREATE REVIEW] Body: ${response.body}');
     print('🔍 [CREATE REVIEW] Headers: ${response.headers}');
+
+    // Check for email verification 403 error
+    _handleEmailVerificationError(response);
 
     return {
       'success': response.statusCode == 201 || response.statusCode == 200,
@@ -1479,6 +1533,9 @@ class ApiService {
     print('API create-report status: ${response.statusCode}');
     print('API create-report body: ${response.body}');
 
+    // Check for email verification 403 error
+    _handleEmailVerificationError(response);
+
     if (response.statusCode == 201 || response.statusCode == 200) {
       return {
         'success': true,
@@ -1661,6 +1718,9 @@ class ApiService {
 
     print('API create-moderator-request status: ${response.statusCode}');
     print('API create-moderator-request body: ${response.body}');
+
+    // Check for email verification 403 error
+    _handleEmailVerificationError(response);
 
     if (response.statusCode == 201) {
       return {
