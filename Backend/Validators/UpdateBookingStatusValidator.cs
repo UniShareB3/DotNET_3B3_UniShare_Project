@@ -67,7 +67,7 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
             }
 
             // Borrower can mark a booking as Completed when it's Accepted (early return)
-            if (booking.BookingStatus == BookingStatus.Accepted && dto.BookingStatus == BookingStatus.Completed)
+            if (booking.BookingStatus == BookingStatus.Approved && dto.BookingStatus == BookingStatus.Completed)
             {
                 return;
             }
