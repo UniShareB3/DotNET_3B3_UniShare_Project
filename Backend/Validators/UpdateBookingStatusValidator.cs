@@ -60,23 +60,21 @@ public class UpdateBookingStatusValidator : AbstractValidator<UpdateBookingStatu
         // 3. Logica pentru BORROWER
         if (dto.UserId == booking.BorrowerId)
         {
-            // Borrower-ul poate da cancel DOAR dacă statusul curent este Pending
-            if (booking.BookingStatus != BookingStatus.Pending)
+            // Borrower can cancel a booking when it's Pending
+            if (booking.BookingStatus == BookingStatus.Pending && dto.BookingStatus == BookingStatus.Canceled)
             {
-                context.AddFailure("Borrower can only cancel a booking when it is still Pending.");
-                _logger.LogError("Borrower can only cancel a booking when it is still Pending.");
                 return;
             }
 
-            // Borrower is allowed only to request a Canceled status when booking is Pending.
-            if (dto.BookingStatus != BookingStatus.Canceled)
+            // Borrower can mark a booking as Completed when it's Accepted (early return)
+            if (booking.BookingStatus == BookingStatus.Accepted && dto.BookingStatus == BookingStatus.Completed)
             {
-                context.AddFailure("Borrower can only cancel a booking; they cannot change it to other statuses.");
-                _logger.LogError("Borrower attempted to change booking status to a non-cancel value.");
                 return;
             }
 
-            // Dacă e Pending și e Borrower, e valid pentru Cancel.
+            // If none of the above valid transitions, reject
+            context.AddFailure("Borrower can only cancel a Pending booking or complete an Accepted booking (early return).");
+            _logger.LogError("Borrower attempted an invalid status transition.");
             return;
         }
 
